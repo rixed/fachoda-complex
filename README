@@ -1,0 +1,18 @@
+go in src, make.
+if make does not work, good luck. edit Makefile.
+play by running fachoda.x11 or .sdl or .cl
+drop me a mail at rixed@free.fr if you really need help.
+
+If make complains about esd.h, just do a 'touch esd.h' in
+src directory, and play with the 'nosound' option.
+
+If make can't build either sdl or clanlib version of fachoda,
+it will stop with an error message. Just type 'make x11' or
+'make sdl' or 'make fachodasrv' to build things separately.
+
+If make complains about the X11 lib, just modify the path to
+X11 libs in Makefile, line 32. On some distribs, the right
+path is '-L/usr/X11R6/lib', on others '-L/usr/lib/X11' ...
+
+Email me if you encounter any problem (rixed@free.fr)
+
