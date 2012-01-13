@@ -10,6 +10,8 @@
 #include <signal.h>
 #include "3d.h"
 
+#define ARRAY_SIZE( x )        (sizeof(x)/sizeof((x)[0]))
+
 void MMXMemSetInt(int *deb, int coul, int n) {
 	while (n--) *deb++ = coul;
 }
@@ -342,10 +344,16 @@ int main(int narg, char **arg) {
 );
 	/*
 	    Who Am I ?
-	                */
-	userid=cuserid(NULL);
-	for (i=0; i<(int)strlen(userid) && i<29; i++) myname[i]=userid[i];
-	myname[i]='\0';
+	  */
+	userid = getlogin();
+	if (userid) {
+		int n = (int)strlen(userid);
+		for (i = 0; i<n && i<ARRAY_SIZE(myname)-1; i++)
+			myname[i]=userid[i];
+	} else {
+			i = 0;
+	}
+	myname[i]=0;
 	if (!i) strcpy(myname,"an unknown");
 	/*
 	    Command line parser
