@@ -1,18 +1,50 @@
-go in src, make.
-if make does not work, good luck. edit Makefile.
-play by running fachoda.x11 or .sdl or .cl
-drop me a mail at rixed@free.fr if you really need help.
+Restoring vintage software
+==========================
 
-If make complains about esd.h, just do a 'touch esd.h' in
-src directory, and play with the 'nosound' option.
+Some restore antique furnitures or old cars for a hobby.  I am 
+restoring a vintage piece of code, a small game that I quickly 
+put together at the end of the former century and have not 
+touched since.
 
-If make can't build either sdl or clanlib version of fachoda,
-it will stop with an error message. Just type 'make x11' or
-'make sdl' or 'make fachodasrv' to build things separately.
+I've always wanted to come up with a follow up but even if I 
+started on several occasions I never achieved anything, nor did I 
+maintained this original version. Being not interested in games 
+nor 3D rendering any more, the only second version of it I can 
+seriously envision now is to bring back to life this rusty piece 
+of software.
 
-If make complains about the X11 lib, just modify the path to
-X11 libs in Makefile, line 32. On some distribs, the right
-path is '-L/usr/X11R6/lib', on others '-L/usr/lib/X11' ...
+I addition to bringing peace to my conscience I will also 
+probably gain a few good laughs rediscovering the old bugs and 
+non portable monstrosities I committed back then.
 
-Email me if you encounter any problem (rixed@free.fr)
+Roadmap
+=======
+
+So, after a quick diagnosis, here is a short list of what need be 
+done:
+
+- Replace the former README (done!)
+
+- Replace the old MMX x86 code by slow but portable C equivalent
+
+- Fix the bugs related to framerate issues (hosts are much faster
+  now and I suspect this will reveal some problems)
+
+- Upgrade build process to modern (??) autotools
+
+- Fix compilation warnings, move around the code, reorganize
+  the files somewhat to comply with my present taste
+
+- Replace the whole software renderer by a mere OpenGL 2.1 
+  renderer, saying goodbye to the original (but somewhat bugged) 
+  shading of the game
+
+- Replace the aforementioned OpenGL 2.1 renderer by a modern
+  OpenGL-ES renderer with simple shaders in order to revive some
+  of the original feeling of the game (but not the related bugs).
+
+And do all this by small steps, without imposing on myself any
+deadline or interfering with my many other projects.
+
+After all, the game was already released 12 years ago wasn't it?
 
