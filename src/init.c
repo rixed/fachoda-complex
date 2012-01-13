@@ -393,7 +393,7 @@ void initworld() {
 	// des troupeaux de charolaises
 	for (i=0; i<NBVILLAGES*2; i++) {
 		int nbn=randK()*5+2;
-		copyv(&p,&village[i].p);
+		copyv(&p,&village[i%NBVILLAGES].p);
 		for (k=0; k<2; k++) {
 			vector pt;
 			randomv(&pt);
