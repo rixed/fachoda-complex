@@ -53,6 +53,8 @@ extern void buffer2video(void);
 extern XImage img;
 extern char getscancode(void);
 extern void initvideo(void);
+extern int kread(unsigned n);
+extern int kreset(unsigned n);
 extern void xproceed(void);
 // renderer.c
 extern void calcposrigide(int o);
@@ -215,7 +217,6 @@ extern int invaders(void);
 // extern int vague[4][4][4];	// vague, camp, colonne
 extern int myc, myv, myt;
 // code.as
-extern void MMXDarkenLine(pixel *vid,int dx,int c,pixel *vidt);
 extern void MMXPhongInit(int aa,int intcol);
 extern void MMXFlatInit(void);
 extern void MMXSaveFPU(void);
@@ -226,23 +227,14 @@ extern void MMXRestoreFPU(void);
 extern void MMXFlat(int *dest, int nbr, int c);
 extern void MMXFlatTransp(int *dest, int nbr, int c);
 extern void MMXMemSetInt(int *deb, int coul, int n);
-extern void MMXBlur(int *deb, int size, int blured);
 extern void MMXAddSatInt(int *deb, int coul, int n);
 extern void MMXCopyToScreen(int *dest, int *src, int sx, int sy, int width);
 extern void MMXCopy(int *dest, int *src, int nbr);
-extern void coupe(vecic*, vecic*, vecic*);
 extern void MMXGouroPreca(int,int,int);
 extern void MMXGouro(void);
-extern void poly (vecic *p1, vecic *p2, vecic *p3);
-extern int calcasm (int,int,int);
-extern void nuplot(int x, int y, int r);
 extern void fuplot(int x, int y, int r);
-extern void phplot(int x, int y, int r);
-extern void MMXPhongLum(int *dest, int nbpix, int l, int atmp, int k, int c);
-extern uchar BigFont[];
+extern uchar *BigFont;
 extern uchar font[112][10];
-extern int kread(char kc);
-extern int kreset(char kc);
 // keycodes
 extern kc_s gkeys[NBKEYS];
 // route

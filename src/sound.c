@@ -1,4 +1,3 @@
-#include "esd.h"
 #include <dirent.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -9,8 +8,6 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
-#include <linux/soundcard.h>
-#include <sys/ultrasound.h>
 #include "3d.h"
 
 char sound=1;
@@ -24,23 +21,32 @@ int esound_sampid[50];
 char esound_samploop[50];
 int nbsamp=0;
 
+#if 0
 SEQ_DEFINEBUF (2048);
+#endif
 int seqfd, gus_dev;
 
 int esound_sock;
 int esound_init() {
+	return -1;
+#	if 0
 	int i;
 	if ((esound_sock=esd_open_sound(NULL))<0) { perror("sock"); return -1; }
 	for (i=0; i<NBVOICES; i++) sampforvoice[i]=-1;
 	return 0;
+#	endif
 }
 
 void seqbuf_dump () {
+#	if 0
 	if (_seqbufptr)
 	if (write (seqfd, _seqbuf, _seqbufptr) == -1) { perror ("write /dev/sequencer"); exit (-1); }
 	_seqbufptr = 0;
+#	endif
 }
 int openseq() {
+	return -1;
+#	if 0
 	int n, i;
 	struct synth_info info;
 	if ((seqfd = open("/dev/sequencer", O_WRONLY, 0))==-1){ perror("/dev/sequencer"); return -1; }
@@ -52,13 +58,18 @@ int openseq() {
 	}
 	if (gus_dev == -1) { fprintf(stderr,"Error: Gravis Ultrasound not detected\n"); return -1; }
 	return 0;
+#	endif
 }
 void gusreset() {
+#	if 0
 	if (!sound) return;
 	ioctl (seqfd, SNDCTL_SEQ_SYNC, 0);
 	ioctl (seqfd, SNDCTL_SEQ_RESETSAMPLES, &gus_dev);
+#	endif
 }
 int opensound() {
+	return -1;
+#	if 0
 	if (!sound) return 0;
 	if (GUS && openseq()!=-1) {
 		printf("GUS or alike detected\n");
@@ -72,8 +83,11 @@ int opensound() {
 		printf("Sound OK using EsounD\n");
 	}
 	return 0;
+#	endif
 }
 int loadsample(sample_e samp, char *fn, char loop) {
+	return -1;
+#	if 0
 	struct patch_info *pat;
 	long sr;
 	FILE *in;
@@ -135,11 +149,13 @@ int loadsample(sample_e samp, char *fn, char loop) {
 	}
 	fclose(in);
 	return 0;
+#	endif
 }
 
 void sndplay(int v, int s, int n, int vol, int pan) {
 	if (!sound || !vol) return;
 	if (vol>127) vol=127;
+#	if 0
 	if (GUS) {
 		SEQ_SET_PATCH(gus_dev, v, s);
 		SEQ_PANNING(gus_dev, v, pan);
@@ -156,28 +172,36 @@ void sndplay(int v, int s, int n, int vol, int pan) {
 			if (esd_sample_play(esound_sock,esound_sampid[s])<0) perror("esound play");
 		}
 	}
+#	endif
 }
 void pitchbend (int v, int pit) {	// regler d'abord le BENDER_RANGE !
 	if (!sound || !GUS) return;
+#	if 0
 	SEQ_PITCHBEND(gus_dev, v, pit);
 	SEQ_DUMPBUF();
+#	endif
 }
 void playsound(int v, sample_e samp, float freq, float vol, int pan) {	// pan entre -128 et 127
 	if (!sound) return;
 	sndplay(v,samp,70*freq,127*vol,pan);
+#	if 0
 	if (GUS) SEQ_DUMPBUF();
+#	endif
 }
 void stopsound(int v, sample_e samp, float vol) {
 	if (!sound) return;
+#	if 0
 	if (GUS) {
 		SEQ_STOP_NOTE(gus_dev,v,samp,127*vol);
 	} else {
 		if (esd_sample_stop(esound_sock,esound_sampid[samp])<0) perror("sample kill");
 	}
+#	endif
 }
 void exitsound() {
 	if (!sound) return;
 //	SEQ_STOP_NOTE(gus_dev, 0, 0, 127);
+#	if 0
 	if (GUS) {
 		SEQ_DUMPBUF();
 		close(seqfd);
@@ -189,4 +213,5 @@ void exitsound() {
 		}
 		close(esound_sock);
 	}
+#	endif
 }

@@ -318,6 +318,7 @@ void calcposa() {
 }
 int zfac;
 void plotphare(int x, int y, int r) {
+#	if 0
 	int balance=-r, xoff=0, yoff=r, newyoff=1;
 	if (r==0 || x-r>=SX || x+r<0 || y-r>=SY || y+r<0 || r>SX) return;
 	MMXSaveFPU();
@@ -338,9 +339,10 @@ void plotphare(int x, int y, int r) {
 		} else newyoff=0;
 	} while (xoff <= yoff);
 	MMXRestoreFPU();
+#	endif
 }
-/*
-void nuplot2(int x, int y, int r) {
+
+void nuplot(int x, int y, int r) {
 	int ix=0,iy=zfac*r;
 	int balance=-r, xoff=0, yoff=r, newyoff=1;
 	if (r<=0 || y<0 || y>=SY) return;
@@ -361,11 +363,10 @@ void nuplot2(int x, int y, int r) {
 		ix+=zfac;
 	} while (xoff <= yoff);
 }
-*/
+
 void plotnuage(int x, int y, int r) {
 	int balance=-r, xoff=0, yoff=r, newyoff=1;
 	if (r==0 || x-r>=SX || x+r<0 || y-r>=SY || y+r<0 || r>SX) return;
-	MMXSaveFPU();
 	zfac=(90<<8)/r;
 	do {
 		if (newyoff) {
@@ -382,10 +383,9 @@ void plotnuage(int x, int y, int r) {
 			newyoff=1;
 		} else newyoff=0;
 	} while (xoff <= yoff);
-	MMXRestoreFPU();
 }
-/*
-void fuplot2(int x, int y, int r) {
+
+void fuplot(int x, int y, int r) {
 	int ix=0,iy=zfac*r;
 	int balance=-r, xoff=0, yoff=r, newyoff=1;
 	if (r<=0 || y<0 || y>=SY) return;
@@ -403,11 +403,10 @@ void fuplot2(int x, int y, int r) {
 		} else newyoff=0;
 		ix+=zfac;
 	} while (xoff <= yoff);
-}*/
+}
 void plotfumee(int x, int y, int r) {
 	int balance=-r, xoff=0, yoff=r, newyoff=1;
 	if (r==0 || x-r>=SX || x+r<0 || y-r>=SY || y+r<0 || r>SX) return;
-	MMXSaveFPU();
 	zfac=(40<<8)/r;
 	do {
 		if (newyoff) {
@@ -424,7 +423,6 @@ void plotfumee(int x, int y, int r) {
 			newyoff=1;
 		} else newyoff=0;
 	} while (xoff <= yoff);
-	MMXRestoreFPU();
 }
 void renderer(int ak, int fast){	// fast=0->ombres+sol, =1->nuages; =2->objets volants + nuages; =3->tout
 	int o, p, no, coul;

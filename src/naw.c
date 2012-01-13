@@ -6,11 +6,24 @@
 #include <X11/Xlib.h>
 #include <X11/keysym.h>
 #include <X11/Xutil.h>
-#include <X11/extensions/xf86vmode.h>
-#include <X11/extensions/xf86dga.h>
 #include <X11/Xatom.h>
 #include <signal.h>
 #include "3d.h"
+
+void MMXMemSetInt(int *deb, int coul, int n) {
+	while (n--) *deb++ = coul;
+}
+
+void MMXCopy(int *dst, int *src, int n) {	// by the time I suppose glibc became quite good at this :-)
+	memcpy(dst, src, n*4);
+}
+void MMXFlat(int *dst, int n, int coul) {
+	MMXMemSetInt(dst, coul, n);
+}
+void MMXSaveFPU(void) {}
+void MMXRestoreFPU(void) {}
+void MMXFlatInit(void) {}
+void MMXPhongInit(int aa, int intcol) {}
 
 extern void catchalarm(int sig);
 
@@ -400,6 +413,8 @@ parse_error:
 		fclose(file);
 	}
 	/* autres inits */
+	loadfont("font.tga", 16,7, 10);
+	loadbigfont("bigfont.tga");
 	initrender();
 	loadtbtile("wood50_50.tga");
 	tbback1=tbback;

@@ -1,8 +1,6 @@
 #include <X11/Xlib.h>
 #include <X11/keysym.h>
 #include <X11/Xutil.h>
-#include <X11/extensions/xf86vmode.h>
-#include <X11/extensions/xf86dga.h>
 #include <X11/Xatom.h>
 #include <math.h>
 #include <SDL/SDL.h>
@@ -65,18 +63,13 @@ void initvideo() {
 
 void buffer2video() {
 	SDL_Rect dstrect;
-/*	if (!WINDOW) MMXCopyToScreen((int*)video,(int*)videobuffer,SX,SY,width);
-	else {
-		if (!XCONVERT && depth!=32) MMXCopyToScreen((int*)img.data,(int*)videobuffer,SX,SY,SX);
-		XPutImage(disp, win, gc, &img, 0,0, 0,0, SX,SY);*/
-		dstrect.x=dstrect.y=0;
-		dstrect.w=bufsurface->w;
-		dstrect.h=bufsurface->h;
-		if(SDL_BlitSurface(bufsurface,NULL,screen,&dstrect)<0) {
-			fprintf(stderr,"Couldn't blit : %s\n",SDL_GetError());
-		}
-		SDL_UpdateRects(screen,1,&dstrect);
-//	}
+	dstrect.x=dstrect.y=0;
+	dstrect.w=bufsurface->w;
+	dstrect.h=bufsurface->h;
+	if(SDL_BlitSurface(bufsurface,NULL,screen,&dstrect)<0) {
+		fprintf(stderr,"Couldn't blit : %s\n",SDL_GetError());
+	}
+	SDL_UpdateRects(screen,1,&dstrect);
 }
 
 char keytab[32]={
@@ -87,8 +80,16 @@ char keytab[32]={
 };
 uchar but1released=1, but2released=1;
 int xmouse,ymouse,bmouse;
-inline void bitset(int n) {__asm__ ("bts %0,keytab": :"r" (n): "memory");}
-inline void bitzero(int n) {__asm__ ("btr %0,keytab": :"r" (n): "memory");}
+inline void bitset(unsigned n) { keytab[n/8] |= 1U<<(n&7); }
+inline void bitzero(unsigned n) { keytab[n/8] &= ~(1U<<(n&7)); }
+int kread(unsigned n) {
+	return !!(keytab[n/8] & (1U<<(n&7)));
+}
+int kreset(unsigned n) {
+	int r = kread(n);
+	bitzero(n);
+	return r;
+}
 
 void xproceed() {
 	SDL_Event event;

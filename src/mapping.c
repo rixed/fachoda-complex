@@ -189,6 +189,10 @@ void polyphong(vect2dlum *p1, vect2dlum *p2, vect2dlum *p3, int coul) {
 	int a, aa, k, x, y, atmp, l;
 	pixel32 *vid;
 	
+	int coul_r = coul & 0xff;
+	int coul_g = (coul >> 8) & 0xff;
+	int coul_b = (coul >> 16) & 0xff;
+
 	if (p2->y<p1->y) { tmp=p1; p1=p2; p2=tmp; }
 	if (p3->y<p1->y) { tmp=p1; p1=p3; p3=tmp; }
 	if (p3->y<p2->y) { tmp=p2; p2=p3; p3=tmp; }
@@ -304,7 +308,15 @@ debtrace:
 			}
 			if (jlim>SX-1) jlim=SX-1;
 			if (j<jlim) {
-				MMXPhongLum((int*)vid+j,jlim-j,l,atmp,k,coul);
+				for (; j!=jlim; j++) {
+					int cc;
+					cc=l<(1<<24)?preca[l>>16]:0;
+					vid[j].r=(int)coul_r+(int)cc<256?coul_r+cc:255;
+					vid[j].g=(int)coul_g+(int)cc<256?coul_g+cc:255;
+					vid[j].b=(int)coul_b+(int)cc<256?coul_b+cc:255;
+					l+=k+atmp;
+					atmp+=aa;
+				}
 			}
 			xi+=qx; yi++;
 			lx+=ql;

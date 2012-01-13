@@ -55,9 +55,9 @@ void pnuma(int n, int x, int y, int c, char just) {
 	};
 	if (sig==-1) for (m=x+2; m<x+6; m++) ((int*)mapping)[m+((y+4)<<8)]=c;
 }
-//uchar font[112][10];
+uchar font[112][10];
 int SizeCharY=10;
-/*
+
 void loadfont(char *fn, int nx, int ny, int cy) {
 	FILE *fil;
 	int x,y,fx,fy,i,sx=0,sy=0;
@@ -84,10 +84,10 @@ void loadfont(char *fn, int nx, int ny, int cy) {
 			}
 		}
 	free(itmp);
-}*/
-//uchar *BigFont;
+}
+uchar *BigFont;
 int SizeBigCharY=50, SizeBigCharX=50, SizeBigChar=2500;
-/*
+
 void loadbigfont(char *fn) {
 	FILE *fil;
 	int x,y,fx,sx=0,sy=0;
@@ -113,10 +113,52 @@ void loadbigfont(char *fn) {
 		}
 	}
 	free(itmp);
-}*/
+}
+
+static int addsat_byte(b1, b2, shft) {
+	int mask = 0xff<<shft;
+	int a = (b1 & mask) + (b2 & mask);
+	return a > mask ? mask : a;
+}
+static int subsat_byte(b1, b2, shft) {
+	int mask = 0xff<<shft;
+	int a = (b1 & mask) - (b2 & mask);
+	return a > mask /* wrap */ || a < (1<<shft) ? 0 : a;
+}
+// TODO: actually we are only interrested in the lower 3 bytes
+void MMXAddSatC(int *dst, int coul) {
+	int v = *dst;
+	*dst = (
+		addsat_byte(v, coul, 0) |
+		addsat_byte(v, coul, 8) |
+		addsat_byte(v, coul, 16) |
+		addsat_byte(v, coul, 24)
+	);
+}
+void MMXSubSatC(int *dst, int coul) {
+	int v = *dst;
+	*dst = (
+		subsat_byte(v, coul, 0) |
+		subsat_byte(v, coul, 8) |
+		subsat_byte(v, coul, 16) |
+		subsat_byte(v, coul, 24)
+	);
+}
+void MMXAddSat(int *dst, int byte) {
+	int b = byte & 0xff;
+	MMXAddSatC(dst, b | (b<<8) | (b<<16) | (b<<24));
+}
+void MMXSubSat(int *dst, int byte) {
+	int b = byte & 0xff;
+	MMXSubSatC(dst, b | (b<<8) | (b<<16) | (b<<24));
+}
+void MMXAddSatInt(int *dst, int byte, int n)
+{
+	while (n--) MMXAddSat(dst++, byte);
+}
+
 void pbignumchar(int n, int x, int y, int coul) {
 	int xx, yy;
-	MMXSaveFPU();
 	for (yy=0; yy<SizeBigCharY; yy++) {
 		for (xx=0; xx<SizeBigCharX; xx++) {
 			if (BigFont[n*SizeBigChar+yy*SizeBigCharX+xx]) {
@@ -125,7 +167,6 @@ void pbignumchar(int n, int x, int y, int coul) {
 			}
 		}
 	}
-	MMXRestoreFPU();
 }
 void pbignum(int n, int x, int y, char just, char tot, char dolsig) {
 	int m, c;

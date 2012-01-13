@@ -165,7 +165,25 @@ void bougeflotte() {
 }
 
 #define H (32<<8)
-//int coulpoly;
+
+void coupe (vecic *p1, vecic *p2, vecic *pr) {
+	pr->x=p1->x+( ( (H-p1->z) * (((p2->x-p1->x)<<8)/(p2->z-p1->z)) )>>8 );
+	pr->y=p1->y+( ( (H-p1->z) * (((p2->y-p1->y)<<8)/(p2->z-p1->z)) )>>8 );
+	pr->z=H;
+}
+
+void poly (veci *p1, veci *p2, veci *p3) {
+	int coulpoly;
+	vect2d l1,l2,l3;
+	l1.x=_DX+(p1->x*_DX)/p1->z;
+	l1.y=_DY+(p1->y*_DX)/p1->z;
+	l2.x=_DX+(p2->x*_DX)/p2->z;
+	l2.y=_DY+(p2->y*_DX)/p2->z;
+	l3.x=_DX+(p3->x*_DX)/p3->z;
+	l3.y=_DY+(p3->y*_DX)/p3->z;
+	polyflat(&l1,&l2,&l3,&coulpoly);
+}
+
 void polyclip(vecic *p1, vecic *p2, vecic *p3) {
 	int i;
 	vecic pp1,pp2;
@@ -222,6 +240,10 @@ inline uchar AddSatB(int a, int b) {
 	if (c<10) c=10;
 	else if (c>245) c=245;
 	return c;
+}
+static int calcasm(int a, int b, int c)
+{
+	return (((long long)b*c)>>13)+a;
 }
 void remap(veci coin, int z1, pixel i1, int z2, pixel i2, int z3, pixel i3, int z4, pixel i4, int m) {
 	vecic ptsi[(SMAP2+1)*2];
@@ -539,6 +561,9 @@ void Gouro() {
 		Gouroyi++;
 	}
 }*/
+void MMXGouro(void) {}
+void MMXGouroPreca(int ib, int ig, int ir) {}
+
 void polygouro(vect2dc *p1, vect2dc *p2, vect2dc *p3) {
 	vect2dc *tmp, *pmax, *pmin;
 	int q1, q2, q3=0, qxx, ql2;
