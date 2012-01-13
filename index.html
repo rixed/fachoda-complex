@@ -51,7 +51,7 @@
 
     
       <p>Some restore antique furnitures or old cars for a hobby.  I am 
-restoring a vintage piece of code, a small game that I quickly 
+restoring a vintage piece of <i>code</i>, a small game that I quickly 
 put together at the end of the former century and have not 
 touched since.
 
@@ -67,8 +67,9 @@ probably gain a few good laughs rediscovering the old bugs and
 non portable monstrosities I committed back then.</p>
     
 <h2>Day 1</h2>
+<img src="http://www.utubefree.com/wp-content/uploads/2011/10/splendid-abandoned-planes-001.jpg">
 
-<p>I settup this page to share the fun of this restoration process.
+<p>I set up this page to share the fun of this restoration process.
 </p><p>
 The first step of this process consisted of the replacement or mere
 removal of all assembly code (<a href="https://github.com/rixed/fachoda-complex/commit/4d2045f7320bd7e6a0dbbd2df89fc8f70919318d">the commit</a>).
@@ -98,27 +99,35 @@ game I ever worked on also have an animated menu (see
 Some games I remember the menus but not the actual games.
 I could watch some of them for hours.
 </p><p>
-But here I was curious about the game, so I hit the "Go" button.
+But here I was curious about the game, so I hit the "Go!" button.
 The game started to load but crashed before displaying it's first ingame
 picture.
 </p><p>
-Well, it has to be expected.
+Well, it had to be expected.
 </p><p>
 The <a href="https://github.com/rixed/fachoda-complex/commit/3c9d121eba7372face78f2c565fd131167120ed5">fix</a>
 was hopefully trivial. Embarrassingly trivial actually. A quite look around this line
 revealed many other potential variants for the same bug. Ouch.
 For now, let's fix this one which is causing a segfault and try again.
 </p><p>
-Compile... run... menu... and then, the game !
-As expected, the rendering is quite acid and not as originally intended,
-but the game runs already so that's not too bad.
+Compile... run... "Go!"... and then, the game!
+</p><p>
+As expected, the rendering is quite acid and not as originally intended.
+From the background color of this page you probably already guessed
+that my best friend in design is the random generator, but in my memories
+(and Google seams to agree) the game colors where not that tripping.
+It looks like the ground colors are wrong RGB ordering, and that we are
+somewhat below some kind of ground (but the blue sky can be seen from
+time to time and is indeed blue). Also, the lighting results in many small
+white stripes, which is nice but no, thanks.
+</p><p>
+Anyway, the engine runs already so that's not too bad.
 </p>
 
 <img src="ingame1.png"/>
 <p>
 Obviously there's still a lot of work to do before it's finished (and put to sleep
-again for 12 more years ;-)),
-but it's a good start.
+again for 12 more years), but it's a good start.
 </p><p>
 To see this old program running again is a lot like when you find by accident an
 old toy you owned or an old drawing you've made as a kid. It feels at the same time warm
