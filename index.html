@@ -66,31 +66,65 @@ I addition to bringing peace to my conscience I will also
 probably gain a few good laughs rediscovering the old bugs and 
 non portable monstrosities I committed back then.</p>
     
+<h2>Day 1</h2>
 
-    
-      <h2>Dependencies</h2>
-      <p>Libjpeg and SDL for now. More later probably.</p>
-    
+<p>I settup this page to share the fun of this restoration process.
+</p><p>
+The first step of this process consisted of the replacement or mere
+removal of all assembly code (<a href="https://github.com/rixed/fachoda-complex/commit/4d2045f7320bd7e6a0dbbd2df89fc8f70919318d">the commit</a>).
+This code was used mainly for the rendering
+so I did not expect anything to show properly after this move.
+</p><p>
+After hundreds of dreadful warnings the SDL version of the game compiled
+(the other versions were jettisoned one commit earlier). When you think about it,
+it means that SDL is still retrocompatible with code written more than 
+10 years ago. That's what I call commitment !
+</p><p>
+So, since I was able to run the game then I just did,
+and... the game menu appeared, in all its past glory, colors and animations!
+</p>
+<img src="menu1.png"/>
+<p>
+So, despite all the rendering code that I just removed, there was enough
+rendering functions still functional to give life to the menu.
+There must have been a lot of redundant code in there.
+</p><p>
+If you are like me, you pay a lot of attention to the game menu. Lots of
+them are bugged or otherwise unpleasant because I suppose game authors
+enjoy writing the game engine more than its menu. But I think a good game
+menu says it all about authors' (lack of) care to details. The only other
+game I ever worked on also have an animated menu (see
+<a href="http://www.nongnu.org/ensemblist/index_en.html">here</a>).
+Some games I remember the menus but not the actual games.
+I could watch some of them for hours.
+</p><p>
+But here I was curious about the game, so I hit the "Go" button.
+The game started to load but crashed before displaying it's first ingame
+picture.
+</p><p>
+Well, it has to be expected.
+</p><p>
+The <a href="https://github.com/rixed/fachoda-complex/commit/3c9d121eba7372face78f2c565fd131167120ed5">fix</a>
+was hopefully trivial. Embarrassingly trivial actually. A quite look around this line
+revealed many other potential variants for the same bug. Ouch.
+For now, let's fix this one which is causing a segfault and try again.
+</p><p>
+Compile... run... menu... and then, the game !
+As expected, the rendering is quite acid and not as originally intended,
+but the game runs already so that's not too bad.
+</p>
 
-    
-      <h2>Install</h2>
-      <p>You won't install it before long.</p>
-    
+<img src="ingame1.png"/>
+<p>
+Obviously there's still a lot of work to do before it's finished (and put to sleep
+again for 12 more years ;-)),
+but it's a good start.
+</p><p>
+To see this old program running again is a lot like when you find by accident an
+old toy you owned or an old drawing you've made as a kid. It feels at the same time warm
+and distant, familiar but alien, desirable yet worthless.
+</p>
 
-    
-      <h2>License</h2>
-      <p>Currently in the public domain, will probably move to GPL if something emerges.</p>
-    
-
-    
-      <h2>Authors</h2>
-      <p>Cedric Cellier (rixed@free.fr)</p>
-    
-
-    
-      <h2>Contact</h2>
-      <p>Cedric Cellier (rixed@free.fr)<br/>      </p>
-    
 
     <h2>Download</h2>
     <p>
