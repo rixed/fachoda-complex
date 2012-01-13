@@ -273,11 +273,7 @@ int resurrect(void) {	// jesus revient, jesus reviuent parmis les tiens...
 int visu=0, visubomb=0, mapmode=0, accel=0, autopilot=0, lapause=0, lepeintre=0, bmanu, imgcount=0;
 double loinvisu=110, visuteta=0,visuphi=0;
 uchar avancevisu=0, tournevisu=0, quitte=0, arme=0, AfficheHS=0;
-#ifdef CLANLIB
-int mymain(int narg, char **arg) {
-#else
 int main(int narg, char **arg) {
-#endif
 	int i,j, dtradio=0, RedefineKeys=0; vector p; matrix m;
 	int caisse=0, dtcaisse=0, oldgold=0, caissetot=0, maxgold=0, initradio=0;
 	char *userid;
