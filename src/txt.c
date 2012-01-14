@@ -115,12 +115,12 @@ void loadbigfont(char *fn) {
 	free(itmp);
 }
 
-static int addsat_byte(b1, b2, shft) {
+static int addsat_byte(int b1, int b2, int shft) {
 	int mask = 0xff<<shft;
 	int a = (b1 & mask) + (b2 & mask);
 	return a > mask ? mask : a;
 }
-static int subsat_byte(b1, b2, shft) {
+static int subsat_byte(int b1, int b2, int shft) {
 	int mask = 0xff<<shft;
 	int a = (b1 & mask) - (b2 & mask);
 	return a > mask /* wrap */ || a < (1<<shft) ? 0 : a;
