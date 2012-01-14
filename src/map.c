@@ -225,12 +225,12 @@ static int color_of_pixel(pixel c) {
 }
 static void poly(vecic *p1, vecic *p2, vecic *p3) {
 	vect2d l1,l2,l3;
-	l1.x=_DX+(p1->x*_DX)/p1->z;
-	l1.y=_DY+(p1->y*_DX)/p1->z;
-	l2.x=_DX+(p2->x*_DX)/p2->z;
-	l2.y=_DY+(p2->y*_DX)/p2->z;
-	l3.x=_DX+(p3->x*_DX)/p3->z;
-	l3.y=_DY+(p3->y*_DX)/p3->z;
+	l1.x=_DX+(p1->x*focale)/p1->z;
+	l1.y=_DY+(p1->y*focale)/p1->z;
+	l2.x=_DX+(p2->x*focale)/p2->z;
+	l2.y=_DY+(p2->y*focale)/p2->z;
+	l3.x=_DX+(p3->x*focale)/p3->z;
+	l3.y=_DY+(p3->y*focale)/p3->z;
 	polyflat(&l1, &l2, &l3, color_of_pixel(p1->c));
 }
 
