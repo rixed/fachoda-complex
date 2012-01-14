@@ -1,19 +1,31 @@
-OBJET=renderer.o map.o modele.o radio.o robot.o tableaubord.o txt.o ran0.o control.o mapping.o manuel.o soleil.o carte.o sound.o ravages.o present.o net.o keycodes.o route.o drawroute.o init.o intro.o
-MAIN=naw.o
-V_SDL=video_sdl.o
-OBJ2=codepeindre.o
-P2=peindre.o
-CPP=/usr/local/pgcc/bin/g++
+CFLAGS   := $(CFLAGS) -std=c99 -W -Wall ${shell sdl-config --cflags}
+CPPFLAGS := $(CPPFLAGS) -D_GNU_SOURCE
+LDFLAGS  := $(LDFLAGS) -lm -ljpeg ${shell sdl-config --libs}
 
-CFLAGS += -std=c99 -D_GNU_SOURCE
+SRCS = \
+	renderer.c map.c modele.c radio.c robot.c \
+	tableaubord.c txt.c ran0.c control.c mapping.c \
+	manuel.c soleil.c carte.c sound.c ravages.c \
+	present.c net.c keycodes.c route.c drawroute.c \
+	init.c intro.c naw.c video_sdl.c
 
-all: fachoda.sdl fachodasrv
+OBJS = ${subst .c,.o,$(SRCS)}
 
-fachoda.sdl: $(OBJET) $(V_SDL) $(MAIN)
-	$(CC) $(CFLAGS) -o $@ $(MAIN) $(OBJET) $(V_SDL) -lm -lSDL -lpthread -ljpeg
+fachoda: $(OBJS)
 
-peindre: $(OBJ2) $(P2)
-	$(CC) -o peindre $(OBJ2) $(P2) -L/usr/X11R6/lib -lm -lX11 -lXext -lXxf86dga -O
+.PHONY: clean distclean
 
 clean:
-	rm -f *.o fachoda.sdl fachodasrv core
+	rm -f *.o *.dep core core.*
+
+distclean: clean
+	rm -f fachoda fachoda.sdl fachodasrv
+
+.depend: $(SRCS)
+	rm -f .depend ;
+	for f in $(SRCS); do \
+		$(CC) -MM -MF $$f.dep $$f ; \
+		cat $$f.dep >> .depend ; \
+	done
+
+include .depend

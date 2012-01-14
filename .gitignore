@@ -1,7 +1,8 @@
 *.o
-fachoda.sdl
+fachoda
 fachodasrv
 cscope.out
 core
 core.*
 *.swp
+.depend
