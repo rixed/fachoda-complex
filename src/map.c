@@ -217,9 +217,12 @@ void coupe (vecic *p1, vecic *p2, vecic *pr) {
 	pr->x = p1->x+( ( (H-p1->z) * (((p2->x-p1->x)<<8)/(p2->z-p1->z)) )>>8 );
 	pr->y = p1->y+( ( (H-p1->z) * (((p2->y-p1->y)<<8)/(p2->z-p1->z)) )>>8 );
 	pr->z = H;
+	pr->c = p1->c;
 }
 
-	int coulpoly;
+static int color_of_pixel(pixel c) {
+	(c.r<<16) + (c.g<<8) + (c.b);
+}
 static void poly(vecic *p1, vecic *p2, vecic *p3) {
 	vect2d l1,l2,l3;
 	l1.x=_DX+(p1->x*_DX)/p1->z;
@@ -228,7 +231,7 @@ static void poly(vecic *p1, vecic *p2, vecic *p3) {
 	l2.y=_DY+(p2->y*_DX)/p2->z;
 	l3.x=_DX+(p3->x*_DX)/p3->z;
 	l3.y=_DY+(p3->y*_DX)/p3->z;
-	polyflat(&l1,&l2,&l3,&coulpoly);
+	polyflat(&l1, &l2, &l3, color_of_pixel(p1->c));
 }
 
 void polyclip(vecic *p1, vecic *p2, vecic *p3) {
