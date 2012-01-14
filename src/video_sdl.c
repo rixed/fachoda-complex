@@ -80,8 +80,8 @@ char keytab[32]={
 };
 uchar but1released=1, but2released=1;
 int xmouse,ymouse,bmouse;
-inline void bitset(unsigned n) { keytab[n/8] |= 1U<<(n&7); }
-inline void bitzero(unsigned n) { keytab[n/8] &= ~(1U<<(n&7)); }
+static void bitset(unsigned n) { keytab[n/8] |= 1U<<(n&7); }
+static void bitzero(unsigned n) { keytab[n/8] &= ~(1U<<(n&7)); }
 int kread(unsigned n) {
 	return !!(keytab[n/8] & (1U<<(n&7)));
 }
