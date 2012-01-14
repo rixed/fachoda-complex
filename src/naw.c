@@ -982,7 +982,7 @@ parse_error:
 					drawtbback();
 					drawtbcadrans(visubot);
 					bougeflotte();
-					rendusol();
+					draw_ground_and_objects();
 					if (!Dark) {
 						double i;
 						uchar u;

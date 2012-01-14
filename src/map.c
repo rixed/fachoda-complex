@@ -1,14 +1,43 @@
+#include <stdint.h>
 #include <math.h>
 #include "3d.h"
-uchar *map;	// les Z
-uchar *mapmap;	// les No de sousmap (ca prend que 3 bits, bits 5 pour visibilité)
-uchar *(sousmap[10]);	// les Z de les sousmaps
+
+/* The map is the central structure of the game.
+ * It's a simple square heightfield of unsigned bytes
+ * which side length is a power of 2.
+ *
+ * There are 11 of these maps.
+ * The most important one is the global map, of side length WMAP (128).
+ * The other ones are the submaps, of length SMAP2 (16), representing the height of
+ * each world map tile.
+ * We have 10 of them, 9 is for water (animated), while 0
+ * is completely flat for the airfields. Each other tile of
+ * the global map that is neither water nor airfield is
+ * attributed one of the other 1 to 8 submaps according to its
+ * height, with some random.
+ *
+ * So all in all we need very few memory for the world map (less than 20Kb).
+ */
+
+uchar *map;	// The global map: a square of WMAP*WMAP bytes
+uchar *submap[10];	// The submaps (same structure as the global map, only smaller: SMAP*SMAP)
+uchar *mapmap;	// les No de submap (ca prend que 3 bits, bits 5 pour visibilité)
 short int *fomap;	// No du premier objet de la map
 uchar Direct;
 pixel zcol[256];
-char *(sousmapint[10]);	// les intens relatives des points de la sousmap
-uchar *flottemap;
-void carremap(int x, int y, int s, uchar *m, int smap) {
+char *sousmapint[10];	// les intens relatives des points de la submap
+
+/*
+ * Map Generation
+ */
+
+// Generate the heighfield for a portion of the map (recursive)
+static void random_submap(
+	int x, int y,	// location of the starting corner of the square to randominz
+	int s,			// size of the square to randomize
+	uchar *m,		// map
+	int smap		// size of the map
+) {
 	int ss=s>>1;
 	double sf=Accident*(double)s/smap;
 	if (ss) {
@@ -25,33 +54,45 @@ void carremap(int x, int y, int s, uchar *m, int smap) {
 			m[x+(y+ss)*smap]=(((int)m[x+y*smap]+m[x+yy*smap])>>1)+(randK()-.5)*sf;
 		if (m[x+ss+(y+ss)*smap]==0)
 			m[x+ss+(y+ss)*smap]=(((int)m[(x+ss)+y*smap]+m[xx+(y+ss)*smap]+m[(x+ss)+yy*smap]+m[x+(y+ss)*smap])>>2)+(randK()-.5)*sf;
-		carremap(x,y,ss,m,smap);
-		carremap(x+ss,y,ss,m,smap);
-		carremap(x,y+ss,ss,m,smap);
-		carremap(x+ss,y+ss,ss,m,smap);
+		random_submap(x,y,ss,m,smap);
+		random_submap(x+ss,y,ss,m,smap);
+		random_submap(x,y+ss,ss,m,smap);
+		random_submap(x+ss,y+ss,ss,m,smap);
 	}
 }
-void smooth(uchar **m,int smap,int s){
+
+static void smooth_map(uchar *m,int smap,int s){
 	int i,x,y;
 	for (i=0; i<s; i++)
 		for (y=0; y<smap; y++)
 			for (x=0; x<smap; x++)
-				(*m)[x+y*smap]=((*m)[x+y*smap]+(*m)[(x==smap-1?0:x+1)+y*smap]+(*m)[x+(y==smap-1?0:y+1)*smap])/3;
+				m[x+y*smap]=(m[x+y*smap]+m[(x==smap-1?0:x+1)+y*smap]+m[x+(y==smap-1?0:y+1)*smap])/3;
 }
-void genemap(uchar **m, int s, int mapzmax, int smap) {
-	int i;
-	int zmin=MAXINT,zmax=-MAXINT;
-	(*m)[0]=255;
-	carremap(0,0,smap,*m,smap);
-	for (i=0; i<smap*smap; i++) {
-		int z=(*m)[i];
+
+static void make_map(uchar *m, int smooth_factor, int mapzmax, int map_size) {
+	m[0]=255;
+	random_submap(0,0,map_size,m,map_size);
+
+	/* Scale all heights (remember height are unsigned bytes)
+	 * so that we have all values from 0 to mapzmax */
+	int zmin=MAXINT, zmax=-MAXINT;
+	for (unsigned i=0; i<map_size*map_size; i++) {
+		int z=m[i];
 		if (z>zmax) zmax=z;
 		if (z<zmin) zmin=z;
 	}
-	for (i=0; i<smap*smap; i++) (*m)[i]=((*m)[i]-zmin)*(double)mapzmax/(zmax-zmin+1);
-	smooth(m,smap,s);
+	double const ratio = (double)mapzmax/(zmax-zmin+1);
+	for (unsigned i=0; i<map_size*map_size; i++) {
+		m[i] = (m[i]-zmin)*ratio;
+	}
+
+	// Smooth all maps at least once
+	smooth_map(m, map_size, smooth_factor);
 }
-void creuse(int dy) {
+
+// dig a wave in the map (in other words, a river)
+// looks alien
+void dig(int dy) {
 	float a,ai,xx,yy;
 	int x,y;
 	a=0; ai=.02; xx=0; yy=WMAP/3;
@@ -69,7 +110,7 @@ void creuse(int dy) {
 	} while (x<WMAP-2 && y>2 && y<WMAP-2);
 }
 
-void initmap() {
+void initmap(void) {
 	int x,y,i;
 	pixel colterrain[4] = {
 		{ 150,150,20 },	// glouglou
@@ -98,50 +139,51 @@ void initmap() {
 		zcol[x].g-=zcol[x].g>>2;
 		zcol[x].b-=zcol[x].b>>2;
 	}
-	// MAP GENERALE
-	map=(uchar*)calloc(WMAP*WMAP,sizeof(uchar));
-	if (Fleuve) creuse(0);
-	genemap(&map,0,255,WMAP);
-	for (i=0;i<Smooth; i++) {	//7
-		smooth(&map,WMAP,1);
-		if (Fleuve) creuse(0);
+
+	// Global map
+	map = calloc(WMAP*WMAP,sizeof(*map));	// starts from 0
+	if (Fleuve) dig(0);	// digging in 0?
+	make_map(map, 0, 255, WMAP);
+	for (i=0;i<Smooth; i++) {	// Instead of using make_map smooth_factor, we smooth (and dig) several times.
+		smooth_map(map,WMAP,1);
+		if (Fleuve) dig(0);
 	}
-	mapmap=(uchar*)malloc(WMAP*WMAP*sizeof(uchar));
-	fomap=(short int*)malloc(WMAP*WMAP*sizeof(short int));
+	mapmap = malloc(WMAP*WMAP*sizeof(*mapmap));
+	fomap = malloc(WMAP*WMAP*sizeof(*fomap));
 	for (y=0; y<WMAP; y++) {
 		for (x=0; x<WMAP; x++) {
 			int z=map[x+y*WMAP];
 			fomap[x+y*WMAP]=-1;
-			if (z>200) {
+			if (z>200) {	// submaps 4 and 5 are for high lands
 				mapmap[x+y*WMAP]=4+randK()*2;
-			} else if (z<100) {
+			} else if (z<100) { // submaps 6, 7, 8 are for middle lands
 				if (z>15) mapmap[x+y*WMAP]=6+randK()*3;
 				else mapmap[x+y*WMAP]=9;
-			} else {
+			} else { // submaps 1, 2, 3 are for low lands
 				mapmap[x+y*WMAP]=1+randK()*3;
 			}
 		}
 	}
 	// SOUSMAPS
-	for (i=0; i<10; i++) sousmap[i]=(uchar*)calloc(SMAP2*SMAP2,sizeof(uchar));
-	genemap(&sousmap[0],10,5,SMAP2);
-	genemap(&sousmap[1],2,100,SMAP2);
-	genemap(&sousmap[2],2,190,SMAP2);
-	genemap(&sousmap[3],2,230,SMAP2);
-	genemap(&sousmap[4],1,250,SMAP2);
-	genemap(&sousmap[5],1,250,SMAP2);
-	genemap(&sousmap[6],3,253,SMAP2);
-	genemap(&sousmap[7],3,253,SMAP2);
-	genemap(&sousmap[8],2,253,SMAP2);
-	genemap(&sousmap[9],0,2,SMAP2);	// SPECIAL FLOTTE
+	for (i=0; i<10; i++) submap[i]=(uchar*)calloc(SMAP2*SMAP2,sizeof(uchar));
+	make_map(submap[0],10,5,SMAP2);
+	make_map(submap[1],2,100,SMAP2);	// flat
+	make_map(submap[2],2,190,SMAP2);	// flat
+	make_map(submap[3],2,230,SMAP2);	// flat
+	make_map(submap[4],1,250,SMAP2);	// mountain tops
+	make_map(submap[5],1,250,SMAP2);	// mountain tops
+	make_map(submap[6],3,253,SMAP2);	// middle lands
+	make_map(submap[7],3,253,SMAP2);	// middle lands
+	make_map(submap[8],2,253,SMAP2);	// middle lands
+	make_map(submap[9],0,2,SMAP2);		// reserved for water: we will move this heighfield
 	for (i=0; i<10; i++) {
 		sousmapint[i]=(char*)malloc(SMAP2*SMAP2*sizeof(char));
 		for (y=0; y<SMAP2; y++) {
 			for (x=0; x<SMAP2; x++) {
 				double in;
-				int z=sousmap[i][x+y*SMAP2];
-				if (x) in=((z-sousmap[i][x-1+y*SMAP2])/200.+1.)*.5;
-				else in=((z-sousmap[i][SMAP2-1+y*SMAP2])/200.+1.)*.5;
+				int z=submap[i][x+y*SMAP2];
+				if (x) in=((z-submap[i][x-1+y*SMAP2])/200.+1.)*.5;
+				else in=((z-submap[i][SMAP2-1+y*SMAP2])/200.+1.)*.5;
 				if (in<0) in=0;
 				else if (in>1) in=1;
 				sousmapint[i][x+y*SMAP2]=90*(in-.5);
@@ -149,6 +191,7 @@ void initmap() {
 		}
 	}
 }
+
 float Fphix=0,Fphiy=0,Fphix2=0;
 void bougeflotte() {
 	int x,y;
@@ -156,13 +199,17 @@ void bougeflotte() {
 	for (y=0; y<SMAP2; y++) {
 		sy=sin(y*2*M_PI/SMAP2+Fphiy);
 		for (x=0; x<SMAP2; x++) {
-			sousmap[9][x+(y<<NMAP2)]=128+60*(sin(x*4*M_PI/SMAP2+Fphix)+sy);
+			submap[9][x+(y<<NMAP2)]=128+60*(sin(x*4*M_PI/SMAP2+Fphix)+sy);
 			sousmapint[9][x+(y<<NMAP2)]=8*(cos(x*4*M_PI/SMAP2+Fphix)+sy);
 		}
 	}
 	Fphiy+=.03*AccelFactor;
 	Fphix+=.11*AccelFactor;
 }
+
+/*
+ * Map Rendering
+ */
 
 #define H (32<<8)
 
@@ -243,7 +290,7 @@ uchar AddSatB(int a, int b) {
 }
 static int calcasm(int a, int b, int c)
 {
-	return (((long long)b*c)>>13)+a;
+	return (((int64_t)b*c)>>13)+a;
 }
 void remap(veci coin, int z1, pixel i1, int z2, pixel i2, int z3, pixel i3, int z4, pixel i4, int m) {
 	vecic ptsi[(SMAP2+1)*2];
@@ -284,7 +331,7 @@ void remap(veci coin, int z1, pixel i1, int z2, pixel i2, int z3, pixel i3, int 
 			if (dx==SMAP2) mm+=sxx+(syx<<NWMAP);
 			if (dy==SMAP2) mm+=sxy+(syy<<NWMAP);
 			nmap=mapmapm(mm);
-			z=(sousmap[nmap][b]<<10)+(zz>>8);
+			z=(submap[nmap][b]<<10)+(zz>>8);
 			ptsi[a].c.r=AddSatB(sousmapint[nmap][b],rr>>8);
 			ptsi[a].c.g=AddSatB(sousmapint[nmap][b],gg>>8);
 			ptsi[a].c.b=AddSatB(sousmapint[nmap][b],bb>>8);
@@ -326,19 +373,38 @@ void remap(veci coin, int z1, pixel i1, int z2, pixel i2, int z3, pixel i3, int 
 		}
 	}
 }
-void rendusol() {
-	vecic ptsi[(SMAP+1)*2];
-	int pz[(SMAP+1)*2];
-	int i, ay, oldz;
-	int xx,yx,xy,yy,xk,yk, dx,dy;
+void draw_ground_and_objects(void) {
+	vecic ptsi[(SMAP+1)*2];	// integer 3d position + color for a small tile ribbon
+	int pz[(SMAP+1)*2];	// storing the height of this map position << 14, for convenience
+	int ay, oldz;
+	int x,y,xx,yx,xy,yy,xk,yk, dx,dy;
 	int dmx=0,dmy=0;
-	int lastcare[9], lcidx=0;
+	int lastcare[9], lcidx=0;	// some tiles we want to draw last
 	veci coin, coinp;
 	vector c;
-	i=(obj[0].rot.z.x>0);
-	i+=(obj[0].rot.z.y>0)<<1;
-	i+=(fabs(obj[0].rot.z.x)>fabs(obj[0].rot.z.y))<<2;
-	switch(i) {
+
+	/* We will draw the world using the painter method.
+	 * Notice that the painter method is only local: the painter
+	 * does not necessarily sort by distance all what he has to draw and proceed to
+	 * draw things in that order. He proceed that way to draw a portion of the painting,
+	 * then can switch to another portion of its drawing which distance is unrelated
+	 * to the portion he just left. So, he sort only localy.
+	 * We do the same here: we do not sort all the world's tiles but merely select a
+	 * way to traverse the world map so that we avoid overdrawing an object with another
+	 * one that's farther away (remember there are no zbuffer neither).
+	 * It's mostly enough to traverse the map along its rows and columns, starting
+	 * from the farther corner and proceeding toward the camera (obj[0]).
+	 * So here we consider the direction the camera is looking at and choose
+	 * the traversal parameters accordingly.
+	 * (why only "mostly enough"? Because the objects within the tiles are allowed
+	 * to cross the tiles boundaries - we deal with this with the abovementionned
+	 * lastcare list).
+	 */
+	switch (
+		(obj[0].rot.z.x > 0) |
+		((obj[0].rot.z.y > 0) <<1) |
+		((fabs(obj[0].rot.z.x) > fabs(obj[0].rot.z.y)) <<2)
+	) {
 	case 0:
 		x=0; y=0; sxx=1; syx=0; sxy=0; syy=1; coli=0; dirx=1; diry=3; dmx=-1; dmy=-1; direct=1; break;
 	case 1:
@@ -389,7 +455,6 @@ void rendusol() {
 		for (xx=xy, yx=yy, dx=0; dx<=SMAP; dx++, xx+=sxx, yx+=syx) {
 			int a=dx+ay, b=MASKW(xx)+(MASKW(yx)<<NWMAP), bb=MASKW(xx+dmx)+(MASKW(yx+dmy)<<NWMAP);
 			int ob=MASKW(xx-1)+(MASKW(yx)<<NWMAP), intens;
-			uchar rm=0;
 			int z;
 			z=map[b];
 			pz[a]=z<<14;
@@ -444,21 +509,18 @@ void rendusol() {
 					if (Direct && (mapmap[bb]&0x80)) {	// est-ce vraient utile de remapper quand c'est plat ?
 						drawroute(bb);
 					}
-				} else MMXRestoreFPU();
-				rm=1;
-			} else rm=0;
-			if (!rm) {
+				}
+			} else {
+				// If the tile is far enough that we don't want to draw it's submap
 				if (dx && dy) {
 					Direct=0;
 					polyclip(&ptsi[a-1+direct],coli?&ptsi[dx+(ay^(SMAP+1))-1]:&ptsi[dx+(ay^(SMAP+1))],&ptsi[a-direct]);
 					polyclip(coli?&ptsi[a]:&ptsi[a-1],&ptsi[dx+(ay^(SMAP+1))-1+direct],&ptsi[dx+(ay^(SMAP+1))-direct]);
-					MMXRestoreFPU();
 					if (Direct && (mapmap[bb]&0x80)) {
 						drawroute(bb);
 					}
-				} else MMXRestoreFPU();
-			} else MMXRestoreFPU();
-			//MMXRestoreFPU();
+				}
+			}
 			if (xk-xx>-KVISU && xk-xx<KVISU && yk-yx>-KVISU && yk-yx<KVISU) {
 				if (fomap[bb]!=-1) {
 					if (xk-xx<-1 || xk-xx>1 || yk-yx<-1 || yk-yx>1) renderer(bb,3);
@@ -503,7 +565,14 @@ void rendusol() {
 		if (coin.z<-((int)ECHELLE<<10)) break;
 	}
 	MMXRestoreFPU();
-	for (i=0; i<lcidx; i++) renderer(lastcare[i],2);
+
+	/* Now that the picture is almost done, render the objects that were so close
+	 * to the camera that we refused to draw them when encountered (see note above
+	 * about the "mostly enough")
+	 */
+	for (unsigned i=0; i < lcidx; i++) {
+		renderer(lastcare[i], 2);
+	}
 }
 #define Gourovf 8	// NE PAS CHANGER !
 #define Gourovfm (1>>Gourovf)
@@ -727,24 +796,24 @@ float zsol(float x, float y) {	// renvoit les coords du sol à cette pos
 	iix=(medx<<NMAP2)>>(NECHELLE+4);
 	iiy=(medy<<NMAP2)>>(NECHELLE+4);
 	ii=iix+(iiy<<NMAP2);
-	mz1=((int)sousmap[mapmapm(i)][ii]<<(10+5-NECHELLE+NMAP2));
+	mz1=((int)submap[mapmapm(i)][ii]<<(10+5-NECHELLE+NMAP2));
 	if (iiy!=SMAP2-1) {
-		mz2=((int)sousmap[mapmapm(i)][ii+SMAP2]<<(10+5-NECHELLE+NMAP2));
+		mz2=((int)submap[mapmapm(i)][ii+SMAP2]<<(10+5-NECHELLE+NMAP2));
 		if (iix!=SMAP2-1) {
-			mz3=((int)sousmap[mapmapm(i)][ii+SMAP2+1]<<(10+5-NECHELLE+NMAP2));
-			mz4=((int)sousmap[mapmapm(i)][ii+1]<<(10+5-NECHELLE+NMAP2));
+			mz3=((int)submap[mapmapm(i)][ii+SMAP2+1]<<(10+5-NECHELLE+NMAP2));
+			mz4=((int)submap[mapmapm(i)][ii+1]<<(10+5-NECHELLE+NMAP2));
 		} else {
-			mz3=((int)sousmap[mapmapm(i+1)][(iiy+1)<<NMAP2]<<(10+5-NECHELLE+NMAP2));
-			mz4=((int)sousmap[mapmapm(i+1)][iiy<<NMAP2]<<(10+5-NECHELLE+NMAP2));
+			mz3=((int)submap[mapmapm(i+1)][(iiy+1)<<NMAP2]<<(10+5-NECHELLE+NMAP2));
+			mz4=((int)submap[mapmapm(i+1)][iiy<<NMAP2]<<(10+5-NECHELLE+NMAP2));
 		}
 	} else {
-		mz2=((int)sousmap[mapmapm(i+WMAP)][iix]<<(10+5-NECHELLE+NMAP2));
+		mz2=((int)submap[mapmapm(i+WMAP)][iix]<<(10+5-NECHELLE+NMAP2));
 		if (iix!=SMAP2-1) {
-			mz3=((int)sousmap[mapmapm(i+WMAP)][iix+1]<<(10+5-NECHELLE+NMAP2));
-			mz4=((int)sousmap[mapmapm(i)][ii+1]<<(10+5-NECHELLE+NMAP2));
+			mz3=((int)submap[mapmapm(i+WMAP)][iix+1]<<(10+5-NECHELLE+NMAP2));
+			mz4=((int)submap[mapmapm(i)][ii+1]<<(10+5-NECHELLE+NMAP2));
 		} else {
-			mz3=((int)sousmap[mapmapm(i+WMAP+1)][0]<<(10+5-NECHELLE+NMAP2));
-			mz4=((int)sousmap[mapmapm(i+1)][iiy<<NMAP2]<<(10+5-NECHELLE+NMAP2));
+			mz3=((int)submap[mapmapm(i+WMAP+1)][0]<<(10+5-NECHELLE+NMAP2));
+			mz4=((int)submap[mapmapm(i+1)][iiy<<NMAP2]<<(10+5-NECHELLE+NMAP2));
 		}
 	}
 	minx=medx&((1<<(NECHELLE+4-NMAP2))-1);
