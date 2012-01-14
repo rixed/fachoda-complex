@@ -66,7 +66,7 @@ extern void mixplot(int x, int y, int r, int g, int b);
 extern void plotmouse(int x,int y);
 extern void plotcursor(int x,int y);
 extern void cercle(int x, int y, int radius, int c);
-extern void polyflat(vect2dlum *p1, vect2dlum *p2, vect2dlum *p3, int c);
+extern void polyflat(vect2d *p1, vect2d *p2, vect2d *p3, int color);
 extern void drawline(vect2dlum *p1, vect2dlum *p2, int col);
 extern void drawline2(vect2d *p1, vect2d *p2, int col);
 extern void calcposaind(int i);

@@ -214,13 +214,13 @@ void bougeflotte() {
 #define H (32<<8)
 
 void coupe (vecic *p1, vecic *p2, vecic *pr) {
-	pr->x=p1->x+( ( (H-p1->z) * (((p2->x-p1->x)<<8)/(p2->z-p1->z)) )>>8 );
-	pr->y=p1->y+( ( (H-p1->z) * (((p2->y-p1->y)<<8)/(p2->z-p1->z)) )>>8 );
-	pr->z=H;
+	pr->x = p1->x+( ( (H-p1->z) * (((p2->x-p1->x)<<8)/(p2->z-p1->z)) )>>8 );
+	pr->y = p1->y+( ( (H-p1->z) * (((p2->y-p1->y)<<8)/(p2->z-p1->z)) )>>8 );
+	pr->z = H;
 }
 
-void poly (veci *p1, veci *p2, veci *p3) {
 	int coulpoly;
+static void poly(vecic *p1, vecic *p2, vecic *p3) {
 	vect2d l1,l2,l3;
 	l1.x=_DX+(p1->x*_DX)/p1->z;
 	l1.y=_DY+(p1->y*_DX)/p1->z;
@@ -637,37 +637,37 @@ void polygouro(vect2dc *p1, vect2dc *p2, vect2dc *p3) {
 	vect2dc *tmp, *pmax, *pmin;
 	int q1, q2, q3=0, qxx, ql2;
 	int qr1, qr2, qr3=0, qg1, qg2, qg3=0, qb1, qb2, qb3=0, qrr, qgg, qbb;
-	if (p2->y<p1->y) { tmp=p1; p1=p2; p2=tmp; }
-	if (p3->y<p1->y) { tmp=p1; p1=p3; p3=tmp; }
-	if (p3->y<p2->y) { tmp=p2; p2=p3; p3=tmp; }
-	if (p3->y<0 || p1->y>SY) return;
+	if (p2->v.y<p1->v.y) { tmp=p1; p1=p2; p2=tmp; }
+	if (p3->v.y<p1->v.y) { tmp=p1; p1=p3; p3=tmp; }
+	if (p3->v.y<p2->v.y) { tmp=p2; p2=p3; p3=tmp; }
+	if (p3->v.y<0 || p1->v.y>SY) return;
 	pmin=pmax=p1;
-	if (p2->x>pmax->x) pmax=p2;
-	if (p3->x>pmax->x) pmax=p3;
-	if (pmax->x<0) return;
-	if (p2->x<pmin->x) pmin=p2;
-	if (p3->x<pmin->x) pmin=p3;
-	if (pmin->x>SX) return;
-	Gouroyi=p1->y;
+	if (p2->v.x>pmax->v.x) pmax=p2;
+	if (p3->v.x>pmax->v.x) pmax=p3;
+	if (pmax->v.x<0) return;
+	if (p2->v.x<pmin->v.x) pmin=p2;
+	if (p3->v.x<pmin->v.x) pmin=p3;
+	if (pmin->v.x>SX) return;
+	Gouroyi=p1->v.y;
 	Direct=1;
-	if (p1->y!=p2->y) {
-		Gouroxi=p1->x<<Gourovf;
+	if (p1->v.y!=p2->v.y) {
+		Gouroxi=p1->v.x<<Gourovf;
 		Gourocoulb=p1->c.b<<Gourovf;
 		Gourocoulg=p1->c.g<<Gourovf;
 		Gourocoulr=p1->c.r<<Gourovf;
-		q1=((p2->x-p1->x)<<Gourovf)/(p2->y-p1->y);
-		qr1=(((int)(p2->c.r-p1->c.r))<<Gourovf)/(p2->y-p1->y);
-		qg1=(((int)(p2->c.g-p1->c.g))<<Gourovf)/(p2->y-p1->y);
-		qb1=(((int)(p2->c.b-p1->c.b))<<Gourovf)/(p2->y-p1->y);
-		q2=((p3->x-p1->x)<<Gourovf)/(p3->y-p1->y);
-		qr2=(((int)(p3->c.r-p1->c.r))<<Gourovf)/(p3->y-p1->y);
-		qg2=(((int)(p3->c.g-p1->c.g))<<Gourovf)/(p3->y-p1->y);
-		qb2=(((int)(p3->c.b-p1->c.b))<<Gourovf)/(p3->y-p1->y);
-		if (p3->y-p2->y) {
-			q3=((p3->x-p2->x)<<Gourovf)/(p3->y-p2->y);
-			qr3=(((int)(p3->c.r-p2->c.r))<<Gourovf)/(p3->y-p2->y);
-			qg3=(((int)(p3->c.g-p2->c.g))<<Gourovf)/(p3->y-p2->y);
-			qb3=(((int)(p3->c.b-p2->c.b))<<Gourovf)/(p3->y-p2->y);
+		q1=((p2->v.x-p1->v.x)<<Gourovf)/(p2->v.y-p1->v.y);
+		qr1=(((int)(p2->c.r-p1->c.r))<<Gourovf)/(p2->v.y-p1->v.y);
+		qg1=(((int)(p2->c.g-p1->c.g))<<Gourovf)/(p2->v.y-p1->v.y);
+		qb1=(((int)(p2->c.b-p1->c.b))<<Gourovf)/(p2->v.y-p1->v.y);
+		q2=((p3->v.x-p1->v.x)<<Gourovf)/(p3->v.y-p1->v.y);
+		qr2=(((int)(p3->c.r-p1->c.r))<<Gourovf)/(p3->v.y-p1->v.y);
+		qg2=(((int)(p3->c.g-p1->c.g))<<Gourovf)/(p3->v.y-p1->v.y);
+		qb2=(((int)(p3->c.b-p1->c.b))<<Gourovf)/(p3->v.y-p1->v.y);
+		if (p3->v.y-p2->v.y) {
+			q3=((p3->v.x-p2->v.x)<<Gourovf)/(p3->v.y-p2->v.y);
+			qr3=(((int)(p3->c.r-p2->c.r))<<Gourovf)/(p3->v.y-p2->v.y);
+			qg3=(((int)(p3->c.g-p2->c.g))<<Gourovf)/(p3->v.y-p2->v.y);
+			qb3=(((int)(p3->c.b-p2->c.b))<<Gourovf)/(p3->v.y-p2->v.y);
 		}
 		Gourolx = Gourovfm;
 		if (q1<=q2) {
@@ -675,7 +675,7 @@ void polygouro(vect2dc *p1, vect2dc *p2, vect2dc *p3) {
 			if(!(ql2=q2-q3)) ql2=-1;
 			Gouroqx=q2; qxx=q2;
 			Gouroqr=qr2; Gouroqg=qg2; Gouroqb=qb2; qrr=qr2; qgg=qg2; qbb=qb2;
-			if (p2->y-p1->y>p3->y-p2->y) {
+			if (p2->v.y-p1->v.y>p3->v.y-p2->v.y) {
 #define QLPREC (Gourovfm/4)
 				if (Gouroql>QLPREC) {
 					Gouroir=((qr1-qr2)<<Gourovf)/Gouroql;
@@ -694,7 +694,7 @@ void polygouro(vect2dc *p1, vect2dc *p2, vect2dc *p3) {
 			if (!(ql2=q3-q2)) ql2=-1;
 			Gouroqx=q1; qxx=q3;
 			Gouroqr=qr1; Gouroqg=qg1; Gouroqb=qb1; qrr=qr3; qgg=qg3; qbb=qb3;
-			if (p2->y-p1->y>p3->y-p2->y) {
+			if (p2->v.y-p1->v.y>p3->v.y-p2->v.y) {
 				if (Gouroql>QLPREC) {
 					Gouroir=((qr2-qr1)<<Gourovf)/Gouroql;
 					Gouroig=((qg2-qg1)<<Gourovf)/Gouroql;
@@ -709,28 +709,28 @@ void polygouro(vect2dc *p1, vect2dc *p2, vect2dc *p3) {
 			}
 		}
 		MMXGouroPreca(Gouroib,Gouroig,Gouroir);
-		Gourody=p2->y-p1->y;
+		Gourody=p2->v.y-p1->v.y;
 		MMXGouro();
 		Gouroqx=qxx; Gouroql=ql2;
 		Gouroqr=qrr; Gouroqg=qgg; Gouroqb=qbb;
-		Gourody=p3->y-p2->y+1;
+		Gourody=p3->v.y-p2->v.y+1;
 		MMXGouro();
 	} else {	// base plate
-		if (p3->y>p2->y) {	// triangle qd meme
-			q2=((p3->x-p1->x)<<Gourovf)/(p3->y-p1->y);
-			qr2=(((int)(p3->c.r-p1->c.r))<<Gourovf)/(p3->y-p1->y);
-			qg2=(((int)(p3->c.g-p1->c.g))<<Gourovf)/(p3->y-p1->y);
-			qb2=(((int)(p3->c.b-p1->c.b))<<Gourovf)/(p3->y-p1->y);
-			q3=((p3->x-p2->x)<<Gourovf)/(p3->y-p2->y);
-			qr3=(((int)(p3->c.r-p2->c.r))<<Gourovf)/(p3->y-p2->y);
-			qg3=(((int)(p3->c.g-p2->c.g))<<Gourovf)/(p3->y-p2->y);
-			qb3=(((int)(p3->c.b-p2->c.b))<<Gourovf)/(p3->y-p2->y);
-			if (p2->x>=p1->x) {
-				Gouroxi=p2->x<<Gourovf;
+		if (p3->v.y>p2->v.y) {	// triangle qd meme
+			q2=((p3->v.x-p1->v.x)<<Gourovf)/(p3->v.y-p1->v.y);
+			qr2=(((int)(p3->c.r-p1->c.r))<<Gourovf)/(p3->v.y-p1->v.y);
+			qg2=(((int)(p3->c.g-p1->c.g))<<Gourovf)/(p3->v.y-p1->v.y);
+			qb2=(((int)(p3->c.b-p1->c.b))<<Gourovf)/(p3->v.y-p1->v.y);
+			q3=((p3->v.x-p2->v.x)<<Gourovf)/(p3->v.y-p2->v.y);
+			qr3=(((int)(p3->c.r-p2->c.r))<<Gourovf)/(p3->v.y-p2->v.y);
+			qg3=(((int)(p3->c.g-p2->c.g))<<Gourovf)/(p3->v.y-p2->v.y);
+			qb3=(((int)(p3->c.b-p2->c.b))<<Gourovf)/(p3->v.y-p2->v.y);
+			if (p2->v.x>=p1->v.x) {
+				Gouroxi=p2->v.x<<Gourovf;
 				Gourocoulb=p2->c.b<<Gourovf;
 				Gourocoulg=p2->c.g<<Gourovf;
 				Gourocoulr=p2->c.r<<Gourovf;
-				Gourolx = (p2->x-p1->x)<<Gourovf;
+				Gourolx = (p2->v.x-p1->v.x)<<Gourovf;
 				if(!(Gouroql=q3-q2)) Gouroql=-1;
 				Gouroqx=q3;
 				Gouroqr=qr3; Gouroqg=qg3; Gouroqb=qb3;
@@ -740,11 +740,11 @@ void polygouro(vect2dc *p1, vect2dc *p2, vect2dc *p3) {
 					Gouroib=((qb2-qb3)<<Gourovf)/Gouroql;
 				} else Gouroir=Gouroig=Gouroib=0;
 			} else {
-				Gouroxi=p1->x<<Gourovf;
+				Gouroxi=p1->v.x<<Gourovf;
 				Gourocoulb=p1->c.b<<Gourovf;
 				Gourocoulg=p1->c.g<<Gourovf;
 				Gourocoulr=p1->c.r<<Gourovf;
-				Gourolx = (p1->x-p2->x)<<Gourovf;
+				Gourolx = (p1->v.x-p2->v.x)<<Gourovf;
 				if(!(Gouroql=q2-q3)) Gouroql=-1;
 				Gouroqx=q2;
 				Gouroqr=qr2; Gouroqg=qg2; Gouroqb=qb2;
@@ -755,11 +755,11 @@ void polygouro(vect2dc *p1, vect2dc *p2, vect2dc *p3) {
 				} else Gouroir=Gouroib=Gouroig=0;
 			}
 			MMXGouroPreca(Gouroib,Gouroig,Gouroir);
-			Gourody=p3->y-p1->y+1;
+			Gourody=p3->v.y-p1->v.y+1;
 			MMXGouro();
 		} else {	// trait plat
-			Gouroxi=pmax->x<<Gourovf;
-			if(!(Gourolx=(pmax->x-pmin->x)<<Gourovf)) Gourolx=Gourovfm;
+			Gouroxi=pmax->v.x<<Gourovf;
+			if(!(Gourolx=(pmax->v.x-pmin->v.x)<<Gourovf)) Gourolx=Gourovfm;
 			Gourocoulb=pmax->c.b<<Gourovf;
 			Gourocoulg=pmax->c.g<<Gourovf;
 			Gourocoulr=pmax->c.r<<Gourovf;
@@ -823,7 +823,7 @@ float zsol(float x, float y) {	// renvoit les coords du sol à cette pos
 	return ((((medx*(zj-zi))>>4)+(zi<<NECHELLE)) + ((minx*(mzj-mzi))>>4)+(mzi<<(NECHELLE-NMAP2)))/8192.;
 }
 
-float zsolraz(float x, float y) {	// renvoit les coords du sol à cette pos, sans tenir compte de la sousmap
+float zsolraz(float x, float y) {	// renvoit les coords du sol à cette pos, sans tenir compte de la submap
 	int zi,zj;
 	int xi, xx=x*16.+(((WMAP<<NECHELLE)>>1)<<4), medx, minx;
 	int yi, yy=y*16.+(((WMAP<<NECHELLE)>>1)<<4), medy, miny;

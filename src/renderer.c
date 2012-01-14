@@ -103,8 +103,8 @@ void cercle(int x, int y, int radius, int c) {
 
 	} while (xoff <= yoff);
 }
-void polyflat(vect2dlum *p1, vect2dlum *p2, vect2dlum *p3, int coul) {
-	vect2dlum *tmp;
+void polyflat(vect2d *p1, vect2d *p2, vect2d *p3, int coul) {
+	vect2d *tmp;
 	int xi, yi, lx, i, j, jlim, yfin;
 	int q1, q2, q3, ql, qx, qx2, ql2;
 	pixel32 *vid;
@@ -189,17 +189,17 @@ void drawline(vect2dlum *p1, vect2dlum *p2, int col) {
 	int s, x,y,xi, dy;
 	vect2dlum *tmp;
 	int q;
-	if (p1->x>p2->x) { tmp=p1; p1=p2; p2=tmp; }
-	if ((dy=(p2->y-p1->y))>0) {
+	if (p1->v.x>p2->v.x) { tmp=p1; p1=p2; p2=tmp; }
+	if ((dy=(p2->v.y-p1->v.y))>0) {
 		s=1;
-		q = ((p2->x-p1->x)<<vf)/(1+dy);
+		q = ((p2->v.x-p1->v.x)<<vf)/(1+dy);
 	} else {
 		dy=-dy;
 		s=-1;
-		q = ((p2->x-p1->x)<<vf)/(1+dy);
+		q = ((p2->v.x-p1->v.x)<<vf)/(1+dy);
 	}
-	x = (p1->x)<<vf;
-	for (y=p1->y; dy>=0; dy--, y+=s) {
+	x = (p1->v.x)<<vf;
+	for (y=p1->v.y; dy>=0; dy--, y+=s) {
 		for (xi=x>>vf; xi<1+((x+q)>>vf); xi++) plot(xi-_DX,y-_DY,col);
 		x+=q;
 	}
@@ -424,7 +424,7 @@ void plotfumee(int x, int y, int r) {
 		} else newyoff=0;
 	} while (xoff <= yoff);
 }
-void renderer(int ak, int fast){	// fast=0->ombres+sol, =1->nuages; =2->objets volants + nuages; =3->tout
+void renderer(int ak, int fast){	// fast=0->ombres+ objets au sol, =1->nuages; =2->objets volants + nuages; =3->tout
 	int o, p, no, coul;
 	vector c,t,pts3d;
 	int rayoncaracap, mo;
@@ -485,15 +485,18 @@ void renderer(int ak, int fast){	// fast=0->ombres+sol, =1->nuages; =2->objets v
 					pts3d.z=z;
 					subv(&pts3d,&cam.pos);
 					mulmtv(&cam.rot,&pts3d,&pts3d);
-					if (pts3d.z >0) projl(&pts2d[p],&pts3d);
-					else pts2d[p].x = MAXINT;
+					if (pts3d.z >0) proj(&pts2d[p].v,&pts3d);
+					else pts2d[p].v.x = MAXINT;
 				}
 				for (p=0; p<mod[obj[o].model].nbfaces[1]; p++) {
 					if (scalaire(&mod[obj[o].model].fac[1][p].norm,&oL[no].z)<=0 &&
-					    pts2d[mod[obj[o].model].fac[1][p].p[0]].x != MAXINT &&
-						 pts2d[mod[obj[o].model].fac[1][p].p[1]].x != MAXINT &&
-						 pts2d[mod[obj[o].model].fac[1][p].p[2]].x != MAXINT)
-						polyflat(&pts2d[mod[obj[o].model].fac[1][p].p[0]],&pts2d[mod[obj[o].model].fac[1][p].p[1]],&pts2d[mod[obj[o].model].fac[1][p].p[2]],0);
+					    pts2d[mod[obj[o].model].fac[1][p].p[0]].v.x != MAXINT &&
+						 pts2d[mod[obj[o].model].fac[1][p].p[1]].v.x != MAXINT &&
+						 pts2d[mod[obj[o].model].fac[1][p].p[2]].v.x != MAXINT)
+						polyflat(
+							&pts2d[mod[obj[o].model].fac[1][p].p[0]].v,
+							&pts2d[mod[obj[o].model].fac[1][p].p[1]].v,
+							&pts2d[mod[obj[o].model].fac[1][p].p[2]].v, 0);
 				}
 			}
 		}
@@ -545,8 +548,8 @@ void renderer(int ak, int fast){	// fast=0->ombres+sol, =1->nuages; =2->objets v
 							for (p=0; p<mod[obj[o].model].nbpts[mo]; p++) {
 								mulmv(&co, &mod[obj[o].model].pts[mo][p], &pts3d);
 								addv(&pts3d,&obj[o].posc);
-								if (pts3d.z>0) projl(&pts2d[p],&pts3d);
-								else pts2d[p].x = MAXINT;
+								if (pts3d.z>0) proj(&pts2d[p].v,&pts3d);
+								else pts2d[p].v.x = MAXINT;
 								// on calcule aussi les projs des
 								// norms dans le plan lumineux infiniment éloigné
 								if (scalaire(&mod[obj[o].model].norm[mo][p],&oL[no].z)<0) {
@@ -555,22 +558,22 @@ void renderer(int ak, int fast){	// fast=0->ombres+sol, =1->nuages; =2->objets v
 								} else pts2d[p].xl = MAXINT;
 							}
 							if (obj[o].type==TIR) {
-								if (pts2d[0].x!=MAXINT && pts2d[1].x!=MAXINT) drawline(&pts2d[0],&pts2d[1],0xFFA0F0);
+								if (pts2d[0].v.x!=MAXINT && pts2d[1].v.x!=MAXINT) drawline(&pts2d[0],&pts2d[1],0xFFA0F0);
 							} else {
 								for (p=0; p<mod[obj[o].model].nbfaces[mo]; p++) {
 									// test de visibilité entre cam et normale
 									copyv(&t,&mod[obj[o].model].pts[mo][mod[obj[o].model].fac[mo][p].p[0]]);
 									subv(&t,&c);
 									if (scalaire(&t,&mod[obj[o].model].fac[mo][p].norm)<=0) {
-										if (pts2d[mod[obj[o].model].fac[mo][p].p[0]].x != MAXINT &&
-											 pts2d[mod[obj[o].model].fac[mo][p].p[1]].x != MAXINT &&
-											 pts2d[mod[obj[o].model].fac[mo][p].p[2]].x != MAXINT) {
+										if (pts2d[mod[obj[o].model].fac[mo][p].p[0]].v.x != MAXINT &&
+											 pts2d[mod[obj[o].model].fac[mo][p].p[1]].v.x != MAXINT &&
+											 pts2d[mod[obj[o].model].fac[mo][p].p[2]].v.x != MAXINT) {
 											if (obj[o].type==TABBORD && p>=mod[obj[o].model].nbfaces[mo]-2) {
 												vect2dm pt[3];
 												int i;
 												for (i=0; i<3; i++) {
-													pt[i].x=pts2d[mod[obj[o].model].fac[mo][p].p[i]].x;
-													pt[i].y=pts2d[mod[obj[o].model].fac[mo][p].p[i]].y;
+													pt[i].v.x=pts2d[mod[obj[o].model].fac[mo][p].p[i]].v.x;
+													pt[i].v.y=pts2d[mod[obj[o].model].fac[mo][p].p[i]].v.y;
 												}
 												if (p-(mod[obj[o].model].nbfaces[mo]-2)) {
 													pt[2].mx=MARGE;
@@ -597,7 +600,10 @@ void renderer(int ak, int fast){	// fast=0->ombres+sol, =1->nuages; =2->objets v
 												if (pts2d[mod[obj[o].model].fac[mo][p].p[0]].xl!=MAXINT && pts2d[mod[obj[o].model].fac[mo][p].p[1]].xl!=MAXINT && pts2d[mod[obj[o].model].fac[mo][p].p[2]].xl!=MAXINT)
 													polyphong(&pts2d[mod[obj[o].model].fac[mo][p].p[0]],&pts2d[mod[obj[o].model].fac[mo][p].p[1]],&pts2d[mod[obj[o].model].fac[mo][p].p[2]],coul);
 												else
-													polyflat(&pts2d[mod[obj[o].model].fac[mo][p].p[0]],&pts2d[mod[obj[o].model].fac[mo][p].p[1]],&pts2d[mod[obj[o].model].fac[mo][p].p[2]],coul);
+													polyflat(
+														&pts2d[mod[obj[o].model].fac[mo][p].p[0]].v,
+														&pts2d[mod[obj[o].model].fac[mo][p].p[1]].v,
+														&pts2d[mod[obj[o].model].fac[mo][p].p[2]].v, coul);
 											}
 										}
 									}

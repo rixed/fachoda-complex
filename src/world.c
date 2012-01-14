@@ -92,14 +92,6 @@ static inline void proj(vect2d *e, vector *p) {
 	e->x=_DX+p->x*focale/p->z;
 	e->y=_DY+p->y*focale/p->z;
 }
-static inline void projl(vect2dlum *e, vector *p) {
-	e->x=_DX+p->x*focale/p->z;
-	e->y=_DY+p->y*focale/p->z;
-}
-static inline void projc(vect2dc *e, vector *p) {
-	e->x=_DX+p->x*focale/p->z;
-	e->y=_DY+p->y*focale/p->z;
-}
 static inline float proj1(float p, float z) { return(p*focale/z); }
 static inline void subv3(vector *a, vector *b, vector *r) {	// il faut r!=a,b
 	r->x = a->x-b->x;
