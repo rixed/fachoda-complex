@@ -86,6 +86,7 @@ int opensound() {
 #	endif
 }
 int loadsample(sample_e samp, char *fn, char loop) {
+	(void)samp; (void)fn; (void)loop;
 	return -1;
 #	if 0
 	struct patch_info *pat;
@@ -153,6 +154,7 @@ int loadsample(sample_e samp, char *fn, char loop) {
 }
 
 void sndplay(int v, int s, int n, int vol, int pan) {
+	(void)v; (void)s; (void)n; (void)pan;
 	if (!sound || !vol) return;
 	if (vol>127) vol=127;
 #	if 0
@@ -175,6 +177,7 @@ void sndplay(int v, int s, int n, int vol, int pan) {
 #	endif
 }
 void pitchbend (int v, int pit) {	// regler d'abord le BENDER_RANGE !
+	(void)v; (void)pit;
 	if (!sound || !GUS) return;
 #	if 0
 	SEQ_PITCHBEND(gus_dev, v, pit);
@@ -189,6 +192,7 @@ void playsound(int v, sample_e samp, float freq, float vol, int pan) {	// pan en
 #	endif
 }
 void stopsound(int v, sample_e samp, float vol) {
+	(void)v; (void)samp; (void)vol;
 	if (!sound) return;
 #	if 0
 	if (GUS) {

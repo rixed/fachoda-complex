@@ -28,6 +28,7 @@ void closeall() {
 	for (h=0; h<nbh; h++) close(new_fd[h]);
 }
 static void catchalarm(int sig) {
+	(void)sig;
 	if (Rec==1) {
 		Rec=2;
 		printf("Interrupting recv\n");
@@ -47,9 +48,9 @@ int recvall(int s, void *b, int l) {
 	if (n==l) return n; else return -1;
 }
 int main(int narg,char **arg) {
-	int sockfd, fininit=0;
+	int sockfd;
 	struct sockaddr_in my_addr;
-	int sin_size, numbytes,h=0,hh, NbAllowedHosts, firstrun=1;
+	int numbytes,h=0,hh, NbAllowedHosts;
 	char buf[MAXDATASIZE];
 	char packet[NBMAXCLIENTS][MAXPACKETSIZE];
 	int packetlenght[NBMAXCLIENTS];
@@ -75,9 +76,8 @@ int main(int narg,char **arg) {
 	}
 	printf("It's open, clients are welcome !\n");
 	do {
-		char c;
 		printf("Still waitin' %d host%s... ",NbAllowedHosts-nbh,NbAllowedHosts-nbh>1?"s":""); fflush(stdout);
-		sin_size=sizeof(struct sockaddr_in);
+		socklen_t sin_size=sizeof(struct sockaddr_in);
 		if ((new_fd[nbh]=accept(sockfd,(struct sockaddr*)&their_addr[nbh],&sin_size))==-1) {
 			perror("accept"); continue;
 		}
@@ -146,7 +146,6 @@ int main(int narg,char **arg) {
 		//printf("DT=%ld\n",DT);
 		// boucle sur tous les clients...
 		for (h=0; h<nbh; h++) {
-			int n;
 			// attend la fin du run (si ca vient, sinon suprime le joueur)
 		//	printf("wainting end of turn from %d\n",h);
 			if (!deadclient[h]) {

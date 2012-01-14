@@ -73,7 +73,7 @@ extern void calcposaind(int i);
 extern void calcposa(void);
 extern void renderer(int ak, int fast);
 // txt.c
-extern void pcharady(uchar m, int *v, int c, int off);
+extern void pcharady(int m, int *v, int c, int off);
 extern int TextClipX1,TextClipX2,TextColfont;
 extern void pnumchar(int n, int x, int y, int c);
 extern void pnum(int n, int x, int y, int c, char just);
@@ -84,12 +84,12 @@ extern void loadbigfont(char *fn);
 extern void pbignumchar(int n, int x, int y, int c);
 extern void pbignum(int n, int x, int y, char just, char tot, char dolard);
 extern void loadfont(char *fn, int nx, int ny, int cy);
-extern void pchar(uchar m, int x, int y, int c);
-extern void pcharlent(uchar m, int x, int y, int c);
-extern void pword(uchar *m, int x, int y, int c);
-extern void pwordlent(uchar *m, int x, int y, int c);
-extern void pstr(uchar *m, int y, int c);
-extern void pstrlent(uchar *m, int y, int c);
+extern void pchar(int m, int x, int y, int c);
+extern void pcharlent(int m, int x, int y, int c);
+extern void pword(char *m, int x, int y, int c);
+extern void pwordlent(char *m, int x, int y, int c);
+extern void pstr(char *m, int y, int c);
+extern void pstrlent(char *m, int y, int c);
 // modele.c
 extern viondesc_s viondesc[];
 extern nobjet_s nobjet[];

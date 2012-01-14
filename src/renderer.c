@@ -96,12 +96,12 @@ void cercle(int x, int y, int radius, int c) {
 		plot(x-yoff, y-xoff, c);
 		plot(x+yoff, y-xoff, c);
 
-		if ((balance += xoff++ + xoff) >= 0) {
+		if ((balance += xoff + xoff + 1) >= 0) {
 			yoff --;
 			balance -= yoff + yoff;
 		}
 
-	} while (xoff <= yoff);
+	} while (++xoff <= yoff);
 }
 void polyflat(vect2d *p1, vect2d *p2, vect2d *p3, int coul) {
 	vect2d *tmp;
@@ -318,6 +318,7 @@ void calcposa() {
 }
 int zfac;
 void plotphare(int x, int y, int r) {
+	(void)x; (void)y; (void)r;
 #	if 0
 	int balance=-r, xoff=0, yoff=r, newyoff=1;
 	if (r==0 || x-r>=SX || x+r<0 || y-r>=SY || y+r<0 || r>SX) return;
@@ -377,12 +378,12 @@ void plotnuage(int x, int y, int r) {
 			nuplot(x,y+xoff, yoff);
 			if (xoff) nuplot(x,y-xoff, yoff);
 		}
-		if ((balance += xoff++ + xoff) >= 0) {
+		if ((balance += xoff + xoff + 1) >= 0) {
 			yoff --;
 			balance -= yoff + yoff;
 			newyoff=1;
 		} else newyoff=0;
-	} while (xoff <= yoff);
+	} while (++xoff <= yoff);
 }
 
 void fuplot(int x, int y, int r) {
@@ -396,13 +397,14 @@ void fuplot(int x, int y, int r) {
 			if (x+yoff>=0 && x+yoff<SX) MMXSubSat((int*)videobuffer+x+yoff+y*SX,ix>>8);
 			if (x-yoff>=0 && x-yoff<SX) MMXSubSat((int*)videobuffer+x-yoff+y*SX,ix>>8);
 		}
-		if ((balance += xoff++ + xoff) >= 0) {
-			balance -= --yoff + yoff;
+		if ((balance += xoff + xoff + 1) >= 0) {
+			yoff--;
+			balance -= yoff + yoff;
 			newyoff=1;
 			iy-=zfac;
 		} else newyoff=0;
 		ix+=zfac;
-	} while (xoff <= yoff);
+	} while (++xoff <= yoff);
 }
 void plotfumee(int x, int y, int r) {
 	int balance=-r, xoff=0, yoff=r, newyoff=1;
@@ -417,17 +419,17 @@ void plotfumee(int x, int y, int r) {
 			fuplot(x,y+xoff, yoff);
 			if (xoff) fuplot(x,y-xoff, yoff);
 		}
-		if ((balance += xoff++ + xoff) >= 0) {
+		if ((balance += xoff + xoff + 1) >= 0) {
 			yoff --;
 			balance -= yoff + yoff;
 			newyoff=1;
 		} else newyoff=0;
-	} while (xoff <= yoff);
+	} while (++xoff <= yoff);
 }
 void renderer(int ak, int fast){	// fast=0->ombres+ objets au sol, =1->nuages; =2->objets volants + nuages; =3->tout
 	int o, p, no, coul;
 	vector c,t,pts3d;
-	int rayoncaracap, mo;
+	int mo;
 	double rayonapparent=0;
 	matrix co;
 	vect2d e;
@@ -514,7 +516,6 @@ void renderer(int ak, int fast){	// fast=0->ombres+ objets au sol, =1->nuages; =
 				// on va projetter ce centre à l'écran
 				proj(&e,&obj[o].posc);
 				rayonapparent = proj1(mod[obj[o].model].rayon,obj[o].posc.z);
-				rayoncaracap = proj1(mod[obj[o].model].rayoncarac,obj[o].posc.z);
 				visu = e.x>-rayonapparent && e.x<SX+rayonapparent && e.y>-rayonapparent && e.y<SY+rayonapparent;
 			} else {	// verifier la formule qd meme...
 				if (obj[o].type!=NUAGE && obj[o].type!=FUMEE) {
@@ -522,7 +523,6 @@ void renderer(int ak, int fast){	// fast=0->ombres+ objets au sol, =1->nuages; =
 					visu = obj[o].posc.z > focale*fabs(obj[o].posc.x)/_DX - r;
 					r = mod[obj[o].model].rayon*sqrt(focale*focale+_DY*_DY)/_DY;
 					visu = visu && (obj[o].posc.z > focale*fabs(obj[o].posc.y)/_DY - r);
-					rayoncaracap = SX;
 					rayonapparent = SX;
 				} else visu=0;
 			}

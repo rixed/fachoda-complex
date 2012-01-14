@@ -36,9 +36,9 @@ void rendumap() {
 	pchar('N',16,SY-SizeCharY*3-10,0xF0F0F0);
 	pchar('S',16,SY-SizeCharY-10,0xF0F0F0);
 	pchar(15+16,16,SY-SizeCharY*2-10,0xA0A0A0);
-	p1.x=19; p1.y=SY-SizeCharY*2+SizeCharY/2-10;
-	p2.x=10*cos(bot[visubot].cap)+p1.x;
-	p2.y=-10*sin(bot[visubot].cap)+p1.y;
+	p1.v.x=19; p1.v.y=SY-SizeCharY*2+SizeCharY/2-10;
+	p2.v.x=10*cos(bot[visubot].cap)+p1.v.x;
+	p2.v.y=-10*sin(bot[visubot].cap)+p1.v.y;
 	drawline(&p1,&p2,c[(int)bot[visubot].camp]);
 }
 void bpoint(vect2dc *p, int x, int y) {
@@ -50,8 +50,8 @@ void bpoint(vect2dc *p, int x, int y) {
 	p->c.r=(zcol[z].r*intens)>>7;
 	p->c.g=(zcol[z].g*intens)>>7;
 	p->c.b=(zcol[z].b*intens)>>7;
-	p->y=_DY+zoom-zoom*2*(y-ycarte)/WMAP;
-	p->x=_DX-zoom+zoom*2*(x-xcarte)/WMAP;
+	p->v.y=_DY+zoom-zoom*2*(y-ycarte)/WMAP;
+	p->v.x=_DX-zoom+zoom*2*(x-xcarte)/WMAP;
 }
 void renduroute() {
 	int i,typ=0;
@@ -65,11 +65,11 @@ void renduroute() {
 		if (i>EndMotorways) typ=1;
 		if (i>EndRoads) typ=2;
 		if (route[i].ak!=-1) {
-			p1.x=_DX+(route[i].i.x-ECHELLE*xcarte)*zoom/(ECHELLE*WMAP/2);
-			p1.y=_DY-(route[i].i.y-ECHELLE*ycarte)*zoom/(ECHELLE*WMAP/2);
+			p1.v.x=_DX+(route[i].i.x-ECHELLE*xcarte)*zoom/(ECHELLE*WMAP/2);
+			p1.v.y=_DY-(route[i].i.y-ECHELLE*ycarte)*zoom/(ECHELLE*WMAP/2);
 			if (route[i+1].ak!=-1) {
-				p2.x=_DX+(route[i+1].i.x-ECHELLE*xcarte)*zoom/(ECHELLE*WMAP/2);
-				p2.y=_DY-(route[i+1].i.y-ECHELLE*ycarte)*zoom/(ECHELLE*WMAP/2);
+				p2.v.x=_DX+(route[i+1].i.x-ECHELLE*xcarte)*zoom/(ECHELLE*WMAP/2);
+				p2.v.y=_DY-(route[i+1].i.y-ECHELLE*ycarte)*zoom/(ECHELLE*WMAP/2);
 				drawline(&p1,&p2,coulr[typ][i&1]);
 			}
 		}
@@ -93,10 +93,10 @@ void rendumapbg() {
 	bpoint(&p2,WMAP,WMAP);
 	MMXRestoreFPU();
 	for (y=0; y<SY; y++) {
-		if (p1.x>0) MMXMemSetInt((int*)videobuffer+y*SX,0,p1.x);
-		if (p2.x<SX) MMXMemSetInt((int*)videobuffer+y*SX+p2.x-1,0,SX-p2.x+1);
-		if (y<p2.y) MMXMemSetInt((int*)videobuffer+y*SX+max(0,p1.x),0,min(p2.x,SX)-max(0,p1.x));
-		if (y>p1.y) MMXMemSetInt((int*)videobuffer+y*SX+max(0,p1.x),0,min(p2.x,SX)-max(0,p1.x));
+		if (p1.v.x>0) MMXMemSetInt((int*)videobuffer+y*SX,0,p1.v.x);
+		if (p2.v.x<SX) MMXMemSetInt((int*)videobuffer+y*SX+p2.v.x-1,0,SX-p2.v.x+1);
+		if (y<p2.v.y) MMXMemSetInt((int*)videobuffer+y*SX+max(0,p1.v.x),0,min(p2.v.x,SX)-max(0,p1.v.x));
+		if (y>p1.v.y) MMXMemSetInt((int*)videobuffer+y*SX+max(0,p1.v.x),0,min(p2.v.x,SX)-max(0,p1.v.x));
 	}
 	renduroute();
 }

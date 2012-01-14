@@ -76,13 +76,13 @@ static void make_map(uchar *m, int smooth_factor, int mapzmax, int map_size) {
 	/* Scale all heights (remember height are unsigned bytes)
 	 * so that we have all values from 0 to mapzmax */
 	int zmin=MAXINT, zmax=-MAXINT;
-	for (unsigned i=0; i<map_size*map_size; i++) {
+	for (int i=0; i<map_size*map_size; i++) {
 		int z=m[i];
 		if (z>zmax) zmax=z;
 		if (z<zmin) zmin=z;
 	}
 	double const ratio = (double)mapzmax/(zmax-zmin+1);
-	for (unsigned i=0; i<map_size*map_size; i++) {
+	for (int i=0; i<map_size*map_size; i++) {
 		m[i] = (m[i]-zmin)*ratio;
 	}
 
@@ -221,7 +221,7 @@ void coupe (vecic *p1, vecic *p2, vecic *pr) {
 }
 
 static int color_of_pixel(pixel c) {
-	(c.r<<16) + (c.g<<8) + (c.b);
+	return (c.r<<16) + (c.g<<8) + (c.b);
 }
 static void poly(vecic *p1, vecic *p2, vecic *p3) {
 	vect2d l1,l2,l3;
@@ -379,7 +379,7 @@ void remap(veci coin, int z1, pixel i1, int z2, pixel i2, int z3, pixel i3, int 
 void draw_ground_and_objects(void) {
 	vecic ptsi[(SMAP+1)*2];	// integer 3d position + color for a small tile ribbon
 	int pz[(SMAP+1)*2];	// storing the height of this map position << 14, for convenience
-	int ay, oldz;
+	int ay;
 	int x,y,xx,yx,xy,yy,xk,yk, dx,dy;
 	int dmx=0,dmy=0;
 	int lastcare[9], lcidx=0;	// some tiles we want to draw last
@@ -549,7 +549,6 @@ void draw_ground_and_objects(void) {
 				break;
 			}
 			if (coinp.z<-((int)ECHELLE<<10)) break;
-			oldz=z;
 		}
 		switch (diry) {
 		case 1:
@@ -573,7 +572,7 @@ void draw_ground_and_objects(void) {
 	 * to the camera that we refused to draw them when encountered (see note above
 	 * about the "mostly enough")
 	 */
-	for (unsigned i=0; i < lcidx; i++) {
+	for (int i=0; i < lcidx; i++) {
 		renderer(lastcare[i], 2);
 	}
 }
@@ -634,7 +633,7 @@ void Gouro() {
 	}
 }*/
 void MMXGouro(void) {}
-void MMXGouroPreca(int ib, int ig, int ir) {}
+void MMXGouroPreca(int ib, int ig, int ir) { (void)ib; (void)ig; (void)ir; }
 
 void polygouro(vect2dc *p1, vect2dc *p2, vect2dc *p3) {
 	vect2dc *tmp, *pmax, *pmin;
@@ -828,9 +827,9 @@ float zsol(float x, float y) {	// renvoit les coords du sol à cette pos
 
 float zsolraz(float x, float y) {	// renvoit les coords du sol à cette pos, sans tenir compte de la submap
 	int zi,zj;
-	int xi, xx=x*16.+(((WMAP<<NECHELLE)>>1)<<4), medx, minx;
-	int yi, yy=y*16.+(((WMAP<<NECHELLE)>>1)<<4), medy, miny;
-	int iix,iiy,i;
+	int xi, xx=x*16.+(((WMAP<<NECHELLE)>>1)<<4), medx;
+	int yi, yy=y*16.+(((WMAP<<NECHELLE)>>1)<<4), medy;
+	int i;
 	xi=xx>>(NECHELLE+4);
 	yi=yy>>(NECHELLE+4);
 	i=xi+(yi<<NWMAP);
@@ -842,9 +841,5 @@ float zsolraz(float x, float y) {	// renvoit les coords du sol à cette pos, sans
 	medy=yy&((ECHELLE<<4)-1);
 	zi=((medy*(z2-z1))>>(NECHELLE+4))+z1;
 	zj=((medy*(z3-z4))>>(NECHELLE+4))+z4;
-	iix=(medx<<NMAP2)>>(NECHELLE+4);
-	iiy=(medy<<NMAP2)>>(NECHELLE+4);
-	minx=medx&((1<<(NECHELLE+4-NMAP2))-1);
-	miny=medy&((1<<(NECHELLE+4-NMAP2))-1);
-	return ((((medx*(zj-zi))>>4)+(zi<<NECHELLE)) /*+ ((minx*(mzj-mzi))>>4)+(mzi<<(NECHELLE-NMAP2))*/)/8192.;
+	return (((medx*(zj-zi))>>4)+(zi<<NECHELLE))/8192.;
 }

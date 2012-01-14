@@ -20,11 +20,11 @@ void disque(int *v, int r, int c) {
 		rectangle(v-xoff+(-yoff<<8), xoff+xoff, 1, c);
 		rectangle(v-yoff+(xoff<<8), yoff+yoff, 1, c);
 		rectangle(v-yoff+(-xoff<<8), yoff+yoff, 1, c);
-		if ((balance += xoff++ + xoff) >= 0) {
+		if ((balance += xoff + xoff + 1) >= 0) {
 			yoff --;
 			balance -= yoff + yoff;
 		}
-	} while (xoff <= yoff);
+	} while (++xoff <= yoff);
 }
 void rectangletb(pixel32 *v, int rx, int ry, int c) {
 	while (ry>0) {
@@ -40,11 +40,11 @@ void disquetb(pixel32 *v, int r, int c) {
 		rectangletb(v-xoff+SXTB*(-yoff), xoff+xoff, 1, c);
 		rectangletb(v-yoff+SXTB*(xoff), yoff+yoff, 1, c);
 		rectangletb(v-yoff+SXTB*(-xoff), yoff+yoff, 1, c);
-		if ((balance += xoff++ + xoff) >= 0) {
+		if ((balance += xoff + xoff + 1) >= 0) {
 			yoff --;
 			balance -= yoff + yoff;
 		}
-	} while (xoff <= yoff);
+	} while (++xoff <= yoff);
 }
 void cercletb(int x, int y, int r, int c) {
 	int balance=-r, xoff=0, yoff=r;
@@ -57,11 +57,11 @@ void cercletb(int x, int y, int r, int c) {
 		*((int*)tbback+x-yoff+(y-xoff)*SXTB)=c;
 		*((int*)tbback+x-yoff+(y+xoff)*SXTB)=c;
 		*((int*)tbback+x+yoff+(y+xoff)*SXTB)=c;
-		if ((balance += xoff++ + xoff) >= 0) {
+		if ((balance += xoff + xoff + 1) >= 0) {
 			yoff --;
 			balance -= yoff + yoff;
 		}
-	} while (xoff <= yoff);
+	} while (++xoff <= yoff);
 }
 void gradutb(int x, int y, double a, int r1, int r2, int c) {
 	vect2d p1,p2;
@@ -266,12 +266,12 @@ void disqueL(int x, int y, int r) {
 			rectangleL(x-yoff,y+xoff, yoff+yoff, 1);
 			if (xoff) rectangleL(x-yoff,y-xoff, yoff+yoff, 1);
 		}
-		if ((balance += xoff++ + xoff) >= 0) {
+		if ((balance += xoff + xoff + 1) >= 0) {
 			yoff --;
 			balance -= yoff + yoff;
 			newyoff=1;
 		} else newyoff=0;
-	} while (xoff <= yoff);
+	} while (++xoff <= yoff);
 }
 void drawtbcadrans(int b) {
 	vect2d p1,p2;

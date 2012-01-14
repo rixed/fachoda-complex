@@ -1,7 +1,3 @@
-#include <X11/Xlib.h>
-#include <X11/keysym.h>
-#include <X11/Xutil.h>
-#include <X11/Xatom.h>
 #include <math.h>
 #include <SDL/SDL.h>
 #include "3d.h"
@@ -13,11 +9,6 @@ SDL_Color *colors;
 int bank, size, width, BufVidOffset, yview=0, depth, XCONVERT=0;
 pixel32 *videobuffer;
 char *video;
-GC gc;
-Display *disp;
-Window win,root;
-XImage img = { 0,0, 0, ZPixmap,NULL, LSBFirst, 32, LSBFirst, 32, 24, 0, 24, 0,0,0 };	// dernier = 32 pour que X fasse la conversion lui meme. Mais il est si lent...
-XFontStruct *xfont;
 
 void initvideo() {
 	int i;

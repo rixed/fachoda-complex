@@ -25,7 +25,7 @@ void MMXFlat(int *dst, int n, int coul) {
 void MMXSaveFPU(void) {}
 void MMXRestoreFPU(void) {}
 void MMXFlatInit(void) {}
-void MMXPhongInit(int aa, int intcol) {}
+void MMXPhongInit(int aa, int intcol) { (void)aa; (void)intcol; }
 
 extern void catchalarm(int sig);
 
@@ -346,15 +346,8 @@ int main(int narg, char **arg) {
 	    Who Am I ?
 	  */
 	userid = getlogin();
-	if (userid) {
-		int n = (int)strlen(userid);
-		for (i = 0; i<n && i<ARRAY_SIZE(myname)-1; i++)
-			myname[i]=userid[i];
-	} else {
-			i = 0;
-	}
-	myname[i]=0;
-	if (!i) strcpy(myname,"an unknown");
+	snprintf(myname, sizeof(myname), "%s", userid ? userid : "an unknown");
+
 	/*
 	    Command line parser
 	                         */

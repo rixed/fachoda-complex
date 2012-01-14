@@ -108,7 +108,7 @@ void couperoute(vect2dc *e, vector *v1,vector *v2) {
 	p.x=((v2->x-v1->x)*(H-v1->z))/(v2->z-v1->z)+v1->x;
 	p.y=((v2->y-v1->y)*(H-v1->z))/(v2->z-v1->z)+v1->y;
 	p.z=H;
-	projc(e,&p);
+	proj(&e->v,&p);
 }
 
 void drawroute(int k) {
@@ -146,18 +146,18 @@ void drawroute(int k) {
 			larg=(int)((largroute[typ]*focale)/norme(&v));
 			if (larg<1) {
 				if (pt3d[0].z>H) {
-					projc(&route[r].e,&pt3d[0]);
+					proj(&route[r].e.v,&pt3d[0]);
 					if (pt3d[1].z>H) {
-						projc(&route[r+1].e,&pt3d[1]);
-						drawroadline(route[r].e.x,route[r].e.y,route[r+1].e.x,route[r+1].e.y,larg,route[r].e.c,route[r+1].e.c);
+						proj(&route[r+1].e.v,&pt3d[1]);
+						drawroadline(route[r].e.v.x,route[r].e.v.y,route[r+1].e.v.x,route[r+1].e.v.y,larg,route[r].e.c,route[r+1].e.c);
 					} else {
 						couperoute(&route[r+1].e,&pt3d[1],&pt3d[0]);
-						drawroadline(route[r].e.x,route[r].e.y,route[r+1].e.x,route[r+1].e.y,larg,route[r].e.c,route[r+1].e.c);
+						drawroadline(route[r].e.v.x,route[r].e.v.y,route[r+1].e.v.x,route[r+1].e.v.y,larg,route[r].e.c,route[r+1].e.c);
 					}
 				} else if (pt3d[1].z>H) {
-					projc(&route[r+1].e,&pt3d[1]);
+					proj(&route[r+1].e.v,&pt3d[1]);
 					couperoute(&route[r].e,&pt3d[0],&pt3d[1]);
-					drawroadline(route[r].e.x,route[r].e.y,route[r+1].e.x,route[r+1].e.y,larg,route[r].e.c,route[r+1].e.c);
+					drawroadline(route[r].e.v.x,route[r].e.v.y,route[r+1].e.v.x,route[r+1].e.v.y,larg,route[r].e.c,route[r+1].e.c);
 				}
 			} else {	// route proche
 				subv3(&route[r].i2,&obj[0].pos,&u);

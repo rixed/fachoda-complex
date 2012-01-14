@@ -168,12 +168,12 @@ void disqueintro(int x, int y, int r, int c) {
 			drawseg(x-yoff,x+yoff,y+xoff,c);
 			if (xoff) drawseg(x-yoff,x+yoff,y-xoff,c);
 		}
-		if ((balance += xoff++ + xoff) >= 0) {
+		if ((balance += xoff + xoff + 1) >= 0) {
 			yoff --;
 			balance -= yoff + yoff;
 			newyoff=1;
 		} else newyoff=0;
-	} while (xoff <= yoff);
+	} while (++xoff <= yoff);
 //	MMXRestoreFPU();
 }
 #define RAYONBOUTTON 40

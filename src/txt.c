@@ -1,5 +1,6 @@
 #include <math.h>
 #include <string.h>
+#include <assert.h>
 #include "3d.h"
 unsigned char num[10][8]= {
 	{ 0x3E,0x41,0x41,0x41,0x41,0x41,0x41,0x3E },		// 0
@@ -193,16 +194,22 @@ void pbignum(int n, int x, int y, char just, char tot, char dolsig) {
 	if (!tot || sig) pbignumchar(10+sig,x-SizeBigCharX,y,c);
 }
 
+static int is_printable(int m) {
+	return m>=16 && m<=112+16;
+}
+
 int TextClipX1=0, TextClipX2=0, TextColfont=0;
-void pcharady(uchar m, int *v, int c, int off) {
+void pcharady(int m, int *v, int c, int off) {
 	int i, l, y, x;
+	assert(is_printable(m));
 	for (l=0, y=0; l<10; l++, y+=off) {
 		for (x=0, i=128; i>=1; i>>=1, x++) if (font[m-16][l]&i) v[x+y]=c;
 		x-=8;
 	}
 }
-void pcharlent(uchar m, int x, int y, int c) {
+void pcharlent(int m, int x, int y, int c) {
 	int i, l;
+	assert(is_printable(m));
 	for (l=0; l<10; l++, y++) {
 		for (i=128; i>=1; i>>=1, x++) if (font[m-16][l]&i) {
 			if (x>=0 && x<SX-1 && y>=0 && y<SY-1) {
@@ -213,8 +220,9 @@ void pcharlent(uchar m, int x, int y, int c) {
 		x-=8;
 	}
 }
-void pchar(uchar m, int x, int y, int c) {
+void pchar(int m, int x, int y, int c) {
 	int i, l;
+	assert(is_printable(m));
 	for (l=0; l<10; l++, y++) {
 		for (i=128; i>=1; i>>=1, x++) if (font[m-16][l]&i) {
 			((int*)videobuffer)[x+SX*y]=c;
@@ -223,23 +231,23 @@ void pchar(uchar m, int x, int y, int c) {
 		x-=8;
 	}
 }
-void pword(uchar *m, int x, int y, int c) {
+void pword(char *m, int x, int y, int c) {
 	do {
 		pchar(*m,x,y,c);	// pchar normalement, mais sinon present bug qd les bouttons clippent
 		x+=6;
 		m++;
-	} while (*m!=' ' && *m>16 && *m<112+16);
+	} while (*m!=' ' && is_printable(*m));
 }
 
-void pwordlent(uchar *m, int x, int y, int c) {
+void pwordlent(char *m, int x, int y, int c) {
 	do {
 		pcharlent(*m,x,y,c);
 		x+=6;
 		m++;
-	} while (*m!=' ' && *m>16 && *m<112+16);
+	} while (*m!=' ' && is_printable(*m));
 }
 
-void pstr(uchar *m, int y, int c) {
+void pstr(char *m, int y, int c) {
 	int l,ll,x;
 	int sx1=TextClipX1?TextClipX1:0;
 	int sx2=TextClipX2?TextClipX2:SX;
@@ -248,7 +256,7 @@ void pstr(uchar *m, int y, int c) {
 		l=strlen(m);
 		x=sx1;
 		do {
-			do l--; while(l && m[l]!=' ' && m[l]>16 && m[l]<112+16);
+			do l--; while(l && m[l]!=' ' && is_printable(m[l]));
 			if (l && l*6<sx2) {
 				x=sx1+((sx2-sx1-l*6)>>1);
 				break;
@@ -257,7 +265,7 @@ void pstr(uchar *m, int y, int c) {
 	}
 	do {
 		l=0;
-		do l++; while(m[l]!=' ' && m[l]>16 && m[l]<112+16);
+		do l++; while(m[l]!=' ' && is_printable(m[l]));
 		if (x+l*6<sx2) {
 			pword(m,x,y,c);
 		} else {
@@ -267,7 +275,7 @@ void pstr(uchar *m, int y, int c) {
 				x=sx1;
 				ll=strlen(m);
 				do {
-					do ll--; while(ll && m[ll]!=' ' && m[ll]>16 && m[ll]<112+16);
+					do ll--; while(ll && m[ll]!=' ' && is_printable(m[ll]));
 					if (ll && ll*6<sx2) {
 						x=sx1+((sx2-sx1-ll*6)>>1);
 						break;
@@ -278,11 +286,11 @@ void pstr(uchar *m, int y, int c) {
 		}
 		x+=l*6+5;
 		m+=l;
-		while(*m!='\0' && (*m==' ' || *m<=16 || *m>=112+16)) m++;
+		while(*m!='\0' && (*m==' ' || !is_printable(*m))) m++;
 	} while (*m!='\0');
 }
 
-void pstrlent(uchar *m, int y, int c) {
+void pstrlent(char *m, int y, int c) {
 	int l,ll,x;
 	int sx1=TextClipX1?TextClipX1:0;
 	int sx2=TextClipX2?TextClipX2:SX;
@@ -291,7 +299,7 @@ void pstrlent(uchar *m, int y, int c) {
 		l=strlen(m);
 		x=sx1;
 		do {
-			do l--; while(l && m[l]!=' ' && m[l]>16 && m[l]<112+16);
+			do l--; while(l && m[l]!=' ' && is_printable(m[l]));
 			if (l && l*6<sx2) {
 				x=sx1+((sx2-sx1-l*6)>>1);
 				break;
@@ -300,7 +308,7 @@ void pstrlent(uchar *m, int y, int c) {
 	}
 	do {
 		l=0;
-		do l++; while(m[l]!=' ' && m[l]>16 && m[l]<112+16);
+		do l++; while(m[l]!=' ' && is_printable(m[l]));
 		if (x+l*6<sx2) {
 			pwordlent(m,x,y,c);
 		} else {
@@ -310,7 +318,7 @@ void pstrlent(uchar *m, int y, int c) {
 				x=sx1;
 				ll=strlen(m);
 				do {
-					do ll--; while(ll && m[ll]!=' ' && m[ll]>16 && m[ll]<112+16);
+					do ll--; while(ll && m[ll]!=' ' && is_printable(m[ll]));
 					if (ll && ll*6<sx2) {
 						x=sx1+((sx2-sx1-ll*6)>>1);
 						break;
@@ -321,7 +329,7 @@ void pstrlent(uchar *m, int y, int c) {
 		}
 		x+=l*6+5;
 		m+=l;
-		while(*m!='\0' && (*m==' ' || *m<=16 || *m>=112+16)) m++;
+		while(*m!='\0' && (*m==' ' || !is_printable(*m))) m++;
 	} while (*m!='\0');
 }
 

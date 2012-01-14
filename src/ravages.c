@@ -126,13 +126,12 @@ void explose(int oc, int i) {
 	}
 }
 void hitgun(int oc, int i) {
-	int o1,o2,j,tarif;
+	int o1,j,tarif;
 	int cmoi=gunner[i-debtir];
 	switch (obj[oc].type) {
 	case CIBGRAT:
 		o1=oc;
 		while (mod[obj[o1].model].pere!=obj[o1].model) o1+=mod[obj[o1].model].pere-obj[o1].model;
-		o2=o1+nobjet[mod[obj[o1].model].nobjet].nbpieces;
 		break;
 	case ZEPPELIN:
 		if (cmoi==-1) return;
@@ -140,7 +139,6 @@ void hitgun(int oc, int i) {
 	case VEHIC:
 		o1=oc;
 		while (obj[o1].objref!=-1) o1=obj[o1].objref;	// MARCHEA PLUS ?
-		o2=o1+nobjet[mod[obj[o1].model].nobjet].nbpieces;
 		break;
 	default:
 		o1=0;
