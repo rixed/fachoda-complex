@@ -235,7 +235,7 @@ veci mx,my,mz;
 #define MASK2(a) ((a)&(SMAP2-1))
 #define MASK(a) ((a)&(SMAP-1))
 #define MASKW(a) ((a)&(WMAP-1))
-inline uchar AddSatB(int a, int b) {
+uchar AddSatB(int a, int b) {
 	int c=a+b;
 	if (c<10) c=10;
 	else if (c>245) c=245;

@@ -5,25 +5,15 @@ OBJ2=codepeindre.o
 P2=peindre.o
 CPP=/usr/local/pgcc/bin/g++
 
-all: sdl fachodasrv
+CFLAGS += -std=c99 -D_GNU_SOURCE
 
-.c.o:
-	$(CC) -c $< -ffast-math $(CFLAGS)
+all: fachoda.sdl fachodasrv
 
-.cc.o:
-	$(CPP) -c $< -ffast-math $(CFLAGS)
-
-fachodasrv: fachodasrv.c
-	$(CC) $< -o $@
-
-sdl: $(OBJET) $(V_SDL) $(MAIN)
-	$(CC) -o fachoda.sdl $(MAIN) $(OBJET) $(V_SDL) -lm -lSDL -lpthread -ljpeg $(CFLAGS)
+fachoda.sdl: $(OBJET) $(V_SDL) $(MAIN)
+	$(CC) $(CFLAGS) -o $@ $(MAIN) $(OBJET) $(V_SDL) -lm -lSDL -lpthread -ljpeg
 
 peindre: $(OBJ2) $(P2)
 	$(CC) -o peindre $(OBJ2) $(P2) -L/usr/X11R6/lib -lm -lX11 -lXext -lXxf86dga -O
 
-srv: fachodasrv.o
-	$(CC) -o fachodasrv fachodasrv.o -lm -O
-	
 clean:
 	rm -f *.o fachoda.sdl fachodasrv core
