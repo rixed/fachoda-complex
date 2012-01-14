@@ -2,3 +2,6 @@
 fachoda.sdl
 fachodasrv
 cscope.out
+core
+core.*
+*.swp
