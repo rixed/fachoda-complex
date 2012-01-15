@@ -6,3 +6,4 @@ core
 core.*
 *.swp
 .depend
+*.dep

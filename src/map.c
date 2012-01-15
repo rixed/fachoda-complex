@@ -1,6 +1,7 @@
 #include <stdint.h>
 #include <math.h>
 #include "3d.h"
+#include "map.h"
 
 /* The map is the central structure of the game.
  * It's a simple square heightfield of unsigned bytes
@@ -11,7 +12,7 @@
  * The other ones are the submaps, of length SMAP2 (16), representing the height of
  * each world map tile.
  * We have 10 of them, 9 is for water (animated), while 0
- * is completely flat for the airfields. Each other tile of
+ * is completely flat for the airfields and roads. Each other tile of
  * the global map that is neither water nor airfield is
  * attributed one of the other 1 to 8 submaps according to its
  * height, with some random.
@@ -19,13 +20,48 @@
  * So all in all we need very few memory for the world map (less than 20Kb).
  */
 
-uchar *map;	// The global map: a square of WMAP*WMAP bytes
+uchar *map;	// The global map: a square of WMAP*WMAP bytes.
+
 uchar *submap[10];	// The submaps (same structure as the global map, only smaller: SMAP*SMAP)
-uchar *mapmap;	// les No de submap (ca prend que 3 bits, bits 5 pour visibilité)
-short int *fomap;	// No du premier objet de la map
-uchar Direct;
+
+/* Each vector of a submap heighfield have a specific lightning (to be added to the
+ * lightning of the tile). It's faster than to compute a proper lightning for every
+ * polygon!
+ */
+static char *submap_rel_light[10];
+
+/* submap_of_map gives the submap number of any map tile. So it's an array of WMAP*WMAP bytes.
+ * When bit7 is set, though, meaning (at least) one road cross this tile, then the submap 0 is
+ * implied (ie. flat) and the lower bits are reused for the road code.
+ */
+uchar *submap_of_map;	// les No de submap (ca prend que 3 bits, bits 5 pour visibilité)
+
+int submap_get(int k)
+{
+	int const s = submap_of_map[k];
+	return s & 0x80 ?  0 : s;	// if there's a road, assume flat submap (0)
+}
+
+/* Number of the first object of each tile, or -1 if no object lies on this tile currently.
+ * Then; objects are chained together via their next/prev field.
+ */
+short int *objs_of_tile;
+
+/* This is an awfull hack to skip drawing of roads when the ground is seen from below
+ * (for instance, roads on the other side of a hill). Problems:
+ * - this flag is set by the polygouro function, while it should be set by the draw_ground
+ *   method itself, which should choose internaly whether to draw road or not (based on this
+ *   and distance, for instance)
+ * - this currently works because roads are only possible on flat submap (thus the last polygouro
+ *   will have the correct information)
+ */
+static int last_poly_is_visible;
+
+/* Ground colors are chosen merely based on the height of the map.
+ * So this array gives the color of any altitude.
+ * It's also used to draw the ingame map.
+ */
 pixel zcol[256];
-char *sousmapint[10];	// les intens relatives des points de la submap
 
 /*
  * Map Generation
@@ -148,19 +184,19 @@ void initmap(void) {
 		smooth_map(map,WMAP,1);
 		if (Fleuve) dig(0);
 	}
-	mapmap = malloc(WMAP*WMAP*sizeof(*mapmap));
-	fomap = malloc(WMAP*WMAP*sizeof(*fomap));
+	submap_of_map = malloc(WMAP*WMAP*sizeof(*submap_of_map));
+	objs_of_tile = malloc(WMAP*WMAP*sizeof(*objs_of_tile));
 	for (y=0; y<WMAP; y++) {
 		for (x=0; x<WMAP; x++) {
+			objs_of_tile[x+y*WMAP]=-1;
 			int z=map[x+y*WMAP];
-			fomap[x+y*WMAP]=-1;
 			if (z>200) {	// submaps 4 and 5 are for high lands
-				mapmap[x+y*WMAP]=4+randK()*2;
+				submap_of_map[x+y*WMAP]=4+randK()*2;
 			} else if (z<100) { // submaps 6, 7, 8 are for middle lands
-				if (z>15) mapmap[x+y*WMAP]=6+randK()*3;
-				else mapmap[x+y*WMAP]=9;
+				if (z>15) submap_of_map[x+y*WMAP]=6+randK()*3;
+				else submap_of_map[x+y*WMAP]=9;
 			} else { // submaps 1, 2, 3 are for low lands
-				mapmap[x+y*WMAP]=1+randK()*3;
+				submap_of_map[x+y*WMAP]=1+randK()*3;
 			}
 		}
 	}
@@ -177,7 +213,7 @@ void initmap(void) {
 	make_map(submap[8],2,253,SMAP2);	// middle lands
 	make_map(submap[9],0,2,SMAP2);		// reserved for water: we will move this heighfield
 	for (i=0; i<10; i++) {
-		sousmapint[i]=(char*)malloc(SMAP2*SMAP2*sizeof(char));
+		submap_rel_light[i]=(char*)malloc(SMAP2*SMAP2*sizeof(char));
 		for (y=0; y<SMAP2; y++) {
 			for (x=0; x<SMAP2; x++) {
 				double in;
@@ -186,7 +222,7 @@ void initmap(void) {
 				else in=((z-submap[i][SMAP2-1+y*SMAP2])/200.+1.)*.5;
 				if (in<0) in=0;
 				else if (in>1) in=1;
-				sousmapint[i][x+y*SMAP2]=90*(in-.5);
+				submap_rel_light[i][x+y*SMAP2]=90*(in-.5);
 			}
 		}
 	}
@@ -200,7 +236,7 @@ void bougeflotte() {
 		sy=sin(y*2*M_PI/SMAP2+Fphiy);
 		for (x=0; x<SMAP2; x++) {
 			submap[9][x+(y<<NMAP2)]=128+60*(sin(x*4*M_PI/SMAP2+Fphix)+sy);
-			sousmapint[9][x+(y<<NMAP2)]=8*(cos(x*4*M_PI/SMAP2+Fphix)+sy);
+			submap_rel_light[9][x+(y<<NMAP2)]=8*(cos(x*4*M_PI/SMAP2+Fphix)+sy);
 		}
 	}
 	Fphiy+=.03*AccelFactor;
@@ -333,11 +369,11 @@ void remap(veci coin, int z1, pixel i1, int z2, pixel i2, int z3, pixel i3, int 
 			int nmap;
 			if (dx==SMAP2) mm+=sxx+(syx<<NWMAP);
 			if (dy==SMAP2) mm+=sxy+(syy<<NWMAP);
-			nmap=mapmapm(mm);
+			nmap=submap_get(mm);
 			z=(submap[nmap][b]<<10)+(zz>>8);
-			ptsi[a].c.r=AddSatB(sousmapint[nmap][b],rr>>8);
-			ptsi[a].c.g=AddSatB(sousmapint[nmap][b],gg>>8);
-			ptsi[a].c.b=AddSatB(sousmapint[nmap][b],bb>>8);
+			ptsi[a].c.r=AddSatB(submap_rel_light[nmap][b],rr>>8);
+			ptsi[a].c.g=AddSatB(submap_rel_light[nmap][b],gg>>8);
+			ptsi[a].c.b=AddSatB(submap_rel_light[nmap][b],bb>>8);
 			ptsi[a].x=calcasm(coinp.x,z,mz.x);
 			ptsi[a].y=calcasm(coinp.y,z,mz.y);
 			ptsi[a].z=calcasm(coinp.z,z,mz.z);
@@ -506,26 +542,26 @@ void draw_ground_and_objects(void) {
 						addvi(&c,&my);
 						break;
 					}
-					Direct=0;
+					last_poly_is_visible=0;
 					remap(c,pz[a],ptsi[a].c,pz[a-1],ptsi[a-1].c,pz[dx+(ay^(SMAP+1))-1],ptsi[dx+(ay^(SMAP+1))-1].c,pz[dx+(ay^(SMAP+1))],ptsi[dx+(ay^(SMAP+1))].c,bb);
 					MMXRestoreFPU();
-					if (Direct && (mapmap[bb]&0x80)) {	// est-ce vraient utile de remapper quand c'est plat ?
+					if (last_poly_is_visible && (submap_of_map[bb]&0x80)) {	// est-ce vraient utile de remapper quand c'est plat ?
 						drawroute(bb);
 					}
 				}
 			} else {
 				// If the tile is far enough that we don't want to draw it's submap
 				if (dx && dy) {
-					Direct=0;
+					last_poly_is_visible=0;
 					polyclip(&ptsi[a-1+direct],coli?&ptsi[dx+(ay^(SMAP+1))-1]:&ptsi[dx+(ay^(SMAP+1))],&ptsi[a-direct]);
 					polyclip(coli?&ptsi[a]:&ptsi[a-1],&ptsi[dx+(ay^(SMAP+1))-1+direct],&ptsi[dx+(ay^(SMAP+1))-direct]);
-					if (Direct && (mapmap[bb]&0x80)) {
+					if (last_poly_is_visible && (submap_of_map[bb]&0x80)) {
 						drawroute(bb);
 					}
 				}
 			}
 			if (xk-xx>-KVISU && xk-xx<KVISU && yk-yx>-KVISU && yk-yx<KVISU) {
-				if (fomap[bb]!=-1) {
+				if (objs_of_tile[bb]!=-1) {
 					if (xk-xx<-1 || xk-xx>1 || yk-yx<-1 || yk-yx>1) renderer(bb,3);
 					else {
 						renderer(bb,0);
@@ -651,7 +687,7 @@ void polygouro(vect2dc *p1, vect2dc *p2, vect2dc *p3) {
 	if (p3->v.x<pmin->v.x) pmin=p3;
 	if (pmin->v.x>SX) return;
 	Gouroyi=p1->v.y;
-	Direct=1;
+	last_poly_is_visible=1;
 	if (p1->v.y!=p2->v.y) {
 		Gouroxi=p1->v.x<<Gourovf;
 		Gourocoulb=p1->c.b<<Gourovf;
@@ -798,24 +834,24 @@ float zsol(float x, float y) {	// renvoit les coords du sol à cette pos
 	iix=(medx<<NMAP2)>>(NECHELLE+4);
 	iiy=(medy<<NMAP2)>>(NECHELLE+4);
 	ii=iix+(iiy<<NMAP2);
-	mz1=((int)submap[mapmapm(i)][ii]<<(10+5-NECHELLE+NMAP2));
+	mz1=((int)submap[submap_get(i)][ii]<<(10+5-NECHELLE+NMAP2));
 	if (iiy!=SMAP2-1) {
-		mz2=((int)submap[mapmapm(i)][ii+SMAP2]<<(10+5-NECHELLE+NMAP2));
+		mz2=((int)submap[submap_get(i)][ii+SMAP2]<<(10+5-NECHELLE+NMAP2));
 		if (iix!=SMAP2-1) {
-			mz3=((int)submap[mapmapm(i)][ii+SMAP2+1]<<(10+5-NECHELLE+NMAP2));
-			mz4=((int)submap[mapmapm(i)][ii+1]<<(10+5-NECHELLE+NMAP2));
+			mz3=((int)submap[submap_get(i)][ii+SMAP2+1]<<(10+5-NECHELLE+NMAP2));
+			mz4=((int)submap[submap_get(i)][ii+1]<<(10+5-NECHELLE+NMAP2));
 		} else {
-			mz3=((int)submap[mapmapm(i+1)][(iiy+1)<<NMAP2]<<(10+5-NECHELLE+NMAP2));
-			mz4=((int)submap[mapmapm(i+1)][iiy<<NMAP2]<<(10+5-NECHELLE+NMAP2));
+			mz3=((int)submap[submap_get(i+1)][(iiy+1)<<NMAP2]<<(10+5-NECHELLE+NMAP2));
+			mz4=((int)submap[submap_get(i+1)][iiy<<NMAP2]<<(10+5-NECHELLE+NMAP2));
 		}
 	} else {
-		mz2=((int)submap[mapmapm(i+WMAP)][iix]<<(10+5-NECHELLE+NMAP2));
+		mz2=((int)submap[submap_get(i+WMAP)][iix]<<(10+5-NECHELLE+NMAP2));
 		if (iix!=SMAP2-1) {
-			mz3=((int)submap[mapmapm(i+WMAP)][iix+1]<<(10+5-NECHELLE+NMAP2));
-			mz4=((int)submap[mapmapm(i)][ii+1]<<(10+5-NECHELLE+NMAP2));
+			mz3=((int)submap[submap_get(i+WMAP)][iix+1]<<(10+5-NECHELLE+NMAP2));
+			mz4=((int)submap[submap_get(i)][ii+1]<<(10+5-NECHELLE+NMAP2));
 		} else {
-			mz3=((int)submap[mapmapm(i+WMAP+1)][0]<<(10+5-NECHELLE+NMAP2));
-			mz4=((int)submap[mapmapm(i+1)][iiy<<NMAP2]<<(10+5-NECHELLE+NMAP2));
+			mz3=((int)submap[submap_get(i+WMAP+1)][0]<<(10+5-NECHELLE+NMAP2));
+			mz4=((int)submap[submap_get(i+1)][iiy<<NMAP2]<<(10+5-NECHELLE+NMAP2));
 		}
 	}
 	minx=medx&((1<<(NECHELLE+4-NMAP2))-1);

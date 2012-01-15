@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include "3d.h"
+#include "map.h"
 
 int IsFlying;
 
@@ -19,11 +20,11 @@ void controlepos(int i) {
 		if (ak!=obj[i].ak) {
 			if (obj[i].next!=-1) obj[obj[i].next].prec=obj[i].prec;
 			if (obj[i].prec!=-1) obj[obj[i].prec].next=obj[i].next;
-			else fomap[obj[i].ak]=obj[i].next;
-			obj[i].next=fomap[ak];
-			if (fomap[ak]!=-1) obj[fomap[ak]].prec=i;
+			else objs_of_tile[obj[i].ak]=obj[i].next;
+			obj[i].next=objs_of_tile[ak];
+			if (objs_of_tile[ak]!=-1) obj[objs_of_tile[ak]].prec=i;
 			obj[i].prec=-1;
-			fomap[ak]=i;
+			objs_of_tile[ak]=i;
 			obj[i].ak=ak;
 		}
 	}
@@ -120,7 +121,7 @@ void control(int b) {
 				mulmv(&obj[bot[b].vion].rot,&v,&bot[b].vionvit);
 			}
 			if (zr<rt) rt=zr;
-			if (((Easy || b>=NbHosts) && (zr<-20*AccelFactor || (zr<-13*AccelFactor && bot[b].but.gearup) || (zr<-10*AccelFactor && mapmapm(obj[bot[b].vion].ak)!=0))) || (zr<-13*AccelFactor || (zr<-10*AccelFactor && bot[b].but.gearup) || (zr<-8*AccelFactor && mapmapm(obj[bot[b].vion].ak)!=0))) {
+			if (((Easy || b>=NbHosts) && (zr<-20*AccelFactor || (zr<-13*AccelFactor && bot[b].but.gearup) || (zr<-10*AccelFactor && submap_get(obj[bot[b].vion].ak)!=0))) || (zr<-13*AccelFactor || (zr<-10*AccelFactor && bot[b].but.gearup) || (zr<-8*AccelFactor && submap_get(obj[bot[b].vion].ak)!=0))) {
 				explose(bot[b].vion,bot[b].vion);
 				return;
 			}
@@ -224,7 +225,7 @@ void control(int b) {
 						bot[b].gold+=viondesc[bot[b].navion].prix;
 						do {
 							i=obj[i].next;
-							if (i==-1) i=fomap[obj[bot[b].vion].ak];
+							if (i==-1) i=objs_of_tile[obj[bot[b].vion].ak];
 						} while (obj[i].type!=AVION || mod[obj[i].model].fixe!=0);
 						bot[b].navion=mod[obj[i].model].nobjet;
 						bot[b].gold-=viondesc[bot[b].navion].prix;

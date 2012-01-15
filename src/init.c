@@ -1,5 +1,7 @@
 #include <math.h>
 #include "3d.h"
+#include "map.h"
+
 char *tankname="Rug-Warrior";
 int bosse(int a) {
 	if (a) return abs((int)map[a]-map[a+1])+abs((int)map[a]-map[a+WMAP])+abs((int)map[a]-map[a+1+WMAP]);
@@ -55,20 +57,21 @@ void addbabase(int c) {
 		p.x=(xb-(WMAP>>1))*ECHELLE+ECHELLE/2;
 		p.y=(yb-(WMAP>>1))*ECHELLE+ECHELLE/2;
 		p.z=0;
-		mapmap[a[x]-1]=0;
-		mapmap[a[x]]=0;
-		mapmap[a[x]+1]=0;
-		mapmap[a[x]+2]=0;
-		mapmap[a[x]+3]=1;
-		mapmap[a[x]-1]=1;
-		mapmap[a[x]-WMAP]=0;
-		mapmap[a[x]+WMAP]=0;
-		mapmap[a[x]+WMAP+1]=0;
-		mapmap[a[x]-WMAP+1]=0;
-		mapmap[a[x]+WMAP-1]=0;
-		mapmap[a[x]-WMAP-1]=0;
-		mapmap[a[x]+WMAP+2]=1;
-		mapmap[a[x]-WMAP+2]=1;
+		// Force the heighmap to be flat around airfields
+		submap_of_map[a[x]-1]=0;
+		submap_of_map[a[x]]=0;
+		submap_of_map[a[x]+1]=0;
+		submap_of_map[a[x]+2]=0;
+		submap_of_map[a[x]+3]=1;
+		submap_of_map[a[x]-1]=1;
+		submap_of_map[a[x]-WMAP]=0;
+		submap_of_map[a[x]+WMAP]=0;
+		submap_of_map[a[x]+WMAP+1]=0;
+		submap_of_map[a[x]-WMAP+1]=0;
+		submap_of_map[a[x]+WMAP-1]=0;
+		submap_of_map[a[x]-WMAP-1]=0;
+		submap_of_map[a[x]+WMAP+2]=1;
+		submap_of_map[a[x]-WMAP+2]=1;
 		map[a[x]-1]=map[a[x]];
 		map[a[x]+1]=map[a[x]];
 		map[a[x]+2]=map[a[x]];
@@ -168,7 +171,7 @@ void initworld() {
 	obj[0].type=CAMERA;
 	obj[0].distance=-1;
 	obj[0].prec=-1; obj[0].next=-1;
-	fomap[0]=0;
+	objs_of_tile[0]=0;
 	obj[0].ak=0;
 	nbobj=1;
 	// babases
@@ -207,15 +210,16 @@ void initworld() {
 			for (j=0; j<i; j++)
 				if (fabs(village[j].p.x-p.x)+fabs(village[j].p.y-p.y)<ECHELLE*5) break;
 		} while (j<i);
-		mapmap[a=akpos(&p)]=0;
-		mapmap[a-1]=0;
-		mapmap[a+1]=0;
-		mapmap[a+WMAP]=0;
-		mapmap[a-WMAP]=0;
-		mapmap[a+WMAP+1]=0;
-		mapmap[a-WMAP+1]=0;
-		mapmap[a+WMAP-1]=0;
-		mapmap[a-WMAP-1]=0;
+		// Make heighmap more flat around villages
+		submap_of_map[a=akpos(&p)]=0;
+		submap_of_map[a-1]=0;
+		submap_of_map[a+1]=0;
+		submap_of_map[a+WMAP]=0;
+		submap_of_map[a-WMAP]=0;
+		submap_of_map[a+WMAP+1]=0;
+		submap_of_map[a-WMAP+1]=0;
+		submap_of_map[a+WMAP-1]=0;
+		submap_of_map[a-WMAP-1]=0;
 		p.z=zsol(p.x,p.y);;
 		copyv(&village[i].p,&p);
 		village[i].o1=nbobj;

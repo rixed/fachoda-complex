@@ -110,10 +110,6 @@ extern long idum;
 // map.c
 extern void polyclip(vecic *p1, vecic *p2, vecic *p3);
 extern void bougeflotte(void);
-extern pixel zcol[256];
-extern uchar *map;
-extern uchar *mapmap;
-extern short int *fomap;
 extern pixel *colormap;
 extern uchar *mapcol;
 extern void initmap(void);

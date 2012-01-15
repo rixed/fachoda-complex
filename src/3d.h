@@ -233,6 +233,5 @@ enum {VOICEGEAR, VOICESHOT, VOICEMOTOR, VOICEEXTER, VOICEALERT };
 	
 #include "proto.h"
 #include "world.c"
-#include "mapinline.c"
 
 #endif

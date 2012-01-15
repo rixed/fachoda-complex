@@ -1,5 +1,7 @@
 #include <math.h>
 #include "3d.h"
+#include "map.h"
+
 int zoom=200,xcarte=0,ycarte=0,repidx=0;
 vector repere[NBREPMAX];
 void plotchar(int x, int y, int c, uchar m) {

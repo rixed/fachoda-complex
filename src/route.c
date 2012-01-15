@@ -1,5 +1,6 @@
 #include <math.h>
 #include "3d.h"
+#include "map.h"
 
 #define NBMAXROUTE 5000	/* <=65534 ! */
 route_s *route;
@@ -19,7 +20,7 @@ void hashroute() {
 		if (route[i].ak==-1) continue;
 		hi=(route[i].ak&(3<<NWMAP))>>(NWMAP-2);
 		hi|=(route[i].ak&3);
-		if (!(mapmap[route[i].ak]&0x80)) {	// première route dans cette kase
+		if (!(submap_of_map[route[i].ak]&0x80)) {	// première route dans cette kase
 			// on peut donc fixer arbitrairement le code nk
 			nk=nbe[hi]++;
 			if (nk>=(1<<7)) {
@@ -29,12 +30,12 @@ void hashroute() {
 			}
 			hi|=nk<<4;
 			map2route[hi][0]=(short)i;
-			mapmap[route[i].ak]=0x80+nk;
+			submap_of_map[route[i].ak]=0x80+nk;
 		} else {	// il y a déjà une route dans cette kase
 			// donc on ne peut pas fixer nk comme ca nous arrange
 			// donc il faut rajouter cet elemnt de route à la meme
 			// position dans le hash
-			nk=mapmap[route[i].ak]&0x7F;
+			nk=submap_of_map[route[i].ak]&0x7F;
 			hi|=nk<<4;
 			for (j=0; map2route[hi][j]!=-1 && j<4; j++);
 			if (j==0) printf("ERROR CONSTRUCTING HASH TABLE !\n");	// il y a deja un elmt ou pas ?

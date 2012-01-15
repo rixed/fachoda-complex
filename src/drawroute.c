@@ -1,5 +1,6 @@
 #include <math.h>
 #include "3d.h"
+#include "map.h"
 
 void drawroadline(int x1, int y1, int x2, int y2, int l, pixel c1, pixel c2) {
 	// trace la route (r,r+1) en ligne, vect2dc étant calculé
@@ -116,8 +117,8 @@ void drawroute(int k) {
 	int j,i, typ, larg;
 	vector pt3d[4], v,u;
 	vecic pt[4];
-//	if (!(mapmap[k]&0x80)) return;
-	nk=mapmap[k]&0x7F;
+//	if (!(submap_of_map[k]&0x80)) return;
+	nk=submap_of_map[k]&0x7F;
 	hi=(k&(3<<NWMAP))>>(NWMAP-2);
 	hi|=k&3;
 	hi|=nk<<4;

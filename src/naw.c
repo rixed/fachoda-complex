@@ -3,12 +3,9 @@
 #include <string.h>
 #include <math.h>
 #include <unistd.h>
-#include <X11/Xlib.h>
-#include <X11/keysym.h>
-#include <X11/Xutil.h>
-#include <X11/Xatom.h>
 #include <signal.h>
 #include "3d.h"
+#include "map.h"
 
 #define ARRAY_SIZE( x )        (sizeof(x)/sizeof((x)[0]))
 
@@ -77,8 +74,8 @@ void addobjet(int mo, vector *p, matrix *m, int or, uchar sol) {
 	yk=(int)floor(p->y/ECHELLE)+(WMAP>>1);
 	ak=xk+(yk<<NWMAP);
 	obj[nbobj].ak=ak;
-	obj[nbobj].next=fomap[ak];
-	fomap[ak]=nbobj;
+	obj[nbobj].next=objs_of_tile[ak];
+	objs_of_tile[ak]=nbobj;
 	obj[nbobj].prec=-1;
 	if (obj[nbobj].next!=-1) obj[obj[nbobj].next].prec=nbobj;
 	nbobj++;
@@ -163,7 +160,7 @@ void background() {
 					}
 				}
 			}
-			if (x<SX) backgroundline(vid+x,SX-x,dz,z1,coulfront[Dark][i+1]);
+			if (x<SX) backgroundline(vid+x,SX-x,dz,z1,coulfront[Dark][i]);
 		} else {
 			for (i=2, x=0; i>=0 && x<SX; i--) {
 				if (z1<zfront[i]) {
@@ -582,7 +579,7 @@ parse_error:
 				if (!vieshot[i-debtir]) continue;
 				vieshot[i-debtir]--;
 				// collision ?
-				for (oc=fomap[obj[i].ak]; oc!=-1; oc=obj[oc].next)
+				for (oc=objs_of_tile[obj[i].ak]; oc!=-1; oc=obj[oc].next)
 					if (obj[oc].type!=BOMB && collision(i,oc)) { fg=1; break; }
 				if (fg) {
 					vieshot[i-debtir]=0;
@@ -607,7 +604,7 @@ parse_error:
 						nbobj--; nbtir--;
 						if (obj[nbobj].next!=-1) obj[obj[nbobj].next].prec=obj[nbobj].prec;
 						if (obj[nbobj].prec!=-1) obj[obj[nbobj].prec].next=obj[nbobj].next;
-						else fomap[obj[nbobj].ak]=obj[nbobj].next;
+						else objs_of_tile[obj[nbobj].ak]=obj[nbobj].next;
 						// comme ca on est sur que calcposa va pas venir
 						// mettre ce tir mort dans un autre ak s'il est à
 						// cheval sur une frontiere, puisqu'il ne bouclera
@@ -630,7 +627,7 @@ parse_error:
 					addv(&obj[j].pos,&v);//bombe[i].vit);
 					controlepos(j);
 					// collision ?
-					for (oc=fomap[obj[j].ak]; oc!=-1; oc=obj[oc].next)
+					for (oc=objs_of_tile[obj[j].ak]; oc!=-1; oc=obj[oc].next)
 						if (obj[oc].type!=TIR && obj[oc].type!=CAMERA && obj[oc].type!=DECO && (oc<bot[bombe[i].b].vion || oc>=bot[bombe[i].b].vion+nobjet[bot[bombe[i].b].navion].nbpieces) && collision(j,oc)) { explose(oc,j); fg=1; break; }
 					if (fg || obj[j].pos.z<zsol(obj[j].pos.x,obj[j].pos.y)) {
 						if (!fg) {
