@@ -1,5 +1,7 @@
+#include <stdlib.h>
+#include <stdio.h>
 #include <math.h>
-#include "3d.h"
+#include "proto.h"
 #define SolMapX 64	// pour le soleil
 #define SolMapY 32
 #define SolImgL 40
@@ -32,14 +34,17 @@ void initsol() {
 			else
 				SolImgAdy[(y+SolImgL/2)*SolImgL+x+SolImgL/2] = -1;
 		}
-	for (i=0; i<20; i++) { SolPicPh[i] = randK()*2*M_PI; SolPicOmega[i]=randK()*0.4+0.3; }
+	for (i=0; i<20; i++) { SolPicPh[i] = drand48()*2*M_PI; SolPicOmega[i]=drand48()*0.4+0.3; }
 	phix=0;
 	// les étoiles
-	if ((etoile=malloc(NBETOILES*sizeof(*etoile)))==NULL) {perror("malloc init3d");exit(-1);}
+	if ((etoile=malloc(NBETOILES*sizeof(*etoile)))==NULL) {
+		perror("malloc init3d");
+		exit(-1);
+	}
 	for (i=0; i<NBETOILES; i++){
 		double teta,phi;
-		do teta=randK()*M_PI*.4; while (randK()>sin(teta));
-		phi=randK()*M_PI*2;
+		do teta=drand48()*M_PI*.4; while (drand48()>sin(teta));
+		phi=drand48()*M_PI*2;
 		etoile[i].x=1e6*sin(teta)*cos(phi);
 		etoile[i].y=1e6*sin(teta)*sin(phi);
 		etoile[i].z=1e6*cos(teta);
@@ -50,7 +55,7 @@ void initsol() {
 
 void animsoleil() {
 	int i, SolNbPic=9;
-	for (i=0; i<SolNbPic; i++) SolPicPh[i]+=randK();
+	for (i=0; i<SolNbPic; i++) SolPicPh[i]+=drand48();
 }
 void affsoleil(vector *L) {
 	vector soleil;

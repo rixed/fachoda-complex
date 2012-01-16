@@ -3,7 +3,6 @@
 #include <stdio.h>
 #include <values.h>
 #include <math.h>
-#include "3d.h"
 #define NBMAXFACE 5000
 
 facelight facesobj[NBMAXFACE*2];

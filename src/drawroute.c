@@ -1,5 +1,6 @@
+#include <stdlib.h>
+#include <stdio.h>
 #include <math.h>
-#include "3d.h"
 #include "map.h"
 
 void drawroadline(int x1, int y1, int x2, int y2, int l, pixel c1, pixel c2) {
@@ -165,18 +166,18 @@ void drawroute(int k) {
 				mulmtv(&obj[0].rot,&u,&pt3d[2]);
 				subv3(&route[r+1].i2,&obj[0].pos,&u);
 				mulmtv(&obj[0].rot,&u,&pt3d[3]);
-				pt[0].x=pt3d[0].x*256;
-				pt[0].y=pt3d[0].y*256;
-				pt[0].z=pt3d[0].z*256;
-				pt[1].x=pt3d[1].x*256;
-				pt[1].y=pt3d[1].y*256;
-				pt[1].z=pt3d[1].z*256;
-				pt[2].x=pt3d[2].x*256;
-				pt[2].y=pt3d[2].y*256;
-				pt[2].z=pt3d[2].z*256;
-				pt[3].x=pt3d[3].x*256;
-				pt[3].y=pt3d[3].y*256;
-				pt[3].z=pt3d[3].z*256;
+				pt[0].v.x=pt3d[0].x*256;
+				pt[0].v.y=pt3d[0].y*256;
+				pt[0].v.z=pt3d[0].z*256;
+				pt[1].v.x=pt3d[1].x*256;
+				pt[1].v.y=pt3d[1].y*256;
+				pt[1].v.z=pt3d[1].z*256;
+				pt[2].v.x=pt3d[2].x*256;
+				pt[2].v.y=pt3d[2].y*256;
+				pt[2].v.z=pt3d[2].z*256;
+				pt[3].v.x=pt3d[3].x*256;
+				pt[3].v.y=pt3d[3].y*256;
+				pt[3].v.z=pt3d[3].z*256;
 				pt[0].c=pt[2].c=route[r].e.c;
 				pt[1].c=pt[3].c=route[r+1].e.c;
 				MMXSaveFPU();

@@ -12,7 +12,6 @@
 #include <sys/time.h>
 #include <math.h>
 #include <signal.h>
-#include "3d.h"
 #define MYPORT 3490
 #define MAXDATASIZE (1024*4)
 #define MAXPACKETSIZE (1024*10)

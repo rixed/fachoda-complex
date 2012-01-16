@@ -1,6 +1,5 @@
 #include <stdlib.h>
 #include <math.h>
-#include "3d.h"
 #include "map.h"
 
 int IsFlying;
@@ -39,9 +38,9 @@ void control(int b) {
 	if (bot[b].camp==-1) return;
 	bot[b].cap=cap(obj[o1].rot.x.x,obj[o1].rot.x.y);
 	bot[b].vitlin=scalaire(&bot[b].vionvit,&obj[bot[b].vion].rot.x);
-	bot[b].xctl+=bot[b].bloodloss*.02*(randK()-.5);
+	bot[b].xctl+=bot[b].bloodloss*.02*(drand48()-.5);
 	if (b<NbHosts) bot[b].xctl+=bot[b].aeroloss*(b&1?.01:-.01);
-	bot[b].yctl+=bot[b].bloodloss*.02*(randK()-.5);
+	bot[b].yctl+=bot[b].bloodloss*.02*(drand48()-.5);
 	if (b<NbHosts) bot[b].yctl-=bot[b].aeroloss*.005;
 	// controles
 	if (bot[b].thrust<0) bot[b].thrust=0;
@@ -127,7 +126,7 @@ void control(int b) {
 			}
 			if (zr<-2*AccelFactor) {
 			//	printf("b=%d zr=%f af=%f\n",b,zr,AccelFactor);
-				float t=randK()-.5;
+				float t=drand48()-.5;
 				if (b==visubot) {
 					if (!bot[b].but.gearup) playsound(VOICEGEAR,SCREETCH,1+t*.08,-.3*(zr+2*AccelFactor),0);
 					else playsound(VOICEGEAR,TOLE,1+t*.08,-.3*(zr+2*AccelFactor),0);
@@ -316,8 +315,8 @@ void control(int b) {
 			copyv(&v,&obj[bot[b].vion].rot.x);
 			mulv(&v,44);
 			addv(&v,&obj[bot[b].vion+viondesc[bot[b].navion].firstcanon+bot[b].alterc].pos);
-			if (b==visubot) playsound(VOICESHOT,SHOT,1+(randK()-.5)*.08,1,bot[b].alterc&1?-128:127);
-			else randK();
+			if (b==visubot) playsound(VOICESHOT,SHOT,1+(drand48()-.5)*.08,1,bot[b].alterc&1?-128:127);
+			else drand48();
 			gunner[nbobj-debtir]=b;
 			vieshot[nbobj-debtir]=80;
 			addobjet(0, &v, &obj[bot[b].vion].rot, -1, 0);
@@ -423,18 +422,18 @@ void controlzep(int z) {	// fait office de routine robot sur les commandes aussi
 	zs=zsol(obj[zep[z].o].pos.x,obj[zep[z].o].pos.y);
 	if (zep[z].vit>1) {
 		// dégonfle
-		zep[z].angy+=.4*sin(phazy+=randK())*AccelFactor;
-		zep[z].angx+=.4*sin(phazx+=randK())*AccelFactor;
-		zep[z].angz+=.4*sin(phazz+=randK())*AccelFactor;
+		zep[z].angy+=.4*sin(phazy+=drand48())*AccelFactor;
+		zep[z].angx+=.4*sin(phazx+=drand48())*AccelFactor;
+		zep[z].angz+=.4*sin(phazz+=drand48())*AccelFactor;
 		obj[zep[z].o].pos.z+=20;
 	} else {
 		// commandes
 		copyv(&v,&zep[z].nav);
 		subv(&v,&obj[zep[z].o].pos);
 		if (norme2(&v)<2000) {
-			zep[z].nav.x=(WMAP<<NECHELLE)*randK()*(SpaceInvaders?.1:.7);
-			zep[z].nav.y=(WMAP<<NECHELLE)*randK()*(SpaceInvaders?.1:.7);
-			zep[z].nav.z=3000+randK()*30000+zsolraz(v.x,v.y);
+			zep[z].nav.x=(WMAP<<NECHELLE)*drand48()*(SpaceInvaders?.1:.7);
+			zep[z].nav.y=(WMAP<<NECHELLE)*drand48()*(SpaceInvaders?.1:.7);
+			zep[z].nav.z=3000+drand48()*30000+zsolraz(v.x,v.y);
 		} else {
 			dir=cap(v.x,v.y)-zep[z].angz;
 			if (dir<-M_PI) dir+=2*M_PI;
@@ -498,7 +497,7 @@ void controlzep(int z) {	// fait office de routine robot sur les commandes aussi
 	// cibles des canons
 	for (i=0; i<6; i++) {
 		if (zep[z].cib[i]==-1) {
-			int nc=NBBOT*randK();
+			int nc=NBBOT*drand48();
 			copyv(&v,&obj[bot[nc].vion].pos);
 			subv(&v,&obj[zep[z].o].pos);
 			if (norme2(&v)<ECHELLE*ECHELLE*0.5) zep[z].cib[i]=nc;

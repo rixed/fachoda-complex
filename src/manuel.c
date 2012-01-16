@@ -1,7 +1,8 @@
+#include <stdlib.h>
 #include <X11/Xlib.h>
 #include <X11/keysym.h>
 #include <math.h>
-#include "3d.h"
+#include "proto.h"
 #include "keycodesdef.h"
 
 int DogBot=0;

@@ -4,7 +4,7 @@
 #include <math.h>
 #include <unistd.h>
 #include <signal.h>
-#include "3d.h"
+#include <values.h>
 #include "map.h"
 
 #define ARRAY_SIZE( x )        (sizeof(x)/sizeof((x)[0]))
@@ -491,8 +491,8 @@ parse_error:
 	NBBOT+=NbHosts;
 	playbotname=malloc(30*NbHosts);
 	strcpy(&(playbotname[bmanu])[0],myname);
-	if (Dark==-1) Dark=randK()>.9;
-	Fleuve=randK()>.01;
+	if (Dark==-1) Dark=drand48()>.9;
+	Fleuve=drand48()>.01;
 	/*
 	    Load les modèles
 		                   */
@@ -635,7 +635,7 @@ parse_error:
 							copyv(&p,&obj[j].pos);
 							subv(&p,&obj[0].pos);
 							np=renorme(&p);
-							playsound(VOICEEXTER,EXPLOZ2,1+(randK()-.5)*.08,min(2.,1./(1+np*np*1e-6)),128*scalaire(&p,&obj[0].rot.x));
+							playsound(VOICEEXTER,EXPLOZ2,1+(drand48()-.5)*.08,min(2.,1./(1+np*np*1e-6)),128*scalaire(&p,&obj[0].rot.x));
 						}
 						obj[j].objref=bot[bombe[i].b].babase;
 						copyv(&obj[j].pos,&vec_zero);
@@ -769,7 +769,7 @@ parse_error:
 				} else {
 					newprime();
 					if (campactu==bot[visubot].camp) playsound(VOICEGEAR,MESSAGE,1,1,0);
-					dtradio=10+randK()*100;
+					dtradio=10+drand48()*100;
 					if (campactu==0) {
 						dtradio+=10000;
 					}
@@ -784,7 +784,7 @@ parse_error:
 			for (i=0; i<NBZEPS; i++) controlzep(i);
 			
 			// fait tourner les moulins
-			AngleMoulin+=randK()*.2*AccelFactor;
+			AngleMoulin+=drand48()*.2*AccelFactor;
 			m.x.x=1; m.x.y=0; m.x.z=0;
 			m.y.x=0; m.y.y=cos(AngleMoulin); m.y.z=sin(AngleMoulin);
 			m.z.x=0; m.z.y=-sin(AngleMoulin); m.z.z=cos(AngleMoulin);
@@ -971,7 +971,7 @@ parse_error:
 					else tbback=tbback2;
 					drawtbback();
 					drawtbcadrans(visubot);
-					bougeflotte();
+					animate_water();
 					draw_ground_and_objects();
 					if (!Dark) {
 						double i;

@@ -1,6 +1,6 @@
 #include <math.h>
 #include <SDL/SDL.h>
-#include "3d.h"
+#include "proto.h"
 
 SDL_Surface *screen, *bufsurface;
 int ncolors;

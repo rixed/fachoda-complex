@@ -1,5 +1,7 @@
+#include <stdlib.h>
 #include <math.h>
-#include "3d.h"
+#include <values.h>
+#include "proto.h"
 bot_s *bot;
 vehic_s *vehic;
 voiture_s *voiture;
@@ -52,13 +54,13 @@ void newcibvehic(int v) {
 choiz:
 	if (j++>10) vehic[v].cibt=-1;
 	else {
-		r=randK();
+		r=drand48();
 		if (r<.3) {
 			// attaque un village
-			int a=NBVILLAGES*randK();
+			int a=NBVILLAGES*drand48();
 			i=0;
 			do {
-				vehic[v].cibt=village[a].o1+(village[a].o2-village[a].o1)*randK();
+				vehic[v].cibt=village[a].o1+(village[a].o2-village[a].o1)*drand48();
 				i++;
 			} while(i<10 && obj[vehic[v].cibt].type!=CIBGRAT);
 			if (i==10) goto choiz;
@@ -66,7 +68,7 @@ choiz:
 			// attaque un tank
 			i=0;
 			do {
-				vehic[v].cibt=(int)(NBTANKBOTS*randK());
+				vehic[v].cibt=(int)(NBTANKBOTS*drand48());
 				i++;
 			} while(i<10 && obj[vehic[v].cibt].type!=VEHIC && vehic[vehic[v].cibt].camp==vehic[v].camp);
 			if (i==10) goto choiz;
@@ -80,7 +82,7 @@ void robotvehic(int v) {
 	double xx,yy,n;
 	if (vehic[v].camp==-1) return;
 	if (vehic[v].cibv==-1) {
-		cib=randK()*NBBOT;
+		cib=drand48()*NBBOT;
 		if (bot[cib].camp!=-1 && bot[cib].camp!=vehic[v].camp) {
 			subv3(&obj[bot[cib].vion].pos,&obj[vehic[v].o1].pos,&p);
 			if (norme2(&p)<5000000) vehic[v].cibv=bot[cib].vion;
@@ -189,13 +191,13 @@ void newcib(int b) {
 choiz:
 	if (j++>10) bot[b].cibt=-1;
 	else {
-		r=randK();
+		r=drand48();
 		if (r<.5) {
 			// attaque un village
-			bot[b].a=NBVILLAGES*randK();
+			bot[b].a=NBVILLAGES*drand48();
 			i=0;
 			do {
-				bot[b].cibt=village[bot[b].a].o1+(village[bot[b].a].o2-village[bot[b].a].o1)*randK();
+				bot[b].cibt=village[bot[b].a].o1+(village[bot[b].a].o2-village[bot[b].a].o1)*drand48();
 				i++;
 			} while(i<10 && obj[bot[b].cibt].type!=CIBGRAT);
 			if (i==10) goto choiz;
@@ -203,7 +205,7 @@ choiz:
 			// attaque un tank
 			i=0;
 			do {
-				bot[b].cibt=(int)(NBTANKBOTS*randK());
+				bot[b].cibt=(int)(NBTANKBOTS*drand48());
 				i++;
 			} while(i<10 && obj[bot[b].cibt].type!=VEHIC && vehic[bot[b].cibt].camp==bot[b].camp);
 			if (i==10) goto choiz;
@@ -239,7 +241,7 @@ void robot(int b){
 		}
 	} else {
 		if (bot[b].cibv==-1) {
-			int cib=randK()*NBBOT;
+			int cib=drand48()*NBBOT;
 			if (bot[b].bullets>100 && bot[b].fiul>70000 && bot[cib].camp!=-1 && bot[cib].camp!=bot[b].camp) {
 				subv3(&obj[bot[cib].vion].pos,&obj[bot[b].vion].pos,&u);
 				if (norme2(&u)<ECHELLE*ECHELLE*10) {

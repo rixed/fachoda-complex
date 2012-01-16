@@ -1,5 +1,6 @@
+#include <stdlib.h>
 #include <math.h>
-#include "3d.h"
+#include <values.h>
 #include "map.h"
 
 int zoom=200,xcarte=0,ycarte=0,repidx=0;

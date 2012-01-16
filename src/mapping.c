@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <math.h>
-#include "3d.h"
+#include <values.h>
+#include "proto.h"
 
 int *mapping;
 uchar *preca;

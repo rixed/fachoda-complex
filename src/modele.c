@@ -1,5 +1,8 @@
+#include <stdlib.h>
+#include <stdio.h>
 #include <math.h>
-#include "3d.h"
+#include "proto.h"
+
 //	  NOM,						NOM LIGHT,	  PERE,PLAT,BOMB,MOBIL,PLATLIGHT
 piece_s zeppelin[] = {
 	{ "zeppelin/Ballon",		"zeppelin/Ballon",	0,0,0,0,0 },

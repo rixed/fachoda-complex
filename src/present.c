@@ -1,11 +1,12 @@
+#include <stdlib.h>
 #include <stdio.h>
 #include <jpeglib.h>
-#include <X11/Xlib.h>
+//#include <X11/Xlib.h>
 #include <X11/keysym.h>
 #include <math.h>
 #include <time.h>
 #include <sys/time.h>
-#include "3d.h"
+#include "proto.h"
 #include "keycodesdef.h"
 pixel32 *presentimg;
 
@@ -20,7 +21,10 @@ void jloadpresent() {
 //	dest_mgr = jinit_write_bmp(&cinfo, FALSE);
 	cinfo.err = jpeg_std_error(&jerr);
 	jpeg_create_decompress(&cinfo);
-	if ((input_file = fopen("complex.jpg","r")) == NULL) {perror("fopen"); exit(-1);}
+	if ((input_file = fopen("complex.jpg","r")) == NULL) {
+		perror("fopen");
+		exit(-1);
+	}
 	jpeg_stdio_src(&cinfo, input_file);
 	jpeg_read_header(&cinfo, TRUE);
 	jpeg_start_decompress(&cinfo);
@@ -72,10 +76,10 @@ void affpresentanim(int d) {
 	for (y=0; y<IMGY; y++) {
 		int yd;
 		if (y&1) {
-			yd=y+d*randK();
+			yd=y+d*drand48();
 			if (yd>=IMGY) yd=IMGY-1;
 		} else {
-			yd=y-d*randK();
+			yd=y-d*drand48();
 			if (yd<1) yd=1;
 		}
 		MMXCopy((int*)videobuffer+(y+yb)*SX+xb,(int*)presentimg+yd*IMGX+clipx,IMGX-clipx-clipx);

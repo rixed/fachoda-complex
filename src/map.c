@@ -1,6 +1,7 @@
+#include <stdlib.h>
 #include <stdint.h>
 #include <math.h>
-#include "3d.h"
+#include <values.h>
 #include "map.h"
 
 /* The map is the central structure of the game.
@@ -81,15 +82,15 @@ static void random_submap(
 		if((xx=x+s)==smap) xx=0;
 		if((yy=y+s)==smap) yy=0;
 		if (m[x+ss+y*smap]==0)
-			m[x+ss+y*smap]=(((int)m[x+y*smap]+m[xx+y*smap])>>1)+(randK()-.5)*sf;
+			m[x+ss+y*smap]=(((int)m[x+y*smap]+m[xx+y*smap])>>1)+(drand48()-.5)*sf;
 		if (m[xx+(y+ss)*smap]==0)
-			m[xx+(y+ss)*smap]=(((int)m[xx+y*smap]+m[xx+yy*smap])>>1)+(randK()-.5)*sf;
+			m[xx+(y+ss)*smap]=(((int)m[xx+y*smap]+m[xx+yy*smap])>>1)+(drand48()-.5)*sf;
 		if (m[x+ss+yy*smap]==0)
-			m[x+ss+yy*smap]=(((int)m[x+yy*smap]+m[xx+yy*smap])>>1)+(randK()-.5)*sf;
+			m[x+ss+yy*smap]=(((int)m[x+yy*smap]+m[xx+yy*smap])>>1)+(drand48()-.5)*sf;
 		if (m[x+(y+ss)*smap]==0)
-			m[x+(y+ss)*smap]=(((int)m[x+y*smap]+m[x+yy*smap])>>1)+(randK()-.5)*sf;
+			m[x+(y+ss)*smap]=(((int)m[x+y*smap]+m[x+yy*smap])>>1)+(drand48()-.5)*sf;
 		if (m[x+ss+(y+ss)*smap]==0)
-			m[x+ss+(y+ss)*smap]=(((int)m[(x+ss)+y*smap]+m[xx+(y+ss)*smap]+m[(x+ss)+yy*smap]+m[x+(y+ss)*smap])>>2)+(randK()-.5)*sf;
+			m[x+ss+(y+ss)*smap]=(((int)m[(x+ss)+y*smap]+m[xx+(y+ss)*smap]+m[(x+ss)+yy*smap]+m[x+(y+ss)*smap])>>2)+(drand48()-.5)*sf;
 		random_submap(x,y,ss,m,smap);
 		random_submap(x+ss,y,ss,m,smap);
 		random_submap(x,y+ss,ss,m,smap);
@@ -128,7 +129,7 @@ static void make_map(uchar *m, int smooth_factor, int mapzmax, int map_size) {
 
 // dig a wave in the map (in other words, a river)
 // looks alien
-void dig(int dy) {
+static void dig(int dy) {
 	float a,ai,xx,yy;
 	int x,y;
 	a=0; ai=.02; xx=0; yy=WMAP/3;
@@ -191,16 +192,16 @@ void initmap(void) {
 			objs_of_tile[x+y*WMAP]=-1;
 			int z=map[x+y*WMAP];
 			if (z>200) {	// submaps 4 and 5 are for high lands
-				submap_of_map[x+y*WMAP]=4+randK()*2;
+				submap_of_map[x+y*WMAP]=4+drand48()*2;
 			} else if (z<100) { // submaps 6, 7, 8 are for middle lands
-				if (z>15) submap_of_map[x+y*WMAP]=6+randK()*3;
+				if (z>15) submap_of_map[x+y*WMAP]=6+drand48()*3;
 				else submap_of_map[x+y*WMAP]=9;
 			} else { // submaps 1, 2, 3 are for low lands
-				submap_of_map[x+y*WMAP]=1+randK()*3;
+				submap_of_map[x+y*WMAP]=1+drand48()*3;
 			}
 		}
 	}
-	// SOUSMAPS
+	// SUBMAPS
 	for (i=0; i<10; i++) submap[i]=(uchar*)calloc(SMAP2*SMAP2,sizeof(uchar));
 	make_map(submap[0],10,5,SMAP2);
 	make_map(submap[1],2,100,SMAP2);	// flat
@@ -228,8 +229,9 @@ void initmap(void) {
 	}
 }
 
-float Fphix=0,Fphiy=0,Fphix2=0;
-void bougeflotte() {
+void animate_water(void)
+{
+	static float Fphix=0, Fphiy=0;
 	int x,y;
 	float sy;
 	for (y=0; y<SMAP2; y++) {
@@ -250,9 +252,9 @@ void bougeflotte() {
 #define H (32<<8)
 
 void coupe (vecic *p1, vecic *p2, vecic *pr) {
-	pr->x = p1->x+( ( (H-p1->z) * (((p2->x-p1->x)<<8)/(p2->z-p1->z)) )>>8 );
-	pr->y = p1->y+( ( (H-p1->z) * (((p2->y-p1->y)<<8)/(p2->z-p1->z)) )>>8 );
-	pr->z = H;
+	pr->v.x = p1->v.x+( ( (H-p1->v.z) * (((p2->v.x-p1->v.x)<<8)/(p2->v.z-p1->v.z)) )>>8 );
+	pr->v.y = p1->v.y+( ( (H-p1->v.z) * (((p2->v.y-p1->v.y)<<8)/(p2->v.z-p1->v.z)) )>>8 );
+	pr->v.z = H;
 	pr->c = p1->c;
 }
 
@@ -261,21 +263,18 @@ static int color_of_pixel(pixel c) {
 }
 static void poly(vecic *p1, vecic *p2, vecic *p3) {
 	vect2d l1,l2,l3;
-	l1.x=_DX+(p1->x*focale)/p1->z;
-	l1.y=_DY+(p1->y*focale)/p1->z;
-	l2.x=_DX+(p2->x*focale)/p2->z;
-	l2.y=_DY+(p2->y*focale)/p2->z;
-	l3.x=_DX+(p3->x*focale)/p3->z;
-	l3.y=_DY+(p3->y*focale)/p3->z;
+	proji(&l1, &p1->v);	// FIXME: should not project the same pt several times!
+	proji(&l2, &p2->v);
+	proji(&l3, &p3->v);
 	polyflat(&l1, &l2, &l3, color_of_pixel(p1->c));
 }
 
 void polyclip(vecic *p1, vecic *p2, vecic *p3) {
 	int i;
 	vecic pp1,pp2;
-	i=p1->z<H;
-	i+=(p2->z<H)<<1;
-	i+=(p3->z<H)<<2;
+	i=p1->v.z<H;
+	i+=(p2->v.z<H)<<1;
+	i+=(p3->v.z<H)<<2;
 	switch (i) {
 	case 0:
 		poly(p1,p2,p3);
@@ -315,13 +314,17 @@ void polyclip(vecic *p1, vecic *p2, vecic *p3) {
 		break;
 	}
 }
-int sxx,syx,sxy,syy,coli,x,y,x2,y2,direct;
-int dirx, diry;
-veci mx,my,mz;
+
+// These are inited by draw_ground_and_objects() and used also by draw_submap()
+static int sxx,syx,sxy,syy,coli,x2,y2,direct;
+static int dirx, diry;
+static veci mx,my,mz;
+
 #define MASK2(a) ((a)&(SMAP2-1))
 #define MASK(a) ((a)&(SMAP-1))
 #define MASKW(a) ((a)&(WMAP-1))
-uchar AddSatB(int a, int b) {
+
+static uchar AddSatB(int a, int b) {
 	int c=a+b;
 	if (c<10) c=10;
 	else if (c>245) c=245;
@@ -331,7 +334,8 @@ static int calcasm(int a, int b, int c)
 {
 	return (((int64_t)b*c)>>13)+a;
 }
-void remap(veci coin, int z1, pixel i1, int z2, pixel i2, int z3, pixel i3, int z4, pixel i4, int m) {
+
+static void draw_submap(veci coin, int z1, pixel i1, int z2, pixel i2, int z3, pixel i3, int z4, pixel i4, int m) {
 	vecic ptsi[(SMAP2+1)*2];
 	int xx,yx,xy,yy, dx,dy, ay;
 	veci coinp;
@@ -374,9 +378,9 @@ void remap(veci coin, int z1, pixel i1, int z2, pixel i2, int z3, pixel i3, int 
 			ptsi[a].c.r=AddSatB(submap_rel_light[nmap][b],rr>>8);
 			ptsi[a].c.g=AddSatB(submap_rel_light[nmap][b],gg>>8);
 			ptsi[a].c.b=AddSatB(submap_rel_light[nmap][b],bb>>8);
-			ptsi[a].x=calcasm(coinp.x,z,mz.x);
-			ptsi[a].y=calcasm(coinp.y,z,mz.y);
-			ptsi[a].z=calcasm(coinp.z,z,mz.z);
+			ptsi[a].v.x=calcasm(coinp.x,z,mz.x);
+			ptsi[a].v.y=calcasm(coinp.y,z,mz.y);
+			ptsi[a].v.z=calcasm(coinp.z,z,mz.z);
 			if (dx && dy) {
 				polyclip(&ptsi[a-1+direct],coli?&ptsi[dx+(ay^(SMAP2+1))-1]:&ptsi[dx+(ay^(SMAP2+1))],&ptsi[a-direct]);
 				polyclip(coli?&ptsi[a]:&ptsi[a-1],&ptsi[dx+(ay^(SMAP2+1))-1+direct],&ptsi[dx+(ay^(SMAP2+1))-direct]);
@@ -497,9 +501,9 @@ void draw_ground_and_objects(void) {
 			int z;
 			z=map[b];
 			pz[a]=z<<14;
-			ptsi[a].x=calcasm(coinp.x,z<<14,mz.x);
-			ptsi[a].y=calcasm(coinp.y,z<<14,mz.y);
-			ptsi[a].z=calcasm(coinp.z,z<<14,mz.z);
+			ptsi[a].v.x=calcasm(coinp.x,z<<14,mz.x);
+			ptsi[a].v.y=calcasm(coinp.y,z<<14,mz.y);
+			ptsi[a].v.z=calcasm(coinp.z,z<<14,mz.z);
 			intens=((z-map[ob]))+32+64;
 			if (intens<64) intens=64;
 			else if (intens>127) intens=127;
@@ -543,9 +547,10 @@ void draw_ground_and_objects(void) {
 						break;
 					}
 					last_poly_is_visible=0;
-					remap(c,pz[a],ptsi[a].c,pz[a-1],ptsi[a-1].c,pz[dx+(ay^(SMAP+1))-1],ptsi[dx+(ay^(SMAP+1))-1].c,pz[dx+(ay^(SMAP+1))],ptsi[dx+(ay^(SMAP+1))].c,bb);
+					// TODO: is it necessary to draw the submap when it's 0 (flat) ?
+					draw_submap(c,pz[a],ptsi[a].c,pz[a-1],ptsi[a-1].c,pz[dx+(ay^(SMAP+1))-1],ptsi[dx+(ay^(SMAP+1))-1].c,pz[dx+(ay^(SMAP+1))],ptsi[dx+(ay^(SMAP+1))].c,bb);
 					MMXRestoreFPU();
-					if (last_poly_is_visible && (submap_of_map[bb]&0x80)) {	// est-ce vraient utile de remapper quand c'est plat ?
+					if (last_poly_is_visible && (submap_of_map[bb]&0x80)) {
 						drawroute(bb);
 					}
 				}

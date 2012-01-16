@@ -13,7 +13,7 @@
 #include <time.h>
 #include <sys/time.h>
 #include <signal.h>
-#include "3d.h"
+#include "proto.h"
 #define DEST_PORT 3490	// ces trois valeurs doivent correspondre a gate.c
 #define MAXDATASIZE (1024*4)
 #define MAXPACKETSIZE (1024*10)
@@ -105,7 +105,6 @@ int NetInit(char *hostname) {
 	}
 	srand48(seed);
 	srand((int)seed);
-	idum=seed;
 	// lit le nbr d'Hosts
 	if ((numbytes=recvall(sockfd, &NbHosts, sizeof(NbHosts)))==-1) {
 		perror("recv"); return(-1);

@@ -1,5 +1,7 @@
+#include <stdlib.h>
+#include <stdio.h>
 #include <math.h>
-#include "3d.h"
+#include <values.h>
 #include "map.h"
 
 #define NBMAXROUTE 5000	/* <=65534 ! */

@@ -1,5 +1,7 @@
+#include <stdlib.h>
+#include <stdio.h>
 #include <math.h>
-#include "3d.h"
+#include <values.h>
 #include "map.h"
 
 char *tankname="Rug-Warrior";
@@ -8,7 +10,7 @@ int bosse(int a) {
 	else return MAXINT;
 }
 void randomhm(matrix *m) {
-	float a=randK()*M_PI*2;
+	float a=drand48()*M_PI*2;
 	copym(m,&mat_id);
 	m->x.x=cos(a);
 	m->x.y=sin(a);
@@ -26,7 +28,7 @@ void posem(matrix *m, vector *p) {	// tourne légèrement la matrice pour la "pose
 }
 int randomvroute(vector *v) {
 	int i;
-	do i=2+randK()*(routeidx-4); while(route[i+1].ak==-1 || route[i].ak==-1);
+	do i=2+drand48()*(routeidx-4); while(route[i+1].ak==-1 || route[i].ak==-1);
 	v->x=route[i].i.x;
 	v->y=route[i].i.y;
 	v->z=route[i].i.z;
@@ -93,17 +95,17 @@ void addbabase(int c) {
 		babaseo[0][x][c]=addnobjet(NBNAVIONS, &p, &mat_id, 1);	// la piste
 	
 		copyv(&pp,&p);
-		pp.x+=(randK()-.5)*ECHELLE*.4;
-		pp.y+=(randK()+.5)*ECHELLE*.2;
+		pp.x+=(drand48()-.5)*ECHELLE*.4;
+		pp.y+=(drand48()+.5)*ECHELLE*.2;
 		pp.z=85;
 		randomhm(&m);
 		addnobjet(NBNAVIONS+1, &pp, &m, 1);	// une tour de controle
 		for (y=0; y<3; y++) {
-			pp.x+=(randK()-.5)*ECHELLE*.2;
-			pp.y+=(randK()-.5)*ECHELLE*.2;
+			pp.x+=(drand48()-.5)*ECHELLE*.2;
+			pp.y+=(drand48()-.5)*ECHELLE*.2;
 			pp.z=15;
 			randomhm(&m);
-			addnobjet(NBNAVIONS+NBBASES+NBMAISONS+randK()*3, &pp, &m, 1);	// des vehic
+			addnobjet(NBNAVIONS+NBBASES+NBMAISONS+drand48()*3, &pp, &m, 1);	// des vehic
 		}
 		babaseo[1][x][c]=nbobj;
 		for (y=0; y<NBNAVIONS; y++) {
@@ -183,8 +185,8 @@ void initworld() {
 		perror("malloc zep"); exit(-1);
 	}
 	for (i=0; i<NBZEPS; i++) {
-		p.x=(randK()-.5)*(WMAP<<NECHELLE)*0.8;
-		p.y=(randK()-.5)*(WMAP<<NECHELLE)*0.8;
+		p.x=(drand48()-.5)*(WMAP<<NECHELLE)*0.8;
+		p.y=(drand48()-.5)*(WMAP<<NECHELLE)*0.8;
 		p.z=5000+zsolraz(p.x,p.y);
 		zep[i].o=addnobjet(NBNAVIONS+NBBASES+NBMAISONS+NBVEHICS+NBDECOS,&p, &mat_id, 0);
 		copyv(&zep[i].nav,&p);
@@ -194,7 +196,7 @@ void initworld() {
 	// installations au sol
 	// des villages de pauvres inocents pour souffrir
 	for (i=0; i<NBVILLAGES; i++) {
-		int nbm=randK()*20+5;
+		int nbm=drand48()*20+5;
 		int ok,k;
 		vector pp;
 		int bos=MAXINT, a;
@@ -293,13 +295,13 @@ void initworld() {
 	EndMotorways=routeidx;
 //	printf("Drawing roads around cities...\n");
 	for (i=0; i<NBVILLAGES; i++) {
-		int nbr=randK()*5+5;	// prop à la taille de la ville
+		int nbr=drand48()*5+5;	// prop à la taille de la ville
 		int r;
 		for (r=0; r<nbr; r++) {
 //			int d=routeidx;
 			vector dest;
 			randomv(&dest);
-			mulv(&dest,ECHELLE*(5+10*randK()));	// prop à la taille de la ville
+			mulv(&dest,ECHELLE*(5+10*drand48()));	// prop à la taille de la ville
 			addv(&dest,&village[i].p);
 			dest.z=zsolraz(dest.x,dest.y);
 			prospectroute(&village[i].p,&dest);
@@ -310,7 +312,7 @@ void initworld() {
 	EndRoads=routeidx;
 //	printf("Drawing footpaths...\n");
 	for (i=0; i<150; i++) {
-		int ri=EndMotorways+randK()*(routeidx-EndMotorways-1);
+		int ri=EndMotorways+drand48()*(routeidx-EndMotorways-1);
 		vector dest,v;
 		if (route[ri].ak!=-1 && route[ri+1].ak!=-1) {
 			copyv(&v,&route[ri+1].i);
@@ -318,8 +320,8 @@ void initworld() {
 			dest.x=v.y;
 			dest.y=-v.x;
 			dest.z=0;
-			if (randK()>.5) mulv(&dest,-1);
-			mulv(&dest,(2+randK()*3));
+			if (drand48()>.5) mulv(&dest,-1);
+			mulv(&dest,(2+drand48()*3));
 			addv(&dest,&route[ri].i);
 			if (fabs(dest.x)<((WMAP-5)<<(NECHELLE-1)) && fabs(dest.y)<((WMAP-5)<<(NECHELLE-1))) {
 				dest.z=zsolraz(dest.x,dest.y);
@@ -344,7 +346,7 @@ void initworld() {
 		vector pp;
 		int ri;
 		matrix m;
-		do ri=EndRoads+randK()*(routeidx-EndRoads-1);
+		do ri=EndRoads+drand48()*(routeidx-EndRoads-1);
 		while (route[ri].ak!=-1 && route[ri+1].ak!=-1);
 		copyv(&p,&route[ri].i);
 		randomhm(&m);
@@ -365,7 +367,7 @@ void initworld() {
 		vector pp;
 		int ri;
 		matrix m;
-		do ri=EndRoads+randK()*(routeidx-EndRoads-1);
+		do ri=EndRoads+drand48()*(routeidx-EndRoads-1);
 		while (route[ri].ak!=-1 && route[ri+1].ak!=-1);
 		copyv(&p,&route[ri].i);
 		randomhm(&m);
@@ -382,7 +384,7 @@ void initworld() {
 		vector pp;
 		int ri;
 		matrix m;
-		do ri=EndRoads+randK()*(routeidx-EndRoads-1);
+		do ri=EndRoads+drand48()*(routeidx-EndRoads-1);
 		while (route[ri].ak!=-1 && route[ri+1].ak!=-1);
 		copyv(&p,&route[ri].i);
 		randomhm(&m);
@@ -396,7 +398,7 @@ void initworld() {
 	FinMoulins=nbobj;
 	// des troupeaux de charolaises
 	for (i=0; i<NBVILLAGES*2; i++) {
-		int nbn=randK()*5+2;
+		int nbn=drand48()*5+2;
 		copyv(&p,&village[i%NBVILLAGES].p);
 		for (k=0; k<2; k++) {
 			vector pt;
@@ -425,7 +427,7 @@ void initworld() {
 		p.z=15;
 		voiture[i].o=addnobjet(NBNAVIONS+NBBASES+NBMAISONS+1, &p, &mat_id, 1);
 		voiture[i].dist=-1;
-		voiture[i].vit=5+15*randK();
+		voiture[i].vit=5+15*drand48();
 	}
 	for (; i<NBVOITURES/2; i++) {
 		voiture[i].r=randomvroute(&p);
@@ -433,7 +435,7 @@ void initworld() {
 		p.z=15;
 		voiture[i].o=addnobjet(NBNAVIONS+NBBASES+NBMAISONS+4, &p, &mat_id, 1);
 		voiture[i].dist=-1;
-		voiture[i].vit=5+15*randK();
+		voiture[i].vit=5+15*drand48();
 	}
 	for (; i<NBVOITURES*8/10; i++) {
 		voiture[i].r=randomvroute(&p);
@@ -441,7 +443,7 @@ void initworld() {
 		p.z=15;
 		voiture[i].o=addnobjet(NBNAVIONS+NBBASES+NBMAISONS+2, &p, &mat_id, 1);
 		voiture[i].dist=-1;
-		voiture[i].vit=10+10*randK();
+		voiture[i].vit=10+10*drand48();
 	}
 	for (; i<NBVOITURES; i++) {
 		voiture[i].r=randomvroute(&p);
@@ -449,7 +451,7 @@ void initworld() {
 		p.z=30;
 		voiture[i].o=addnobjet(NBNAVIONS+NBBASES+NBMAISONS+3, &p, &mat_id, 1);
 		voiture[i].dist=-1;
-		voiture[i].vit=5+5*randK();
+		voiture[i].vit=5+5*drand48();
 	}
 	voiture[i].o=nbobj;
 	// des tracteurs dans les champs
@@ -490,7 +492,7 @@ void initworld() {
 	for (i=0; i<NBBOT; i++) {
 		int c=i&3, b;
 		if (i>=NbHosts) bot[i].camp=c;
-		bot[i].babase=b=babaseo[0][(int)(randK()*3)][(int)bot[i].camp];
+		bot[i].babase=b=babaseo[0][(int)(drand48()*3)][(int)bot[i].camp];
 		if (!SpaceInvaders) {
 			copyv(&p,&obj[b].pos);
 			p.y+=i>=NbHosts?10:250;
@@ -511,13 +513,13 @@ void initworld() {
 				p.y*=2*((i-NbHosts));
 				p.z=0;
 			} else {
-				p.x+=(randK()-.5)*400;
-				p.y+=(randK()-.5)*400;
+				p.x+=(drand48()-.5)*400;
+				p.y+=(drand48()-.5)*400;
 				p.z=100*i;
 			}
 			p.z+=16000;
 		}
-		if (i>=NbHosts) bot[i].navion=randK()*NBNAVIONS;
+		if (i>=NbHosts) bot[i].navion=drand48()*NBNAVIONS;
 		bot[i].vion=addnobjet(bot[i].navion,&p,&m, 0);
 		bot[i].but.gear=!SpaceInvaders;
 		bot[i].but.canon=0;
@@ -546,12 +548,12 @@ void initworld() {
 	}
 	// des tanks
 	for (i=0; i<NBTANKBOTS; i++) {
-		if (randK()<.2) {
+		if (drand48()<.2) {
 			randomvferme(&p);
 			if (i&1) p.x*=.1; else p.y*=.1;
 		} else {
-			p.x+=(randK()-.5)*100;
-			p.y+=(randK()-.5)*100;
+			p.x+=(drand48()-.5)*100;
+			p.y+=(drand48()-.5)*100;
 		}
 		p.z=zsol(p.x,p.y);
 		if (p.y>0) vehic[i].camp=2; else vehic[i].camp=0;
@@ -569,10 +571,10 @@ void initworld() {
 	}
 	// et des nuages
 	for (i=0; i<70; i++) {
-		int nbn=randK()*15+10;
+		int nbn=drand48()*15+10;
 		randomv(&p);
 		mulv(&p,ECHELLE*(WMAP-5));
-		p.z=randK()*5000+20000;
+		p.z=drand48()*5000+20000;
 		for (j=0; j<nbn; j++) {
 			vector pp;
 			randomv(&pp);
@@ -589,5 +591,5 @@ void initworld() {
 	}
 	rayonfumee=(uchar*)calloc(NBMAXFUMEE,sizeof(uchar));
 	typefumee=(uchar*)calloc(NBMAXFUMEE,sizeof(uchar));
-	printf("seed_end = %f\n",randK());
+	printf("seed_end = %f\n",drand48());
 }

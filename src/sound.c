@@ -8,7 +8,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
-#include "3d.h"
+#include "proto.h"
 
 char sound=1;
 char GUS=1;

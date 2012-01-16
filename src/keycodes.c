@@ -1,5 +1,6 @@
+#include <stdlib.h>
 #include <math.h>
-#include "3d.h"
+#include "proto.h"
 
 kc_s gkeys[NBKEYS] = {
 	{9,"Quit"},

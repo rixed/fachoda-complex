@@ -1,5 +1,4 @@
 #include <math.h>
-#include "3d.h"
 uchar font[112][10];
 int SizeCharY=10;
 void loadfont(char *fn, int nx, int ny, int cy) {

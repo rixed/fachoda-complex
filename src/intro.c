@@ -1,3 +1,4 @@
+#include <stdlib.h>
 #include <stdio.h>
 #include <jpeglib.h>
 #include <X11/Xlib.h>
@@ -5,8 +6,9 @@
 #include <math.h>
 #include <time.h>
 #include <sys/time.h>
-#include "3d.h"
 #include "keycodesdef.h"
+#include "proto.h"
+
 extern void deltatime(void);
 extern void plotfumee(int,int,int);
 static struct {
@@ -193,7 +195,7 @@ void page(int r, float rayon, float phase) {
 	int b;
 	int SS=max(_DX,_DY);
 //	MMXMemSetInt((int*)videobuffer,BACKCOLOR,SX*SY);
-	affpresent(randK()*(agit>>8),randK()*(agit>>8));
+	affpresent(drand48()*(agit>>8),drand48()*(agit>>8));
 	if (agit>256) agit=(agit*9)/10;
 	for (b=0; b<Round[r].nbkases; b++) {
 		float ang=phase+b*M_PI*2./Round[r].nbkases;
@@ -235,7 +237,7 @@ int jauge(int vi, int max) {
 		xproceed();
 		if (kread(0) || kread(1)) {
 			if (kzc==0) {
-				playsound(VOICEMOTOR,BIPINTRO, 1+(randK()-.5)*.05,1,(xmouse*128)/SX);
+				playsound(VOICEMOTOR,BIPINTRO, 1+(drand48()-.5)*.05,1,(xmouse*128)/SX);
 				agit=50*256;
 				return va;
 			}
@@ -267,7 +269,7 @@ int jauge(int vi, int max) {
 }*/
 int present() {
 	int curround=0, oldcurround, nextround, etap=2;
-	float phaz=randK()*2*M_PI, rayon=2, phazr=randK()*2*M_PI;
+	float phaz=drand48()*2*M_PI, rayon=2, phazr=drand48()*2*M_PI;
 	inittime();
 	do {
 		deltatime();
@@ -313,7 +315,7 @@ int present() {
 		if (etap==0 && (kreset(0) || kreset(1))) {
 			int b=kzc;
 			if (b!=-1) {
-				playsound(VOICEMOTOR,BIPINTRO, 1+(randK()-.5)*.05,1,(xmouse*128)/SX);
+				playsound(VOICEMOTOR,BIPINTRO, 1+(drand48()-.5)*.05,1,(xmouse*128)/SX);
 				agit=20*256;
 				if (Round[curround].kase[b].nxtround>=0) {
 					oldcurround=curround;

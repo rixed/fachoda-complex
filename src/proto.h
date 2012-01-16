@@ -1,4 +1,263 @@
-#include <X11/Xlib.h>
+#ifndef PROTO_H_120116
+#define PROTO_H_120116
+
+#include <string.h>
+
+#define min(a,b) ((a)<=(b)?(a):(b))
+#define max(a,b) ((b)<=(a)?(a):(b))
+
+#define NHASH 11	// 2048 eléments dans la table de hash
+#define NBREPHASH	4	// nbr max d'éléments dans la meme case de la table
+#define NBZEPS 20
+#define NBVOITURES 400
+#define BACKCOLOR 0xAC8DBD
+
+#define NBKEYS 45 //56
+
+#define NORMALDT 100000
+#define NBMAXCLIENTS 100	// faire correspondre avec gate.c
+#define DOGDISTMAX 9000
+#define NBREPMAX 40
+#define G_FACTOR .5
+#define NTANKMARK 12	// 11 bits pour les No de tanks
+#define vf 8	// 12
+#define vfm (1<<vf)
+
+#define MARGE 1	// au bord de la texture de map
+
+#define NBPTSLISS 45
+#define NBDECOUPLISS 8
+#define NBNIVOLISS 4
+#define cam obj[0]
+
+#define NBNAVIONS 6
+#define NBBASES 2
+#define NBMAISONS 6
+#define NBVEHICS 5
+#define NBDECOS 7
+#define NBZEPPELINS 1
+
+#define NBMAXTIR 1200
+#define NBMAXFUMEE 400
+#define NBGRAVMAX 1000
+#define NBFUMEESOURCE 40
+#define NBPRIMES (4*5)
+#define NBVILLAGES 10
+
+#define NWMAP 7
+#define WMAP (1<<NWMAP)
+#define NMAP 5
+#define SMAP (1<<NMAP)
+#define NMAP2 3
+#define SMAP2 (1<<NMAP2)
+#define NECHELLE 12
+#define ECHELLE (1<<NECHELLE)
+
+//#define NBNOMVILLAGE 5
+
+typedef enum { CAMERA, TIR, AVION, CIBGRAT, BOMB, PHARE, VEHIC, DECO, GRAV, NUAGE, FUMEE, TABBORD, ZEPPELIN } type_e;
+typedef enum { PRESENT, BIPINTRO, SHOT, GEAR_DN, GEAR_UP, SCREETCH, MOTOR, HIT, MESSAGE, EXPLOZ, EXPLOZ2, TOLE, BIPBIP, BIPBIP2, BIPBIP3, FEU, TARATATA, ALLELUIA, ALERT, DEATH, PAIN, BRAVO } sample_e;
+
+typedef unsigned char uchar;
+
+#define MAT_ID { {1, 0, 0},  {0, 1, 0},  {0, 0, 1} }
+typedef struct {
+	uchar b,g,r;
+} pixel;
+typedef struct {
+	uchar b,g,r,u;
+} pixel32;
+typedef struct {
+	float x,y,z;
+} vector;
+typedef struct {
+	int x,y,z;
+} veci;
+typedef struct {
+	veci v;
+	pixel c;
+} vecic;
+typedef struct {
+	int x, y;
+} vect2d;
+typedef struct {
+	vect2d v;
+	int xl, yl;
+} vect2dlum;
+typedef struct {
+	vect2d v;
+	pixel c;
+} vect2dc;
+typedef struct {
+	vect2d v;
+	uchar mx,my;
+} vect2dm;
+typedef struct {
+	vector x,y,z;
+} matrix;
+
+typedef struct {
+	char gear:1;
+	char canon:1;
+	char bomb:1;
+	char flap:1;
+	char gearup:1;
+	char frein:1;
+	char commerce:1;
+	char repere:1;
+} bouton_s;
+typedef struct {
+	int p[3];
+	pixel color;
+	vector norm;
+} face;
+
+typedef struct {	// utilisé dans les fichiers de data
+	int p[3];	// les trois numéros de point dans la liste de point de l'objet
+} facelight;
+
+typedef struct {
+	vector offset;	// centre de l'objet avant recentrage par dxfcompi (utile pour positioner les fils)
+	int nbpts[NBNIVOLISS], nbfaces[NBNIVOLISS], pere, nobjet;
+	type_e type;
+	vector *(pts[NBNIVOLISS]), *(norm[NBNIVOLISS]);
+	face *(fac[NBNIVOLISS]);
+	float rayoncarac, rayoncollision, rayon;
+	char fixe;
+} modele;
+
+typedef struct {
+	short int model;		// No du modèle
+	uchar type;
+	vector pos;		// translation par rapport à l'obj de référence
+	matrix rot;		// rotation par rapport à l'obj de reference
+	short int objref;		// l'objet de référence pour la pos et la rot (-1=absolu)
+	short int next,prec;	// lien sur l'objet suivant dans la liste du tri en Z
+	short int ak;
+	vector posc;
+	float distance;	// eloignement en R2 a la camera
+	vector t;	// position du centre dans le repere de la camera
+	uchar aff:1;	// 0 = pas aff, 1=aff normal
+} objet;
+typedef struct {
+	char *fn, *fnlight;
+	int pere;	// relativement à la première pièce du modèle
+	char plat:1;	// 1 si la piece est plate
+	char bomb:3;	// 0 si pas bombe, 1 si light, 2 si HEAVY ! 3 = destructible à la bombe, pour instal terrestres
+	char mobil;
+	char platlight:1;
+} piece_s;
+typedef struct {
+	int nbpieces;
+	piece_s *piece;
+	int firstpiece;
+} nobjet_s;
+typedef struct {
+	int reward;
+	char camp;
+	short int no;
+	int dt;
+	char *endmsg;
+} prime_s;
+typedef struct {
+	int o1, o2;
+	char *nom;
+	vector p;
+} village_s;
+typedef struct {
+	short int navion,babase;	// Numéro de type d'avion, de base
+	int vion;	// numéro de l'objet principal de l'avion
+	char camp;	// 1 ou 2 ou -1 si détruit
+//	char *nom;
+	int nbomb;
+	bouton_s but;
+	vector vionvit;
+	vector acc;
+	float anghel, anggear;
+	float vitlin;
+	int bullets;
+	float zs;
+	float xctl,yctl,thrust;
+	char manoeuvre;
+	char voltige;
+	vector u,v;
+	matrix m;
+	int cibt,cibv,a;
+	float p,vc, df;
+	uchar alterc;
+	int fiul;
+	int fiulloss;
+	char motorloss;
+	char aeroloss;
+	int bloodloss;
+	int gunned;
+	float cap;
+	int burning;
+	int gold;
+} bot_s;
+typedef struct {
+	short int o, cib[6];
+	vector nav;
+	float angz,angy,angx;
+	float anghel;
+	float vit;
+} zep_s;
+typedef struct {
+	char camp;	// 1 ou 2 ou -1 si détruit.
+	int o1, o2;
+	char *nom;
+	vector p;
+	int moteur:1;
+	int tir:1;
+	int cibt,cibv;
+	float ang0,ang1,ang2;
+	int ocanon;
+} vehic_s;
+
+typedef struct {
+	char *name;
+	int nbpiecestete, prix,nbmoyeux, nbcharngearx,nbcharngeary,tabbord,firstcanon,nbcanon;
+	uchar avant:1;
+	uchar retract3roues:1;
+	uchar oldtb:1;
+	float motorpower,portf,port,derivk,profk,trainee;
+	int bulletsmax, fiulmax;
+	int roue[3];	// D,G,A
+} viondesc_s;
+typedef struct {
+	short int o, b;
+	vector vit;
+} bombe_s;
+typedef struct {
+	int score;
+	char name[30];
+} HS_s;
+typedef struct {
+	short int o;
+	vector vit;
+	float a1,a2,ai1,ai2;
+} debris_s;
+typedef struct {
+	int vague, camp, navion;
+} alienpos_s;
+typedef struct {
+	char kc;
+	char *name;
+} kc_s;
+typedef struct {
+	int ak;
+	vector i,i2;
+	vect2dc e;
+} route_s;
+typedef struct {
+	int r;
+	short int o;
+	char sens;
+	float vit;
+	int dist;
+} voiture_s;
+enum {VOICEGEAR, VOICESHOT, VOICEMOTOR, VOICEEXTER, VOICEALERT };
+	
 // naw.c
 extern char hostname[250];
 extern vector ExplozePos; extern int Exploze;
@@ -43,14 +302,10 @@ extern uchar *typefumee;
 extern int firstfumee;
 extern void tournevion(int v, float d, float p, float g);
 // video_interf
-extern GC gc;
-extern Display *disp;
-extern Window win,root;
 extern int bank, size, width, BufVidOffset, depth, XCONVERT;
 extern pixel32 *videobuffer;
 extern char *video;
 extern void buffer2video(void);
-extern XImage img;
 extern char getscancode(void);
 extern void initvideo(void);
 extern int kread(unsigned n);
@@ -104,12 +359,8 @@ extern char *nomvillage[];
 extern char msgactu[1000];
 extern int msgactutime;
 extern int campactu;
-// ran0.c
-extern float randK(void);
-extern long idum;
 // map.c
 extern void polyclip(vecic *p1, vecic *p2, vecic *p3);
-extern void bougeflotte(void);
 extern pixel *colormap;
 extern uchar *mapcol;
 extern void initmap(void);
@@ -248,3 +499,125 @@ extern void drawroute(int bb/*, vecic *ptref*/);
 extern void affjauge(float j);
 extern void initworld(void);
 extern void randomhm(matrix *m);
+
+static inline void proj(vect2d *e, vector *p) {
+	e->x=_DX+p->x*focale/p->z;
+	e->y=_DY+p->y*focale/p->z;
+}
+static inline void proji(vect2d *e, veci *p) {
+	e->x=_DX+p->x*focale/p->z;
+	e->y=_DY+p->y*focale/p->z;
+}
+static inline void addv(vector *r, vector *a) { r->x+=a->x; r->y+=a->y; r->z+=a->z; }
+static inline void addvi(veci *r, veci *a) { r->x+=a->x; r->y+=a->y; r->z+=a->z; }
+static inline void subv(vector *r, vector *a) { r->x-=a->x; r->y-=a->y; r->z-=a->z; }
+static inline void subvi(veci *r, veci *a) { r->x-=a->x; r->y-=a->y; r->z-=a->z; }
+static inline void mulv(vector *r, float a) { r->x*=a; r->y*=a; r->z*=a; }
+static inline void copyv(vector *r, vector *a) { r->x=a->x; r->y=a->y; r->z=a->z; }
+static inline void copym(matrix *r, matrix *a) { memcpy(r,a,sizeof(matrix)); }
+static inline void mulm(matrix *r, matrix *a) {
+	matrix b;
+	copym(&b,r);
+	r->x.x = b.x.x*a->x.x+b.y.x*a->x.y+b.z.x*a->x.z;
+	r->y.x = b.x.x*a->y.x+b.y.x*a->y.y+b.z.x*a->y.z;
+	r->z.x = b.x.x*a->z.x+b.y.x*a->z.y+b.z.x*a->z.z;
+	r->x.y = b.x.y*a->x.x+b.y.y*a->x.y+b.z.y*a->x.z;
+	r->y.y = b.x.y*a->y.x+b.y.y*a->y.y+b.z.y*a->y.z;
+	r->z.y = b.x.y*a->z.x+b.y.y*a->z.y+b.z.y*a->z.z;
+	r->x.z = b.x.z*a->x.x+b.y.z*a->x.y+b.z.z*a->x.z;
+	r->y.z = b.x.z*a->y.x+b.y.z*a->y.y+b.z.z*a->y.z;
+	r->z.z = b.x.z*a->z.x+b.y.z*a->z.y+b.z.z*a->z.z;
+}
+static inline void mulm3(matrix *r, matrix *c, matrix *a) {
+	matrix b;
+	b.x.x = c->x.x*a->x.x+c->y.x*a->x.y+c->z.x*a->x.z;
+	b.y.x = c->x.x*a->y.x+c->y.x*a->y.y+c->z.x*a->y.z;
+	b.z.x = c->x.x*a->z.x+c->y.x*a->z.y+c->z.x*a->z.z;
+	b.x.y = c->x.y*a->x.x+c->y.y*a->x.y+c->z.y*a->x.z;
+	b.y.y = c->x.y*a->y.x+c->y.y*a->y.y+c->z.y*a->y.z;
+	b.z.y = c->x.y*a->z.x+c->y.y*a->z.y+c->z.y*a->z.z;
+	b.x.z = c->x.z*a->x.x+c->y.z*a->x.y+c->z.z*a->x.z;
+	b.y.z = c->x.z*a->y.x+c->y.z*a->y.y+c->z.z*a->y.z;
+	b.z.z = c->x.z*a->z.x+c->y.z*a->z.y+c->z.z*a->z.z;
+	copym(r,&b);
+}
+static inline void mulmt3(matrix *r, matrix *c, matrix *a) {	// c est transposée
+	matrix b;
+	b.x.x = c->x.x*a->x.x + c->x.y*a->x.y + c->x.z*a->x.z;
+	b.y.x = c->x.x*a->y.x + c->x.y*a->y.y + c->x.z*a->y.z;
+	b.z.x = c->x.x*a->z.x + c->x.y*a->z.y + c->x.z*a->z.z;
+	b.x.y = c->y.x*a->x.x + c->y.y*a->x.y + c->y.z*a->x.z;
+	b.y.y = c->y.x*a->y.x + c->y.y*a->y.y + c->y.z*a->y.z;
+	b.z.y = c->y.x*a->z.x + c->y.y*a->z.y + c->y.z*a->z.z;
+	b.x.z = c->z.x*a->x.x + c->z.y*a->x.y + c->z.z*a->x.z;
+	b.y.z = c->z.x*a->y.x + c->z.y*a->y.y + c->z.z*a->y.z;
+	b.z.z = c->z.x*a->z.x + c->z.y*a->z.y + c->z.z*a->z.z;
+	copym(r,&b);
+}
+
+float norme(vector *u);
+static inline float norme2(vector *u){ return(u->x*u->x+u->y*u->y+u->z*u->z); }
+static inline float scalaire(vector *u, vector *v){ return(u->x*v->x+u->y*v->y+u->z*v->z); }
+static inline float renorme(vector *a) {
+	float d = norme(a);
+	if (d!=0) {a->x/=d; a->y/=d; a->z/=d; }
+	return(d);
+}
+static inline void prodvect(vector *a, vector *b, vector *c) {
+	c->x = a->y*b->z-a->z*b->y;
+	c->y = a->z*b->x-a->x*b->z;
+	c->z = a->x*b->y-a->y*b->x;
+}
+static inline void orthov(vector *a, vector *b) {
+	float s=scalaire(a,b);
+	a->x -= s*b->x;
+	a->y -= s*b->y;
+	a->z -= s*b->z;
+}
+static inline float orthov3(vector *a, vector *b, vector *r) {
+	float s=scalaire(a,b);
+	r->x = a->x-s*b->x;
+	r->y = a->y-s*b->y;
+	r->z = a->z-s*b->z;
+	return(s);
+}
+static inline void mulmv(matrix *n, vector *v, vector *r) {
+	vector t;
+	copyv(&t,v);
+	r->x = n->x.x*t.x+n->y.x*t.y+n->z.x*t.z;
+	r->y = n->x.y*t.x+n->y.y*t.y+n->z.y*t.z;
+	r->z = n->x.z*t.x+n->y.z*t.y+n->z.z*t.z;
+}
+static inline void mulmtv(matrix *n, vector *v, vector *r) {
+	vector t;
+	copyv(&t,v);
+	r->x = n->x.x*t.x+n->x.y*t.y+n->x.z*t.z;
+	r->y = n->y.x*t.x+n->y.y*t.y+n->y.z*t.z;
+	r->z = n->z.x*t.x+n->z.y*t.y+n->z.z*t.z;
+}
+static inline void neg(vector *v) { v->x=-v->x; v->y=-v->y; v->z=-v->z; }
+extern inline void proj(vect2d *e, vector *p);
+static inline float proj1(float p, float z) { return(p*focale/z); }
+static inline void subv3(vector *a, vector *b, vector *r) {	// il faut r!=a,b
+	r->x = a->x-b->x;
+	r->y = a->y-b->y;
+	r->z = a->z-b->z;
+}
+static inline void addv3(vector *a, vector *b, vector *r) {	// il faut r!=a,b
+	r->x = a->x+b->x;
+	r->y = a->y+b->y;
+	r->z = a->z+b->z;
+}
+void randomv(vector *v);
+static inline void randomm(matrix *m) {
+	randomv(&m->x);
+	renorme(&m->x);
+	m->y.x=-m->x.y;
+	m->y.y=+m->x.x;
+	m->y.z=-m->x.z;
+	orthov(&m->y,&m->x);
+	renorme(&m->y);
+	prodvect(&m->x,&m->y,&m->z);
+}
+
+#endif

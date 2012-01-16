@@ -1,6 +1,8 @@
+#include <stdlib.h>
+#include <stdio.h>
 #include <string.h>
 #include <math.h>
-#include "3d.h"
+#include "proto.h"
 prime_s prime[NBPRIMES];
 
 village_s village[NBVILLAGES];
@@ -134,19 +136,19 @@ void newprime() {
 		campactu=(campactu+1)&3;
 		msgactutime=300;
 		strcpy(msgactu,lang?"Try to make more collateral victims":"Essayez de faire davantage de dommages colateraux");
-		switch ((int)(randK()*3.)) {
+		switch ((int)(drand48()*3.)) {
 		case 0:
 			// détruire une maison d'un village
 			k=0;
 			do {
 				k++;
-				j=NBVILLAGES*randK();
-				prime[i].no=village[j].o1+(village[j].o2-village[j].o1)*randK();
+				j=NBVILLAGES*drand48();
+				prime[i].no=village[j].o1+(village[j].o2-village[j].o1)*drand48();
 			} while (k<10 && obj[prime[i].no].type==DECO);
 			if (k<10) {
-				sprintf(msgactu,villagemsg[(int)(randK()*NBMSG)][campactu][lang],village[j].nom);
+				sprintf(msgactu,villagemsg[(int)(drand48()*NBMSG)][campactu][lang],village[j].nom);
 				prime[i].camp=campactu;
-				prime[i].reward=1000+1000*randK();
+				prime[i].reward=1000+1000*drand48();
 				prime[i].dt=-1;
 				prime[i].endmsg=NULL;
 			}
@@ -154,7 +156,7 @@ void newprime() {
 		case 1:
 			// détruire un bot avion
 			k=0;
-			do {k++; j=NBBOT*randK();} while (k<10 && bot[j].camp==-1);
+			do {k++; j=NBBOT*drand48();} while (k<10 && bot[j].camp==-1);
 			if (k<10) {
 				if (j<NbHosts) {
 					strcpy(botname,viondesc[bot[j].navion].name);
@@ -162,9 +164,9 @@ void newprime() {
 					strcat(botname,&(playbotname[j])[0]);
 					strcat(botname,")");
 				}
-				sprintf(msgactu,botavionmsg[bot[j].camp==campactu][(int)(randK()*NBMSG)][campactu][lang],j<NbHosts?botname:viondesc[bot[j].navion].name,obj[bot[j].vion].pos.x,obj[bot[j].vion].pos.y);
+				sprintf(msgactu,botavionmsg[bot[j].camp==campactu][(int)(drand48()*NBMSG)][campactu][lang],j<NbHosts?botname:viondesc[bot[j].navion].name,obj[bot[j].vion].pos.x,obj[bot[j].vion].pos.y);
 				prime[i].camp=campactu;
-				prime[i].reward=1000*randK()+(bot[j].camp==campactu?4000:2000);
+				prime[i].reward=1000*drand48()+(bot[j].camp==campactu?4000:2000);
 				prime[i].no=bot[j].vion;
 				prime[i].dt=-1;
 				prime[i].endmsg=NULL;
@@ -173,11 +175,11 @@ void newprime() {
 		case 2:
 			// détruire un bot véhic
 			k=0;
-			do {k++; j=NBTANKBOTS*randK();} while (k<10 && vehic[j].camp==-1);
+			do {k++; j=NBTANKBOTS*drand48();} while (k<10 && vehic[j].camp==-1);
 			if (k<10) {
-				sprintf(msgactu,botvehicmsg[vehic[j].camp==campactu][(int)(randK()*NBMSG)][campactu][lang],vehic[j].nom,obj[vehic[j].o1].pos.x,obj[vehic[j].o1].pos.y);
+				sprintf(msgactu,botvehicmsg[vehic[j].camp==campactu][(int)(drand48()*NBMSG)][campactu][lang],vehic[j].nom,obj[vehic[j].o1].pos.x,obj[vehic[j].o1].pos.y);
 				prime[i].camp=campactu;
-				prime[i].reward=1500+1000*randK();
+				prime[i].reward=1500+1000*drand48();
 				prime[i].no=vehic[j].o1;
 				prime[i].dt=-1;
 				prime[i].endmsg=NULL;
