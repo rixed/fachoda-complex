@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <meta charset='utf-8'>
+  <meta charset='latin1'>
 
   <title>rixed/fachoda-complex @ GitHub</title>
 
@@ -27,6 +27,8 @@
     pre { background: #000; color: #fff; padding: 15px;}
     hr { border: 0; width: 80%; border-bottom: 1px solid #aaa}
     .footer { text-align:center; padding-top:30px; font-style: italic; }
+	.code { font-family: mono; color: #111; }
+	div.code { margin-left: 5em; }
   </style>
 </head>
 
@@ -42,32 +44,32 @@
         <img border="0" width="90" src="https://github.com/images/modules/download/tar.png"></a>
     </div>
 
-    <h1><a href="https://github.com/rixed/fachoda-complex">fachoda-complex</a>
+    <h1><a href="https://github.com/rixed/fachoda-complex">Fachoda-Complex</a>
       <span class="small">by <a href="https://github.com/rixed">rixed</a></span></h1>
 
     <div class="description">
-      Restore a vintage flight simulator
+      Restoring a vintage flight simulator
     </div>
 
     
       <p>Some restore antique furnitures or old cars for a hobby.  I am 
-restoring a vintage piece of <i>code</i>, a small game that I quickly 
-put together at the end of the former century and have not 
-touched since.
+restoring a vintage piece of <i>code</i>, a small game that was quickly 
+put together at the end of the former century then had its bits abandoned
+to rust. The original author is long gone and his ideas and thoughts
+forgotten. He was the me of 12 years ago.</p>
 
-I've always wanted to come up with a follow up but even if I 
-started on several occasions I never achieved anything, nor did I 
-maintained this original version. Being not interested in games 
-nor 3D rendering any more, the only second version of it I can 
-seriously envision now is to bring back to life this rusty piece 
-of software.
+	<p>I've always wanted to come up with a follow up but even if it was
+started on several occasions nothing was ever achieved.  Being not
+interested in games nor 3D rendering any more, the only second version of
+it I can seriously envision now is to bring back to life this rusty piece
+of software.</p>
 
-I addition to bringing peace to my conscience I will also 
+	<p>In addition to bringing peace to my conscience I will also 
 probably gain a few good laughs rediscovering the old bugs and 
 non portable monstrosities I committed back then.</p>
     
 <h2>Day 1</h2>
-<img src="http://www.utubefree.com/wp-content/uploads/2011/10/splendid-abandoned-planes-001.jpg">
+<img src="http://www.utubefree.com/wp-content/uploads/2011/10/splendid-abandoned-planes-001.jpg"/>
 
 <p>I set up this page to share the fun of this restoration process.
 </p><p>
@@ -134,6 +136,59 @@ old toy you owned or an old drawing you've made as a kid. It feels at the same t
 and distant, familiar but alien, desirable yet worthless.
 </p>
 
+
+<h2>Day 2</h2>
+
+	<p>Returning to a piece of code you wrote many years ago is indeed a humbling
+experience; even more than I expected. The code is odd in so many obvious ways
+I can no longer understand why I was somewhat proud of it at that time to a
+point were I was used to put a link to it on my resumes. I suppose I was proud
+of the numerous tricks used in the engine, and not on the code itself. But the
+tricks are hard to spot while the code is blatantly awfull.</p>
+
+	<p>This is something that often strike me: how with age we become more and
+more passionate about how the code looks rather than what it does and how. I
+suspect the younger me was right to ignore suchh issues as naming, indentation,
+code partitioning, etc, and ficus on the algorithms and optimisations instead; but
+on the other hand this is a kind of confidence that only ignorance can brings.</p>
+
+	<p>Anyway, I reworked somewhat the landscape generation code, removing dead code
+and fixing things along the way. Most importantly, I documented how this part works.
+The landscape is basically a map of 128x128 bytes, giving the height at that location.
+To each of these tile is added a sub-heighfield of 16x16 that add higher frequency
+signal. The nice trick is that there are only 10 of these sub-heighfield possible,
+and we merely have another 128x128 bytes array to associate a tile to one of these
+predefined sub-heighfield.</p>
+
+	<p>Then, we have another array of 256 colors that gives us the color of any
+landscape point from its altitude. Then comes the lighting, for with we need another
+10 arrays of 16x16 bytes, giving the relative lightening of this particular sub-tile
+relative to the underlying tile (sloppy, but the eye won't notice and this avoids
+many dot products). Each polygon of the landscape is then &quot;gouraued&quot;.</p>
+
+	<p>The whole landscape thus fit into:<br/>
+	128*128&nbsp;+&nbsp;10*(16*16)&nbsp;+&nbsp;128*128&nbsp;+&nbsp;256&nbsp;+&nbsp;10*(16*16)&nbsp;=&nbsp;37Kbyte.
+</p>
+
+	<p>Regarding the data structures used in the game, I noticed that very few structs
+were used. C is here used very much like a high level assembly, with very few custom
+types. For instance, each of the afore-mentioned arrays are allocated separately.
+Today I would without hesitation do this:</p>
+
+<div class="code">
+struct map *map = malloc(128*128*sizeof(*map));
+</div>
+
+<p>... where <span class="code">struct map</span> would have a z field, a submap field,
+etc... But here we have all these fields allocated separately in distinct arrays. In
+other words, data are regrouped by usage instead of by "object". This is less easy to
+read but the code may be more cache friendly this way. I will probably not resist the
+temptation to rewrite this object-style, though.</p>
+
+<p>So after a few bugfixes, here is how it looks:</p>
+<img src="ingame2.png"/>
+<p>As you can see acid colors are gone, but I need to get back this Gouraud shading
+that was lost when ditching MMX code.</p>
 
     <h2>Download</h2>
     <p>
