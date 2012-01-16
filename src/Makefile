@@ -12,6 +12,7 @@ SRCS = \
 OBJS = ${subst .c,.o,$(SRCS)}
 
 fachoda: $(OBJS)
+	$(CC) -o $@ $(CFLAGS) $(LDFLAGS) $^
 
 .PHONY: clean distclean
 
