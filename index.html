@@ -39,6 +39,12 @@
 	 ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
 	 var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
 	 })();
+  (function() {
+      var po = document.createElement('script'); po.type = 'text/javascript'; po.async = true;
+      po.src = 'https://apis.google.com/js/plusone.js';
+      var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(po, s);
+    })();
+
 	</script>
 </head>
 
@@ -214,6 +220,8 @@ that was lost when ditching MMX code.</p>
     <div class="footer">
       get the source code on GitHub : <a href="https://github.com/rixed/fachoda-complex">rixed/fachoda-complex</a>
     </div>
+
+<g:plusone size="small"></g:plusone>
 
   </div>
 
