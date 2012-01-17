@@ -228,6 +228,7 @@ void initworld() {
 		randomv(&pp);	// une église
 		mulv(&pp,100);
 		addv(&pp,&p);
+		randomhm(&m);
 		posem(&m,&pp);
 		pp.z=40;
 		addnobjet(NBNAVIONS+NBBASES+1, &pp, &mat_id, 1);
