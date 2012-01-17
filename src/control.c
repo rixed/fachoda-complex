@@ -359,7 +359,7 @@ void controlvehic(int v) {
 		copyv(&p,&obj[o].rot.x);
 		mulv(&p,5*AccelFactor);
 		addv(&obj[o].pos,&p);
-		obj[o].pos.z=z_ground(obj[o].pos.x,obj[o].pos.y);
+		obj[o].pos.z=z_ground(obj[o].pos.x,obj[o].pos.y, true);
 		controlepos(o);
 	}
 	c=cos(vehic[v].ang1);
@@ -419,7 +419,7 @@ void controlzep(int z) {	// fait office de routine robot sur les commandes aussi
 	static float phazx=0, phazy=0, phazz=0, balot=0;
 	balot+=.1/NBZEPS;
 	if (obj[zep[z].o].pos.z>50000) return;
-	zs=z_ground(obj[zep[z].o].pos.x,obj[zep[z].o].pos.y);
+	zs=z_ground(obj[zep[z].o].pos.x,obj[zep[z].o].pos.y, true);
 	if (zep[z].vit>1) {
 		// dégonfle
 		zep[z].angy+=.4*sin(phazy+=drand48())*AccelFactor;
@@ -433,7 +433,7 @@ void controlzep(int z) {	// fait office de routine robot sur les commandes aussi
 		if (norme2(&v)<2000) {
 			zep[z].nav.x=(WMAP<<NECHELLE)*drand48()*(SpaceInvaders?.1:.7);
 			zep[z].nav.y=(WMAP<<NECHELLE)*drand48()*(SpaceInvaders?.1:.7);
-			zep[z].nav.z=3000+drand48()*30000+z_flat_ground(v.x,v.y);
+			zep[z].nav.z=3000+drand48()*30000+z_ground(v.x,v.y, false);
 		} else {
 			dir=cap(v.x,v.y)-zep[z].angz;
 			if (dir<-M_PI) dir+=2*M_PI;

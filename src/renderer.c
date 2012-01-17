@@ -483,7 +483,7 @@ void renderer(int ak, int fast){	// fast=0->ombres+ objets au sol, =1->nuages; =
 #define DISTLUM 300.
 			mulv(&oL[no].x,DISTLUM);
 			mulv(&oL[no].y,DISTLUM);
-  			if (aff && (z=z_ground(obj[o].pos.x,obj[o].pos.y))>obj[o].pos.z-500) {
+  			if (aff && (z=z_ground(obj[o].pos.x,obj[o].pos.y, true))>obj[o].pos.z-500) {
 				for (p=0; p<mod[obj[o].model].nbpts[1]; p++) {
 					mulmv(&obj[o].rot, &mod[obj[o].model].pts[1][p], &pts3d);
 					addv(&pts3d,&obj[o].pos);

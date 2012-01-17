@@ -18,11 +18,11 @@ void randomhm(matrix *m) {
 	m->y.y=m->x.x;
 }
 void posem(matrix *m, vector *p) {	// tourne légèrement la matrice pour la "poser" sur le sol
-	m->x.z=z_ground(p->x+m->x.x,p->y+m->x.y)-z_ground(p->x,p->y);
+	m->x.z=z_ground(p->x+m->x.x,p->y+m->x.y, true)-z_ground(p->x,p->y, true);
 	renorme(&m->x);
 	m->y.x=-m->x.y;
 	m->y.y=m->x.x;
-	m->y.z=z_ground(p->x+m->y.x,p->y+m->y.y)-z_ground(p->x,p->y);
+	m->y.z=z_ground(p->x+m->y.x,p->y+m->y.y, true)-z_ground(p->x,p->y, true);
 	renorme(&m->y);
 	prodvect(&m->x,&m->y,&m->z);
 }
@@ -129,7 +129,7 @@ void randomvferme(vector *p) {
 		ok=1;
 		randomv(p);
 		mulv(p,ECHELLE*(WMAP-WMAP/4));
-		p->z=z_ground(p->x,p->y);
+		p->z=z_ground(p->x,p->y, true);
 		for (c=0; c<4; c++) for (i=0; i<3; i++) {
 			vector pp;
 			copyv(&pp,&obj[babaseo[0][i][c]].pos);
@@ -187,7 +187,7 @@ void initworld() {
 	for (i=0; i<NBZEPS; i++) {
 		p.x=(drand48()-.5)*(WMAP<<NECHELLE)*0.8;
 		p.y=(drand48()-.5)*(WMAP<<NECHELLE)*0.8;
-		p.z=5000+z_flat_ground(p.x,p.y);
+		p.z=5000+z_ground(p.x,p.y, false);
 		zep[i].o=addnobjet(NBNAVIONS+NBBASES+NBMAISONS+NBVEHICS+NBDECOS,&p, &mat_id, 0);
 		copyv(&zep[i].nav,&p);
 		zep[i].angx=zep[i].angy=zep[i].angz=zep[i].anghel=zep[i].vit=0;
@@ -222,7 +222,7 @@ void initworld() {
 		map[a-WMAP+1].submap=0;
 		map[a+WMAP-1].submap=0;
 		map[a-WMAP-1].submap=0;
-		p.z=z_ground(p.x,p.y);;
+		p.z=z_ground(p.x,p.y, true);
 		copyv(&village[i].p,&p);
 		village[i].o1=nbobj;
 		randomv(&pp);	// une église
@@ -264,9 +264,9 @@ void initworld() {
 	}
 	// routes
 	initroute();
-//	printf("Drawing motorways...\n");
+	printf("Drawing motorways...\n");
 	for (i=0; i<NBVILLAGES-1; i++) for (j=i+1; j<NBVILLAGES; j++) {
-//		int d=routeidx;
+		int d=routeidx;
 		int k;
 		float cp;
 		vector v;
@@ -288,29 +288,29 @@ void initworld() {
 		}
 		if (k==j) {
 			prospectroute(&village[i].p,&village[j].p);
-//			if (routeidx-d) printf("Motorway between %s to %s, %d elmts long\n",village[i].nom,village[j].nom,routeidx-d);
+			if (routeidx-d) printf("Motorway between %s to %s, %d elmts long\n",village[i].nom,village[j].nom,routeidx-d);
 		}
 		affjauge(.75/(1.5*((NBVILLAGES+1)*NBVILLAGES)));
 	}
 	EndMotorways=routeidx;
-//	printf("Drawing roads around cities...\n");
+	printf("Drawing roads around cities...\n");
 	for (i=0; i<NBVILLAGES; i++) {
 		int nbr=drand48()*5+5;	// prop à la taille de la ville
 		int r;
 		for (r=0; r<nbr; r++) {
-//			int d=routeidx;
+			int d=routeidx;
 			vector dest;
 			randomv(&dest);
 			mulv(&dest,ECHELLE*(5+10*drand48()));	// prop à la taille de la ville
 			addv(&dest,&village[i].p);
-			dest.z=z_flat_ground(dest.x,dest.y);
+			dest.z=z_ground(dest.x,dest.y, false);
 			prospectroute(&village[i].p,&dest);
-//			if (routeidx-d) printf("Road toward %s, %d elmts long\n",village[i].nom,routeidx-d);
+			if (routeidx-d) printf("Road toward %s, %d elmts long\n",village[i].nom,routeidx-d);
 			affjauge(.75/(3.*7.5*NBVILLAGES));
 		}
 	}
 	EndRoads=routeidx;
-//	printf("Drawing footpaths...\n");
+	printf("Drawing footpaths...\n");
 	for (i=0; i<150; i++) {
 		int ri=EndMotorways+drand48()*(routeidx-EndMotorways-1);
 		vector dest,v;
@@ -324,23 +324,23 @@ void initworld() {
 			mulv(&dest,(2+drand48()*3));
 			addv(&dest,&route[ri].i);
 			if (fabs(dest.x)<((WMAP-5)<<(NECHELLE-1)) && fabs(dest.y)<((WMAP-5)<<(NECHELLE-1))) {
-				dest.z=z_flat_ground(dest.x,dest.y);
+				dest.z=z_ground(dest.x,dest.y, false);
 				prospectroute(&route[ri].i,&dest);
 			}
 		}
 		affjauge(.75/(3.*150.));
 	}
-//	printf("%d road elemts for footpaths\n",routeidx-EndRoads);
+	printf("%d road elemts for footpaths\n",routeidx-EndRoads);
 /*	{
 		vector u,v;
-		u.x=-10*ECHELLE+2345; u.y=10*ECHELLE+1234; u.z=z_ground(u.x,u.y);
-		v.x=10*ECHELLE-2345; v.y=10*ECHELLE+1234; v.z=z_ground(v.x,v.y);
+		u.x=-10*ECHELLE+2345; u.y=10*ECHELLE+1234; u.z=z_ground(u.x,u.y, true);
+		v.x=10*ECHELLE-2345; v.y=10*ECHELLE+1234; v.z=z_ground(v.x,v.y, true);
 		traceroute(&u,&v);
 	}*/
 	endinitroute();
-//	printf("Nb Road elements : %d\n",routeidx);
+	printf("Nb Road elements : %d\n",routeidx);
 	hashroute();
-//	printf("Continuing world generation...\n");
+	printf("Drawing villages...\n");
 	// des fermes et des usines
 	for (i=0; i<(NBVILLAGES*10); i++) {
 		vector pp;
@@ -362,6 +362,7 @@ void initworld() {
 			addnobjet(NBNAVIONS+NBBASES+3, &pp, &m, 1);
 		}
 	}
+	printf("Drawing isolated farms...\n");
 	// des maisons au bord des routes
 	for (i=0; i<200; i++) {
 		vector pp;
@@ -378,6 +379,7 @@ void initworld() {
 		pp.z=48;
 		addnobjet(NBNAVIONS+NBBASES+0, &pp, &m, 1);
 	}
+	printf("Drawing mills...\n");
 	// des moulins
 	DebMoulins=nbobj;
 	for (i=0; i<NBVILLAGES*2; i++) {
@@ -396,6 +398,7 @@ void initworld() {
 		addnobjet(NBNAVIONS+NBBASES+4, &pp, &m, 1);
 	}
 	FinMoulins=nbobj;
+	printf("Drawing cows...\n");
 	// des troupeaux de charolaises
 	for (i=0; i<NBVILLAGES*2; i++) {
 		int nbn=drand48()*5+2;
@@ -419,6 +422,7 @@ void initworld() {
 			}
 		}
 	}
+	printf("Drawing vehicules...\n");
 	// des véhicules en décors
 	voiture=(voiture_s*)malloc((NBVOITURES+1)*sizeof(voiture_s));
 	for (i=0; i<NBVOITURES/4; i++) {
@@ -454,6 +458,7 @@ void initworld() {
 		voiture[i].vit=5+5*drand48();
 	}
 	voiture[i].o=nbobj;
+	printf("Drawing tractors...\n");
 	// des tracteurs dans les champs
 	for (i=0; i<50; i++) {
 		matrix m;
@@ -463,6 +468,7 @@ void initworld() {
 		p.z=30;
 		addnobjet(NBNAVIONS+NBBASES+NBMAISONS+3, &p, &m, 1);
 	}
+	printf("Drawing trees...\n");
 	// et des arbres
 	for (i=0; i<150; i++) {
 		matrix m;
@@ -479,6 +485,7 @@ void initworld() {
 		p.z=20;
 		addnobjet(NBNAVIONS+NBBASES+NBMAISONS+NBVEHICS+4, &p, &m, 1);
 	}*/
+	printf("Drawing planes...\n");
 	// des vionvions
 	printf("NBBOT=%d\n",NBBOT);
 	if ((bot=calloc(sizeof(*bot),NBBOT))==NULL) { perror("bot"); exit(-1); }
@@ -497,7 +504,7 @@ void initworld() {
 			copyv(&p,&obj[b].pos);
 			p.y+=i>=NbHosts?10:250;
 			p.x+=300*(i>=NbHosts?(i>>2):i);
-			p.z=20+z_ground(p.x,p.y);
+			p.z=20+z_ground(p.x,p.y, true);
 			copym(&m,&mat_id);
 			m.x.x=0;
 			m.x.y=-1;
@@ -546,6 +553,7 @@ void initworld() {
 			newnav(i);
 		}
 	}
+	printf("Drawing tanks...\n");
 	// des tanks
 	for (i=0; i<NBTANKBOTS; i++) {
 		if (drand48()<.2) {
@@ -555,7 +563,7 @@ void initworld() {
 			p.x+=(drand48()-.5)*100;
 			p.y+=(drand48()-.5)*100;
 		}
-		p.z=z_ground(p.x,p.y);
+		p.z=z_ground(p.x,p.y, true);
 		if (p.y>0) vehic[i].camp=2; else vehic[i].camp=0;
 		if (p.x>0) vehic[i].camp++;
 		vehic[i].cibv=-1;
@@ -569,6 +577,7 @@ void initworld() {
 		vehic[i].ocanon=0;
 		vehic[i].nom=tankname;
 	}
+	printf("Drawing clouds...\n");
 	// et des nuages
 	for (i=0; i<70; i++) {
 		int nbn=drand48()*15+10;
@@ -584,6 +593,7 @@ void initworld() {
 			addnobjet(NBNAVIONS+NBBASES+NBMAISONS+NBVEHICS, &pp, &mat_id, 0);
 		}
 	}
+	printf("Drawing smoke...\n");
 	// et de la fumée
 	firstfumee=nbobj;
 	for (i=0; i<NBMAXFUMEE; i++) {

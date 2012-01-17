@@ -1,7 +1,9 @@
 #include <stdlib.h>
+#include <stdio.h>
 #include <stdint.h>
 #include <math.h>
 #include <values.h>
+#include <assert.h>
 #include "map.h"
 
 /* The map is the central structure of the game.
@@ -505,8 +507,7 @@ void draw_ground_and_objects(void) {
 		for (xx=xy, yx=yy, dx=0; dx<=SMAP; dx++, xx+=sxx, yx+=syx) {
 			int a=dx+ay, b=MASKW(xx)+(MASKW(yx)<<NWMAP), bb=MASKW(xx+dmx)+(MASKW(yx+dmy)<<NWMAP);
 			int ob=MASKW(xx-1)+(MASKW(yx)<<NWMAP), intens;
-			int z;
-			z=map[b].z;
+			int const z = map[b].z;
 			pz[a]=z<<14;
 			ptsi[a].v.x=calcasm(coinp.x,z<<14,mz.x);
 			ptsi[a].v.y=calcasm(coinp.y,z<<14,mz.y);
@@ -826,68 +827,79 @@ void polygouro(vect2dc *p1, vect2dc *p2, vect2dc *p3) {
 //	MMXRestoreFPU();
 }
 
-float z_flat_ground(float x, float y) {	// renvoit les coords du sol à cette pos, sans tenir compte de la submap
-	int zi,zj;
-	int xi, xx=x*16.+(((WMAP<<NECHELLE)>>1)<<4), medx;
-	int yi, yy=y*16.+(((WMAP<<NECHELLE)>>1)<<4), medy;
-	int i;
-	xi=xx>>(NECHELLE+4);
-	yi=yy>>(NECHELLE+4);
-	i=xi+(yi<<NWMAP);
-#define z1 ((int)map[i].z<<(14-NECHELLE+5))
-#define z2 ((int)map[i+WMAP].z<<(14-NECHELLE+5))
-#define z3 ((int)map[i+WMAP+1].z<<(14-NECHELLE+5))
-#define z4 ((int)map[i+1].z<<(14-NECHELLE+5))
-	medx=xx&((ECHELLE<<4)-1);
-	medy=yy&((ECHELLE<<4)-1);
-	zi=((medy*(z2-z1))>>(NECHELLE+4))+z1;	//z est sur 8 bits, delta z peut etre sur 3 seulement ?
-	zj=((medy*(z3-z4))>>(NECHELLE+4))+z4;
-	return (((medx*(zj-zi))>>4)+(zi<<NECHELLE))/8192.;
-}
 
-float z_ground(float x, float y) {	// renvoit les coords du sol à cette pos
-	int xx=x*16.+(((WMAP<<NECHELLE)>>1)<<4);
-	int yy=y*16.+(((WMAP<<NECHELLE)>>1)<<4);
-	int xi = xx>>(NECHELLE+4);
-	int yi = yy>>(NECHELLE+4);
-	int i = xi+(yi<<NWMAP);
-	int medx = xx&((ECHELLE<<4)-1);
-	int medy = yy&((ECHELLE<<4)-1);
+// return the ground altitude at this position
+float z_ground(float x, float y, bool with_submap)
+{
+	// This starts as above
+	// xx, yy: 28:4 fixed prec coordinates
+	int const xx = x*16. + (((WMAP<<NECHELLE)>>1)<<4);
+	int const yy = y*16. + (((WMAP<<NECHELLE)>>1)<<4);
+	// xi, yi: the tile we're in
+	int const xi = xx>>(NECHELLE+4);
+	int const yi = yy>>(NECHELLE+4);
+	// medx, medy: location within the tile, in 0:16 fixed prec
+	int const medx = xx & ((ECHELLE<<4)-1);
+	int const medy = yy & ((ECHELLE<<4)-1);
+	// z1, z2, z3, z4: the altitudes of the 4 corner of this tile, in 8:0 fixed prec
+	int const i = xi + (yi<<NWMAP);
+	int const z1 = (int)map[i].z;
+	int const z2 = (int)map[i+WMAP].z;
+	int const z3 = (int)map[i+WMAP+1].z;
+	int const z4 = (int)map[i+1].z;
+	// zi, zj: the altitudes in the left and right edges of the tile when y=medy, in 0:16*8:0=8:16 fixed prec
+	int const zi = medy*(z2-z1) + (z1<<16);
+	int const zj = medy*(z3-z4) + (z4<<16);
+	// then the altitude in between these points when x=medx, in (0:16>>6)*(8:16>>6) = (8:32>>12) = 8:20, then further degraded into 8:16
+	int const z_base = (((medx>>6)*((zj-zi)>>6))>>4) + zi;
+	float const z_base_f = z_base / 1024.;	// we want altitude * 64.
+	if (! with_submap) {
+//		assert(z_base_f > 0 && z_base_f < 64.*256.);
+		return z_base_f;
+	}
+
+	// iix, iiy: coord within the tile in 0:3 fixed prec, ie subtile we are in in submap si
 	unsigned const si = submap_get(i);
-	unsigned const si1 = submap_get(i+1);
-	float const z_base = z_flat_ground(x, y);
-
-	int iix = (medx<<NMAP2)>>(NECHELLE+4);
-	int iiy = (medy<<NMAP2)>>(NECHELLE+4);
-	int ii = iix+(iiy<<NMAP2);
-	int mz1 = ((int)submap[si][ii]<<(10+5-NECHELLE+NMAP2));
+	int const iix = (medx<<NMAP2)>>(NECHELLE+4);
+	int const iiy = (medy<<NMAP2)>>(NECHELLE+4);
+	int const ii = iix+(iiy<<NMAP2);
+	// mz1 is the nord-west corner of the submap, the only one we can fetch for sure from si, in 8:0 fixed prec
+	int const mz1 = submap[si][ii];
 	int mz2, mz3, mz4;
-	if (iiy!=SMAP2-1) {
-		mz2=((int)submap[si][ii+SMAP2]<<(10+5-NECHELLE+NMAP2));
-		if (iix!=SMAP2-1) {
-			mz3=((int)submap[si][ii+SMAP2+1]<<(10+5-NECHELLE+NMAP2));
-			mz4=((int)submap[si][ii+1]<<(10+5-NECHELLE+NMAP2));
+	if (iiy != SMAP2-1) {	// not last row
+		mz2 = submap[si][ii+SMAP2];
+		if (iix != SMAP2-1) { // not last column
+			mz3 = submap[si][ii+SMAP2+1];
+			mz4 = submap[si][ii+1];
 		} else {
-			mz3=((int)submap[si1][(iiy+1)<<NMAP2]<<(10+5-NECHELLE+NMAP2));
-			mz4=((int)submap[si1][iiy<<NMAP2]<<(10+5-NECHELLE+NMAP2));
+			unsigned const si1 = submap_get(i+1);
+			mz3 = submap[si1][(iiy+1)<<NMAP2];
+			mz4 = submap[si1][iiy<<NMAP2];
 		}
-	} else {
+	} else {	// last row
 		unsigned const siw = submap_get(i+WMAP);
-		unsigned const siw1 = submap_get(i+WMAP+1);
-		mz2=((int)submap[siw][iix]<<(10+5-NECHELLE+NMAP2));
+		mz2 = submap[siw][iix];
 		if (iix!=SMAP2-1) {
-			mz3=((int)submap[siw][iix+1]<<(10+5-NECHELLE+NMAP2));
-			mz4=((int)submap[si][ii+1]<<(10+5-NECHELLE+NMAP2));
+			mz3 = submap[siw][iix+1];
+			mz4 = submap[si][ii+1];
 		} else {
-			mz3=((int)submap[siw1][0]<<(10+5-NECHELLE+NMAP2));
-			mz4=((int)submap[si1][iiy<<NMAP2]<<(10+5-NECHELLE+NMAP2));
+			unsigned const si1 = submap_get(i+1);
+			unsigned const siw1 = submap_get(i+WMAP+1);
+			mz3 = submap[siw1][0];
+			mz4 = submap[si1][iiy<<NMAP2];
 		}
 	}
-	int minx = medx&((1<<(NECHELLE+4-NMAP2))-1);
-	int miny = medy&((1<<(NECHELLE+4-NMAP2))-1);
-	int mzi = ((miny*(mz2-mz1))>>(NECHELLE+4-NMAP2))+mz1;
-	int mzj = ((miny*(mz3-mz4))>>(NECHELLE+4-NMAP2))+mz4;
-	return z_base + (((minx*(mzj-mzi))>>4)+(mzi<<(NECHELLE-NMAP2)))/8192.;
+	// minx, miny: our location within the subtile, in 0:13
+	int const minx = medx & (((ECHELLE<<4)>>NMAP2)-1);
+	int const miny = medy & (((ECHELLE<<4)>>NMAP2)-1);
+	// mzi, mzj: altitudes of the left and right edge of the submap, in 0:13*8:0 = 8:13 fixed prec
+	int const mzi = miny*(mz2-mz1) + (mz1<<13);
+	int const mzj = miny*(mz3-mz4) + (mz4<<13);
+	// now the altitude in the middle of mzi..mzj, in (0:13>>4)*(8:13>>4) = (8:26>>8) = 8:18
+	int const z = (minx>>4)*((mzj-mzi)>>4) + (mzi<<5);
+	// add submap altitude (divided by 16) to ground level altitude
+	float const ret = z_base_f + (z/(16.*4096.));	// return z * 64.
+//	assert(ret > 0 && ret < 64.*256.);
+	return ret;
 }
-
 
