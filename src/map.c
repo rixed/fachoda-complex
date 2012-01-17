@@ -21,32 +21,20 @@
  * So all in all we need very few memory for the world map (less than 20Kb).
  */
 
-uchar *map;	// The global map: a square of WMAP*WMAP bytes.
+struct tile *map;	// The global map: a square of WMAP*WMAP tiles.
 
-uchar *submap[10];	// The submaps (same structure as the global map, only smaller: SMAP*SMAP)
+static uchar *submap[10];	// The submaps (same structure as the global map, only smaller: SMAP*SMAP)
 
 /* Each vector of a submap heighfield have a specific lightning (to be added to the
  * lightning of the tile). It's faster than to compute a proper lightning for every
  * polygon!
  */
-static char *submap_rel_light[10];
-
-/* submap_of_map gives the submap number of any map tile. So it's an array of WMAP*WMAP bytes.
- * When bit7 is set, though, meaning (at least) one road cross this tile, then the submap 0 is
- * implied (ie. flat) and the lower bits are reused for the road code.
- */
-uchar *submap_of_map;	// les No de submap (ca prend que 3 bits, bits 5 pour visibilité)
+static char *submap_rel_light[ARRAY_LEN(submap)];
 
 int submap_get(int k)
 {
-	int const s = submap_of_map[k];
-	return s & 0x80 ?  0 : s;	// if there's a road, assume flat submap (0)
+	return map[k].has_road ? 0 : map[k].submap;
 }
-
-/* Number of the first object of each tile, or -1 if no object lies on this tile currently.
- * Then; objects are chained together via their next/prev field.
- */
-short int *objs_of_tile;
 
 /* This is an awfull hack to skip drawing of roads when the ground is seen from below
  * (for instance, roads on the other side of a hill). Problems:
@@ -70,61 +58,77 @@ pixel zcol[256];
 
 // Generate the heighfield for a portion of the map (recursive)
 static void random_submap(
-	int x, int y,	// location of the starting corner of the square to randominz
-	int s,			// size of the square to randomize
-	uchar *m,		// map
-	int smap		// size of the map
+	int x, int y,	// location of the starting corner of the square to randomize
+	int s,			// length of the square to randomize
+	size_t z_off,	// offset between any two consecutive z bytes along x
+	uchar *m,		// first z
+	int smap        // length ot the total map
 ) {
 	int ss=s>>1;
+	if (! ss) return;
+
 	double sf=Accident*(double)s/smap;
-	if (ss) {
-		int xx, yy;
-		if((xx=x+s)==smap) xx=0;
-		if((yy=y+s)==smap) yy=0;
-		if (m[x+ss+y*smap]==0)
-			m[x+ss+y*smap]=(((int)m[x+y*smap]+m[xx+y*smap])>>1)+(drand48()-.5)*sf;
-		if (m[xx+(y+ss)*smap]==0)
-			m[xx+(y+ss)*smap]=(((int)m[xx+y*smap]+m[xx+yy*smap])>>1)+(drand48()-.5)*sf;
-		if (m[x+ss+yy*smap]==0)
-			m[x+ss+yy*smap]=(((int)m[x+yy*smap]+m[xx+yy*smap])>>1)+(drand48()-.5)*sf;
-		if (m[x+(y+ss)*smap]==0)
-			m[x+(y+ss)*smap]=(((int)m[x+y*smap]+m[x+yy*smap])>>1)+(drand48()-.5)*sf;
-		if (m[x+ss+(y+ss)*smap]==0)
-			m[x+ss+(y+ss)*smap]=(((int)m[(x+ss)+y*smap]+m[xx+(y+ss)*smap]+m[(x+ss)+yy*smap]+m[x+(y+ss)*smap])>>2)+(drand48()-.5)*sf;
-		random_submap(x,y,ss,m,smap);
-		random_submap(x+ss,y,ss,m,smap);
-		random_submap(x,y+ss,ss,m,smap);
-		random_submap(x+ss,y+ss,ss,m,smap);
+	// offset of first corner of the square
+	size_t const sx = z_off * x;
+	size_t const sy = z_off * y * smap;
+	// offset of the last corner of the square (wrapped)
+	size_t const ey = y + s == smap ? 0 : z_off * (y + s);
+	size_t const ex = x + s == smap ? 0 : z_off * (x + s);
+	// offset of the center of the square
+	size_t const mx = sx + z_off * ss;
+	size_t const my = sy + z_off * ss * smap;
+
+	if (m[mx + sy] == 0)
+		m[mx + sy] = (((int)m[sx + sy] + m[ex + sy])>>1) + (drand48()-.5)*sf;
+	if (m[ex + my] == 0)
+		m[ex + my] = (((int)m[ex + sy] + m[ex + ey])>>1) + (drand48()-.5)*sf;
+	if (m[mx + ey] == 0)
+		m[mx + ey] = (((int)m[sx + ey] + m[ex + ey])>>1) + (drand48()-.5)*sf;
+	if (m[sx + my] == 0)
+		m[sx + my] = (((int)m[sx + sy] + m[sx + ey])>>1) + (drand48()-.5)*sf;
+	if (m[mx + my] == 0)
+		m[mx + my] = (((int)m[mx + sy] + m[ex + my] + m[mx + ey] + m[sx + my])>>2) + (drand48()-.5)*sf;
+	// Recurse into each quad
+	random_submap(     x,      y, ss, z_off, m, smap);
+	random_submap(x + ss,      y, ss, z_off, m, smap);
+	random_submap(     x, y + ss, ss, z_off, m, smap);
+	random_submap(x + ss, y + ss, ss, z_off, m, smap);
+}
+
+static void smooth_map(uchar *m, int smap, int s, size_t z_off){
+	for (int i=0; i<s; i++) {
+		size_t yo = 0, yn;
+		for (int y=0; y<smap; y++, yo=yn) {
+			size_t xo = 0, xn;
+			yn = y==smap-1 ? 0 : yo + z_off*smap;
+			for (int x=0; x<smap; x++, xo=xn) {
+				xn = x==smap-1 ? 0 : xo + z_off;
+				m[xo+yo] = (m[xo+yo] + m[xn+yo] + m[xo+yn]) / 3;
+			}
+		}
 	}
 }
 
-static void smooth_map(uchar *m,int smap,int s){
-	int i,x,y;
-	for (i=0; i<s; i++)
-		for (y=0; y<smap; y++)
-			for (x=0; x<smap; x++)
-				m[x+y*smap]=(m[x+y*smap]+m[(x==smap-1?0:x+1)+y*smap]+m[x+(y==smap-1?0:y+1)*smap])/3;
-}
-
-static void make_map(uchar *m, int smooth_factor, int mapzmax, int map_size) {
+static void make_map(uchar *m, int smooth_factor, int mapzmax, int map_length, size_t z_off) {
 	m[0]=255;
-	random_submap(0,0,map_size,m,map_size);
+	random_submap(0, 0, map_length, z_off, m, map_length);
 
 	/* Scale all heights (remember height are unsigned bytes)
 	 * so that we have all values from 0 to mapzmax */
 	int zmin=MAXINT, zmax=-MAXINT;
-	for (int i=0; i<map_size*map_size; i++) {
-		int z=m[i];
-		if (z>zmax) zmax=z;
-		if (z<zmin) zmin=z;
+	size_t const map_size = map_length * map_length;
+	for (size_t i = 0; i < map_size; i += z_off) {
+		int const z = m[i];
+		if (z > zmax) zmax = z;
+		if (z < zmin) zmin = z;
 	}
 	double const ratio = (double)mapzmax/(zmax-zmin+1);
-	for (int i=0; i<map_size*map_size; i++) {
+	for (size_t i = 0; i < map_size; i += z_off) {
 		m[i] = (m[i]-zmin)*ratio;
 	}
 
 	// Smooth all maps at least once
-	smooth_map(m, map_size, smooth_factor);
+	smooth_map(m, map_length, smooth_factor, z_off);
 }
 
 // dig a wave in the map (in other words, a river)
@@ -136,10 +140,10 @@ static void dig(int dy) {
 	do {
 		x=xx;
 		y=yy;
-		map[x+(y+dy)*WMAP]=1;
+		map[x+(y+dy)*WMAP].z=1;
 		x=xx-sin(a);
 		y=yy+cos(a);
-		map[x+(y+dy)*WMAP]=1;
+		map[x+(y+dy)*WMAP].z=1;
 		xx+=cos(a);
 		yy+=sin(a);
 		a+=ai;
@@ -180,40 +184,44 @@ void initmap(void) {
 	// Global map
 	map = calloc(WMAP*WMAP,sizeof(*map));	// starts from 0
 	if (Fleuve) dig(0);	// digging in 0?
-	make_map(map, 0, 255, WMAP);
+	make_map(&map[0].z, 0, 255, WMAP, sizeof(*map));
 	for (i=0;i<Smooth; i++) {	// Instead of using make_map smooth_factor, we smooth (and dig) several times.
-		smooth_map(map,WMAP,1);
+		smooth_map(&map[0].z, WMAP, 1, sizeof(*map));
 		if (Fleuve) dig(0);
 	}
-	submap_of_map = malloc(WMAP*WMAP*sizeof(*submap_of_map));
-	objs_of_tile = malloc(WMAP*WMAP*sizeof(*objs_of_tile));
 	for (y=0; y<WMAP; y++) {
 		for (x=0; x<WMAP; x++) {
-			objs_of_tile[x+y*WMAP]=-1;
-			int z=map[x+y*WMAP];
-			if (z>200) {	// submaps 4 and 5 are for high lands
-				submap_of_map[x+y*WMAP]=4+drand48()*2;
-			} else if (z<100) { // submaps 6, 7, 8 are for middle lands
-				if (z>15) submap_of_map[x+y*WMAP]=6+drand48()*3;
-				else submap_of_map[x+y*WMAP]=9;
+			map[x+y*WMAP].has_road = 0;
+			map[x+y*WMAP].first_obj = -1;
+			// init submap according to z
+			int const z = map[x+y*WMAP].z;
+			if (z > 200) {	// submaps 4 and 5 are for high lands
+				map[x+y*WMAP].submap = 4+drand48()*2;
+			} else if (z < 100) { // submaps 6, 7, 8 are for middle lands
+				if (z > 15) map[x+y*WMAP].submap = 6+drand48()*3;
+				else map[x+y*WMAP].submap = 9;
 			} else { // submaps 1, 2, 3 are for low lands
-				submap_of_map[x+y*WMAP]=1+drand48()*3;
+				map[x+y*WMAP].submap = 1+drand48()*3;
 			}
 		}
 	}
-	// SUBMAPS
-	for (i=0; i<10; i++) submap[i]=(uchar*)calloc(SMAP2*SMAP2,sizeof(uchar));
-	make_map(submap[0],10,5,SMAP2);
-	make_map(submap[1],2,100,SMAP2);	// flat
-	make_map(submap[2],2,190,SMAP2);	// flat
-	make_map(submap[3],2,230,SMAP2);	// flat
-	make_map(submap[4],1,250,SMAP2);	// mountain tops
-	make_map(submap[5],1,250,SMAP2);	// mountain tops
-	make_map(submap[6],3,253,SMAP2);	// middle lands
-	make_map(submap[7],3,253,SMAP2);	// middle lands
-	make_map(submap[8],2,253,SMAP2);	// middle lands
-	make_map(submap[9],0,2,SMAP2);		// reserved for water: we will move this heighfield
-	for (i=0; i<10; i++) {
+
+	// Build submaps
+	for (unsigned i = 0; i < ARRAY_LEN(submap); i++) {
+		submap[i] = calloc(SMAP2*SMAP2, sizeof(*submap[i]));
+	}
+	make_map(submap[0], 10,  5, SMAP2, 1);	// flat
+	make_map(submap[1], 2, 100, SMAP2, 1);	// mostly flat
+	make_map(submap[2], 2, 190, SMAP2, 1);	// mostly flat
+	make_map(submap[3], 2, 230, SMAP2, 1);	// mostly flat
+	make_map(submap[4], 1, 250, SMAP2, 1);	// mountain tops
+	make_map(submap[5], 1, 250, SMAP2, 1);	// mountain tops
+	make_map(submap[6], 3, 253, SMAP2, 1);	// middle lands
+	make_map(submap[7], 3, 253, SMAP2, 1);	// middle lands
+	make_map(submap[8], 2, 253, SMAP2, 1);	// middle lands
+	make_map(submap[9], 0,   2, SMAP2, 1);	// reserved for water: we will move this heighfield
+	// compure relative lighting.
+	for (unsigned i = 0; i < ARRAY_LEN(submap); i++) {
 		submap_rel_light[i]=(char*)malloc(SMAP2*SMAP2*sizeof(char));
 		for (y=0; y<SMAP2; y++) {
 			for (x=0; x<SMAP2; x++) {
@@ -324,6 +332,7 @@ static veci mx,my,mz;
 #define MASK(a) ((a)&(SMAP-1))
 #define MASKW(a) ((a)&(WMAP-1))
 
+// Saturated between 10 and 245
 static uchar AddSatB(int a, int b) {
 	int c=a+b;
 	if (c<10) c=10;
@@ -499,12 +508,12 @@ void draw_ground_and_objects(void) {
 			int a=dx+ay, b=MASKW(xx)+(MASKW(yx)<<NWMAP), bb=MASKW(xx+dmx)+(MASKW(yx+dmy)<<NWMAP);
 			int ob=MASKW(xx-1)+(MASKW(yx)<<NWMAP), intens;
 			int z;
-			z=map[b];
+			z=map[b].z;
 			pz[a]=z<<14;
 			ptsi[a].v.x=calcasm(coinp.x,z<<14,mz.x);
 			ptsi[a].v.y=calcasm(coinp.y,z<<14,mz.y);
 			ptsi[a].v.z=calcasm(coinp.z,z<<14,mz.z);
-			intens=((z-map[ob]))+32+64;
+			intens=((z-map[ob].z))+32+64;
 			if (intens<64) intens=64;
 			else if (intens>127) intens=127;
 			ptsi[a].c.r=(zcol[z].r*intens)>>7;
@@ -550,7 +559,7 @@ void draw_ground_and_objects(void) {
 					// TODO: is it necessary to draw the submap when it's 0 (flat) ?
 					draw_submap(c,pz[a],ptsi[a].c,pz[a-1],ptsi[a-1].c,pz[dx+(ay^(SMAP+1))-1],ptsi[dx+(ay^(SMAP+1))-1].c,pz[dx+(ay^(SMAP+1))],ptsi[dx+(ay^(SMAP+1))].c,bb);
 					MMXRestoreFPU();
-					if (last_poly_is_visible && (submap_of_map[bb]&0x80)) {
+					if (last_poly_is_visible && (map[bb].has_road)) {
 						drawroute(bb);
 					}
 				}
@@ -560,13 +569,13 @@ void draw_ground_and_objects(void) {
 					last_poly_is_visible=0;
 					polyclip(&ptsi[a-1+direct],coli?&ptsi[dx+(ay^(SMAP+1))-1]:&ptsi[dx+(ay^(SMAP+1))],&ptsi[a-direct]);
 					polyclip(coli?&ptsi[a]:&ptsi[a-1],&ptsi[dx+(ay^(SMAP+1))-1+direct],&ptsi[dx+(ay^(SMAP+1))-direct]);
-					if (last_poly_is_visible && (submap_of_map[bb]&0x80)) {
+					if (last_poly_is_visible && (map[bb].has_road)) {
 						drawroute(bb);
 					}
 				}
 			}
 			if (xk-xx>-KVISU && xk-xx<KVISU && yk-yx>-KVISU && yk-yx<KVISU) {
-				if (objs_of_tile[bb]!=-1) {
+				if (map[bb].first_obj != -1) {
 					if (xk-xx<-1 || xk-xx>1 || yk-yx<-1 || yk-yx>1) renderer(bb,3);
 					else {
 						renderer(bb,0);
@@ -828,10 +837,10 @@ float zsol(float x, float y) {	// renvoit les coords du sol à cette pos
 	xi=xx>>(NECHELLE+4);
 	yi=yy>>(NECHELLE+4);
 	i=xi+(yi<<NWMAP);
-#define z1 ((int)map[i]<<(14-NECHELLE+5))
-#define z2 ((int)map[i+WMAP]<<(14-NECHELLE+5))
-#define z3 ((int)map[i+WMAP+1]<<(14-NECHELLE+5))
-#define z4 ((int)map[i+1]<<(14-NECHELLE+5))
+#define z1 ((int)map[i].z<<(14-NECHELLE+5))
+#define z2 ((int)map[i+WMAP].z<<(14-NECHELLE+5))
+#define z3 ((int)map[i+WMAP+1].z<<(14-NECHELLE+5))
+#define z4 ((int)map[i+1].z<<(14-NECHELLE+5))
 	medx=xx&((ECHELLE<<4)-1);
 	medy=yy&((ECHELLE<<4)-1);
 	zi=((medy*(z2-z1))>>(NECHELLE+4))+z1;	//z est sur 8 bits, delta z peut etre sur 3 seulement ?
@@ -874,10 +883,10 @@ float zsolraz(float x, float y) {	// renvoit les coords du sol à cette pos, sans
 	xi=xx>>(NECHELLE+4);
 	yi=yy>>(NECHELLE+4);
 	i=xi+(yi<<NWMAP);
-#define z1 ((int)map[i]<<(14-NECHELLE+5))
-#define z2 ((int)map[i+WMAP]<<(14-NECHELLE+5))
-#define z3 ((int)map[i+WMAP+1]<<(14-NECHELLE+5))
-#define z4 ((int)map[i+1]<<(14-NECHELLE+5))
+#define z1 ((int)map[i].z<<(14-NECHELLE+5))
+#define z2 ((int)map[i+WMAP].z<<(14-NECHELLE+5))
+#define z3 ((int)map[i+WMAP+1].z<<(14-NECHELLE+5))
+#define z4 ((int)map[i+1].z<<(14-NECHELLE+5))
 	medx=xx&((ECHELLE<<4)-1);
 	medy=yy&((ECHELLE<<4)-1);
 	zi=((medy*(z2-z1))>>(NECHELLE+4))+z1;

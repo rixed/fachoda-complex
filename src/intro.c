@@ -193,7 +193,7 @@ int xb[10],yb[10], kzc;
 int agit=0;
 void page(int r, float rayon, float phase) {
 	int b;
-	int SS=max(_DX,_DY);
+	int SS=MAX(_DX,_DY);
 //	MMXMemSetInt((int*)videobuffer,BACKCOLOR,SX*SY);
 	affpresent(drand48()*(agit>>8),drand48()*(agit>>8));
 	if (agit>256) agit=(agit*9)/10;

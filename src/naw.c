@@ -7,8 +7,6 @@
 #include <values.h>
 #include "map.h"
 
-#define ARRAY_SIZE( x )        (sizeof(x)/sizeof((x)[0]))
-
 void MMXMemSetInt(int *deb, int coul, int n) {
 	while (n--) *deb++ = coul;
 }
@@ -74,8 +72,8 @@ void addobjet(int mo, vector *p, matrix *m, int or, uchar sol) {
 	yk=(int)floor(p->y/ECHELLE)+(WMAP>>1);
 	ak=xk+(yk<<NWMAP);
 	obj[nbobj].ak=ak;
-	obj[nbobj].next=objs_of_tile[ak];
-	objs_of_tile[ak]=nbobj;
+	obj[nbobj].next=map[ak].first_obj;
+	map[ak].first_obj=nbobj;
 	obj[nbobj].prec=-1;
 	if (obj[nbobj].next!=-1) obj[obj[nbobj].next].prec=nbobj;
 	nbobj++;
@@ -396,7 +394,7 @@ parse_error:
 //	TROPLOIN2=TROPLOIN*TROPLOIN;
 	SX&=0xFFFFFFF8; SY&=0xFFFFFFFE;
 	_DX=SX>>1; _DY=SY>>1;
-//	SIZECERCLE=min(SX,SY)/10;
+//	SIZECERCLE=MIN(SX,SY)/10;
 	SYTB=90;//SY/4;
 	TBY=SY-SYTB;
 	SXTB=SYTB*2; //SX>>1;
@@ -579,7 +577,7 @@ parse_error:
 				if (!vieshot[i-debtir]) continue;
 				vieshot[i-debtir]--;
 				// collision ?
-				for (oc=objs_of_tile[obj[i].ak]; oc!=-1; oc=obj[oc].next)
+				for (oc=map[obj[i].ak].first_obj; oc!=-1; oc=obj[oc].next)
 					if (obj[oc].type!=BOMB && collision(i,oc)) { fg=1; break; }
 				if (fg) {
 					vieshot[i-debtir]=0;
@@ -604,7 +602,7 @@ parse_error:
 						nbobj--; nbtir--;
 						if (obj[nbobj].next!=-1) obj[obj[nbobj].next].prec=obj[nbobj].prec;
 						if (obj[nbobj].prec!=-1) obj[obj[nbobj].prec].next=obj[nbobj].next;
-						else objs_of_tile[obj[nbobj].ak]=obj[nbobj].next;
+						else map[obj[nbobj].ak].first_obj = obj[nbobj].next;
 						// comme ca on est sur que calcposa va pas venir
 						// mettre ce tir mort dans un autre ak s'il est à
 						// cheval sur une frontiere, puisqu'il ne bouclera
@@ -627,7 +625,7 @@ parse_error:
 					addv(&obj[j].pos,&v);//bombe[i].vit);
 					controlepos(j);
 					// collision ?
-					for (oc=objs_of_tile[obj[j].ak]; oc!=-1; oc=obj[oc].next)
+					for (oc=map[obj[j].ak].first_obj; oc!=-1; oc=obj[oc].next)
 						if (obj[oc].type!=TIR && obj[oc].type!=CAMERA && obj[oc].type!=DECO && (oc<bot[bombe[i].b].vion || oc>=bot[bombe[i].b].vion+nobjet[bot[bombe[i].b].navion].nbpieces) && collision(j,oc)) { explose(oc,j); fg=1; break; }
 					if (fg || obj[j].pos.z<zsol(obj[j].pos.x,obj[j].pos.y)) {
 						if (!fg) {
@@ -635,7 +633,7 @@ parse_error:
 							copyv(&p,&obj[j].pos);
 							subv(&p,&obj[0].pos);
 							np=renorme(&p);
-							playsound(VOICEEXTER,EXPLOZ2,1+(drand48()-.5)*.08,min(2.,1./(1+np*np*1e-6)),128*scalaire(&p,&obj[0].rot.x));
+							playsound(VOICEEXTER,EXPLOZ2,1+(drand48()-.5)*.08,MIN(2.,1./(1+np*np*1e-6)),128*scalaire(&p,&obj[0].rot.x));
 						}
 						obj[j].objref=bot[bombe[i].b].babase;
 						copyv(&obj[j].pos,&vec_zero);

@@ -6,7 +6,7 @@
 
 char *tankname="Rug-Warrior";
 int bosse(int a) {
-	if (a) return abs((int)map[a]-map[a+1])+abs((int)map[a]-map[a+WMAP])+abs((int)map[a]-map[a+1+WMAP]);
+	if (a) return abs((int)map[a].z-map[a+1].z)+abs((int)map[a].z-map[a+WMAP].z)+abs((int)map[a].z-map[a+1+WMAP].z);
 	else return MAXINT;
 }
 void randomhm(matrix *m) {
@@ -45,7 +45,7 @@ void addbabase(int c) {
 	for (y=y1[c]; y<y1[c]+3.*WMAP/10.; y+=5)
 		for (x=x1[c]; x<x1[c]+3.*WMAP/10.; x+=5) {
 			int aa=x+(y<<NWMAP);
-			if (map[aa]>50 && map[aa]<120) {
+			if (map[aa].z>50 && map[aa].z<120) {
 				if (!a[0] || bosse(aa)<bosse(a[0])) {
 					a[2]=a[1]; a[1]=a[0]; a[0]=aa;
 				} else if (!a[1] || bosse(aa)<bosse(a[1])) {
@@ -60,31 +60,31 @@ void addbabase(int c) {
 		p.y=(yb-(WMAP>>1))*ECHELLE+ECHELLE/2;
 		p.z=0;
 		// Force the heighmap to be flat around airfields
-		submap_of_map[a[x]-1]=0;
-		submap_of_map[a[x]]=0;
-		submap_of_map[a[x]+1]=0;
-		submap_of_map[a[x]+2]=0;
-		submap_of_map[a[x]+3]=1;
-		submap_of_map[a[x]-1]=1;
-		submap_of_map[a[x]-WMAP]=0;
-		submap_of_map[a[x]+WMAP]=0;
-		submap_of_map[a[x]+WMAP+1]=0;
-		submap_of_map[a[x]-WMAP+1]=0;
-		submap_of_map[a[x]+WMAP-1]=0;
-		submap_of_map[a[x]-WMAP-1]=0;
-		submap_of_map[a[x]+WMAP+2]=1;
-		submap_of_map[a[x]-WMAP+2]=1;
-		map[a[x]-1]=map[a[x]];
-		map[a[x]+1]=map[a[x]];
-		map[a[x]+2]=map[a[x]];
-		map[a[x]-WMAP]=map[a[x]];
-		map[a[x]-WMAP-1]=map[a[x]];
-		map[a[x]-WMAP+1]=map[a[x]];
-		map[a[x]-WMAP+2]=map[a[x]];
-		map[a[x]+WMAP]=map[a[x]];
-		map[a[x]+WMAP-1]=map[a[x]];
-		map[a[x]+WMAP+1]=map[a[x]];
-		map[a[x]+WMAP+2]=map[a[x]];
+		map[a[x]-1].submap=0;
+		map[a[x]].submap=0;
+		map[a[x]+1].submap=0;
+		map[a[x]+2].submap=0;
+		map[a[x]+3].submap=1;
+		map[a[x]-1].submap=1;
+		map[a[x]-WMAP].submap=0;
+		map[a[x]+WMAP].submap=0;
+		map[a[x]+WMAP+1].submap=0;
+		map[a[x]-WMAP+1].submap=0;
+		map[a[x]+WMAP-1].submap=0;
+		map[a[x]-WMAP-1].submap=0;
+		map[a[x]+WMAP+2].submap=1;
+		map[a[x]-WMAP+2].submap=1;
+		map[a[x]-1].z=map[a[x]].z;
+		map[a[x]+1].z=map[a[x]].z;
+		map[a[x]+2].z=map[a[x]].z;
+		map[a[x]-WMAP].z=map[a[x]].z;
+		map[a[x]-WMAP-1].z=map[a[x]].z;
+		map[a[x]-WMAP+1].z=map[a[x]].z;
+		map[a[x]-WMAP+2].z=map[a[x]].z;
+		map[a[x]+WMAP].z=map[a[x]].z;
+		map[a[x]+WMAP-1].z=map[a[x]].z;
+		map[a[x]+WMAP+1].z=map[a[x]].z;
+		map[a[x]+WMAP+2].z=map[a[x]].z;
 	}
 	for (x=0; x<3; x++) {
 		int yb=a[x]>>NWMAP;
@@ -136,7 +136,7 @@ void randomvferme(vector *p) {
 			subv(&pp,p);
 			if (norme(&pp)<ECHELLE*10) ok=0;
 		}
-	} while (map[akpos(p)]<80 || map[akpos(p)]>150 || !ok);
+	} while (map[akpos(p)].z<80 || map[akpos(p)].z>150 || !ok);
 }
 int collisionpoint(vector *pp, int k, int mo) {
 	vector u;
@@ -173,7 +173,7 @@ void initworld() {
 	obj[0].type=CAMERA;
 	obj[0].distance=-1;
 	obj[0].prec=-1; obj[0].next=-1;
-	objs_of_tile[0]=0;
+	map[0].first_obj = 0;
 	obj[0].ak=0;
 	nbobj=1;
 	// babases
@@ -204,7 +204,7 @@ void initworld() {
 			for (j=0; j<5; j++) {
 				int b;
 				randomvferme(&pp);
-				if (map[akpos(&pp)]<160 && (b=bossep(&pp))<bos) {
+				if (map[akpos(&pp)].z < 160 && (b=bossep(&pp))<bos) {
 					bos=b;
 					copyv(&p,&pp);
 				}
@@ -213,15 +213,15 @@ void initworld() {
 				if (fabs(village[j].p.x-p.x)+fabs(village[j].p.y-p.y)<ECHELLE*5) break;
 		} while (j<i);
 		// Make heighmap more flat around villages
-		submap_of_map[a=akpos(&p)]=0;
-		submap_of_map[a-1]=0;
-		submap_of_map[a+1]=0;
-		submap_of_map[a+WMAP]=0;
-		submap_of_map[a-WMAP]=0;
-		submap_of_map[a+WMAP+1]=0;
-		submap_of_map[a-WMAP+1]=0;
-		submap_of_map[a+WMAP-1]=0;
-		submap_of_map[a-WMAP-1]=0;
+		map[a=akpos(&p)].submap=0;
+		map[a-1].submap=0;
+		map[a+1].submap=0;
+		map[a+WMAP].submap=0;
+		map[a-WMAP].submap=0;
+		map[a+WMAP+1].submap=0;
+		map[a-WMAP+1].submap=0;
+		map[a+WMAP-1].submap=0;
+		map[a-WMAP-1].submap=0;
 		p.z=zsol(p.x,p.y);;
 		copyv(&village[i].p,&p);
 		village[i].o1=nbobj;

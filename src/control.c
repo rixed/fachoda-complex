@@ -19,11 +19,11 @@ void controlepos(int i) {
 		if (ak!=obj[i].ak) {
 			if (obj[i].next!=-1) obj[obj[i].next].prec=obj[i].prec;
 			if (obj[i].prec!=-1) obj[obj[i].prec].next=obj[i].next;
-			else objs_of_tile[obj[i].ak]=obj[i].next;
-			obj[i].next=objs_of_tile[ak];
-			if (objs_of_tile[ak]!=-1) obj[objs_of_tile[ak]].prec=i;
+			else map[obj[i].ak].first_obj=obj[i].next;
+			obj[i].next=map[ak].first_obj;
+			if (map[ak].first_obj!=-1) obj[map[ak].first_obj].prec=i;
 			obj[i].prec=-1;
-			objs_of_tile[ak]=i;
+			map[ak].first_obj=i;
 			obj[i].ak=ak;
 		}
 	}
@@ -224,7 +224,7 @@ void control(int b) {
 						bot[b].gold+=viondesc[bot[b].navion].prix;
 						do {
 							i=obj[i].next;
-							if (i==-1) i=objs_of_tile[obj[bot[b].vion].ak];
+							if (i==-1) i=map[obj[bot[b].vion].ak].first_obj;
 						} while (obj[i].type!=AVION || mod[obj[i].model].fixe!=0);
 						bot[b].navion=mod[obj[i].model].nobjet;
 						bot[b].gold-=viondesc[bot[b].navion].prix;
@@ -439,7 +439,7 @@ void controlzep(int z) {	// fait office de routine robot sur les commandes aussi
 			if (dir<-M_PI) dir+=2*M_PI;
 			else if (dir>M_PI) dir-=2*M_PI;
 			angcap=-dir*.9;
-			angprof=10*(v.z-obj[zep[z].o].pos.z)/(1.+max(fabs(v.y),fabs(v.x)));
+			angprof=10*(v.z-obj[zep[z].o].pos.z)/(1.+MAX(fabs(v.y),fabs(v.x)));
 			if (obj[zep[z].o].pos.z-zs<3000) angprof=1;
 			if (angprof>1) angprof=1;
 			else if (angprof<-1) angprof=-1;

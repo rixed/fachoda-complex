@@ -22,7 +22,7 @@ void hashroute() {
 		if (route[i].ak==-1) continue;
 		hi=(route[i].ak&(3<<NWMAP))>>(NWMAP-2);
 		hi|=(route[i].ak&3);
-		if (!(submap_of_map[route[i].ak]&0x80)) {	// première route dans cette kase
+		if (!(map[route[i].ak].has_road)) {	// première route dans cette kase
 			// on peut donc fixer arbitrairement le code nk
 			nk=nbe[hi]++;
 			if (nk>=(1<<7)) {
@@ -32,12 +32,13 @@ void hashroute() {
 			}
 			hi|=nk<<4;
 			map2route[hi][0]=(short)i;
-			submap_of_map[route[i].ak]=0x80+nk;
+			map[route[i].ak].has_road = 1;
+			map[route[i].ak].submap = nk;
 		} else {	// il y a déjà une route dans cette kase
 			// donc on ne peut pas fixer nk comme ca nous arrange
 			// donc il faut rajouter cet elemnt de route à la meme
 			// position dans le hash
-			nk=submap_of_map[route[i].ak]&0x7F;
+			nk = map[route[i].ak].submap;
 			hi|=nk<<4;
 			for (j=0; map2route[hi][j]!=-1 && j<4; j++);
 			if (j==0) printf("ERROR CONSTRUCTING HASH TABLE !\n");	// il y a deja un elmt ou pas ?
@@ -168,7 +169,7 @@ void nxtrt(vector i, vector *f, int lastd) {
 		return;
 	}
 	// colore la route
-	intens=((map[route[routeidx].ak]-map[(route[routeidx].ak-1)&((WMAP<<NWMAP)-1)]))+32+64;
+	intens=((map[route[routeidx].ak].z-map[(route[routeidx].ak-1)&((WMAP<<NWMAP)-1)].z))+32+64;
 	if (intens<80) intens=80;
 	else if (intens>117) intens=117;
 	if (EndMotorways==-1) {coul.r=120; coul.g=150; coul.b=130; }

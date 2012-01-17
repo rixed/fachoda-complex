@@ -281,11 +281,11 @@ void calcposaind(int i) {
 	if (ak!=obj[i].ak) {
 		if (obj[i].next!=-1) obj[obj[i].next].prec=obj[i].prec;
 		if (obj[i].prec!=-1) obj[obj[i].prec].next=obj[i].next;
-		else objs_of_tile[obj[i].ak]=obj[i].next;
-		obj[i].next=objs_of_tile[ak];
-		if (objs_of_tile[ak]!=-1) obj[objs_of_tile[ak]].prec=i;
+		else map[obj[i].ak].first_obj=obj[i].next;
+		obj[i].next=map[ak].first_obj;
+		if (map[ak].first_obj!=-1) obj[map[ak].first_obj].prec=i;
 		obj[i].prec=-1;
-		objs_of_tile[ak]=i;
+		map[ak].first_obj=i;
 		obj[i].ak=ak;
 	}
 }
@@ -310,11 +310,11 @@ void calcposa() {
 			if (ak!=obj[i].ak) {
 				if (obj[i].next!=-1) obj[obj[i].next].prec=obj[i].prec;
 				if (obj[i].prec!=-1) obj[obj[i].prec].next=obj[i].next;
-				else objs_of_tile[obj[i].ak]=obj[i].next;
-				obj[i].next=objs_of_tile[ak];
-				if (objs_of_tile[ak]!=-1) obj[objs_of_tile[ak]].prec=i;
+				else map[obj[i].ak].first_obj=obj[i].next;
+				obj[i].next=map[ak].first_obj;
+				if (map[ak].first_obj!=-1) obj[map[ak].first_obj].prec=i;
 				obj[i].prec=-1;
-				objs_of_tile[ak]=i;
+				map[ak].first_obj=i;
 				obj[i].ak=ak;
 			}
 		}
@@ -438,9 +438,9 @@ void renderer(int ak, int fast){	// fast=0->ombres+ objets au sol, =1->nuages; =
 	matrix co;
 	vect2d e;
 	//cam=light
-	if (objs_of_tile[ak]==-1) return;
+	if (map[ak].first_obj==-1) return;
 	// boucler sur tous les objets
-	for (o=objs_of_tile[ak]; o!=-1; o=obj[o].next) {
+	for (o=map[ak].first_obj; o!=-1; o=obj[o].next) {
 		if ((fast==1 && obj[o].type!=NUAGE) || fast==2) continue;
 		// calcul la position de l'objet dans le repère de la caméra, ie CamT*(objpos-campos)
 //		if (obj[o].model==0) continue;	// une roue effacée
@@ -451,7 +451,7 @@ void renderer(int ak, int fast){	// fast=0->ombres+ objets au sol, =1->nuages; =
 	}
 	// reclasser les objets en R2
 	if (fast==0 || fast==3) {	// 1-> pas la peine et 2-> deja fait.
-	o=objs_of_tile[ak];
+	o=map[ak].first_obj;
 	if (obj[o].next!=-1)	do {	// le if est utile ssi il n'y a qu'un seul objet
 		int n=obj[o].next, ii=o;
 		//for (p=0; p!=-1; p=obj[p].next) printf("%d<",p);
@@ -462,8 +462,8 @@ void renderer(int ak, int fast){	// fast=0->ombres+ objets au sol, =1->nuages; =
 			if (obj[o].next!=-1) obj[obj[o].next].prec=o;
 			obj[n].prec=ii;
 			if (ii==-1) {
-				obj[n].next=objs_of_tile[ak];
-				objs_of_tile[ak]=n;
+				obj[n].next=map[ak].first_obj;
+				map[ak].first_obj=n;
 				obj[obj[n].next].prec=n;
 			} else {
 				obj[n].next=obj[ii].next;
@@ -474,7 +474,7 @@ void renderer(int ak, int fast){	// fast=0->ombres+ objets au sol, =1->nuages; =
 	} while (o!=-1 && obj[o].next!=-1);
 	}
 	// affichage des ombres
-	o=objs_of_tile[ak]; no=0;
+	o=map[ak].first_obj; no=0;
 	if (fast!=1) do {
 		float z;
 		char aff=norme2(&obj[o].t)<ECHELLE*ECHELLE*4;
@@ -510,7 +510,7 @@ void renderer(int ak, int fast){	// fast=0->ombres+ objets au sol, =1->nuages; =
 	} while (o!=-1);
 	if (no>MAXNO) printf("ERROR ! NO>MAXNO AT ak=%d (no=%d)\n",ak,no);
 	// affichage dans l'ordre du Z
-	o=objs_of_tile[ak]; no=0;
+	o=map[ak].first_obj; no=0;
 	if (fast!=1) while (obj[o].next!=-1 /*&& (viewall || obj[obj[o].next].distance<TL2)*/) { o=obj[o].next; no++; }
 	do {
 		if (fast==3 || (fast==1 && obj[o].type==NUAGE) || (fast==0 && (obj[o].type==CIBGRAT || obj[o].type==VEHIC || obj[o].type==PHARE || obj[o].type==DECO || obj[o].type==GRAV)) || (fast==2 && (obj[o].type==AVION || obj[o].type==ZEPPELIN || obj[o].type==FUMEE || obj[o].type==TIR || obj[o].type==BOMB || obj[o].type==TABBORD || obj[o].type==NUAGE))) {

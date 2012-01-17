@@ -46,8 +46,8 @@ void rendumap() {
 }
 void bpoint(vect2dc *p, int x, int y) {
 	int z, intens;
-	z=map[x+(y<<NWMAP)];
-	intens=((z-(x?map[x-1+(y<<NWMAP)]:0)))+32+64;
+	z=map[x+(y<<NWMAP)].z;
+	intens=((z-(x?map[x-1+(y<<NWMAP)].z:0)))+32+64;
 	if (intens<64) intens=64;
 	else if (intens>127) intens=127;
 	p->c.r=(zcol[z].r*intens)>>7;
@@ -98,8 +98,8 @@ void rendumapbg() {
 	for (y=0; y<SY; y++) {
 		if (p1.v.x>0) MMXMemSetInt((int*)videobuffer+y*SX,0,p1.v.x);
 		if (p2.v.x<SX) MMXMemSetInt((int*)videobuffer+y*SX+p2.v.x-1,0,SX-p2.v.x+1);
-		if (y<p2.v.y) MMXMemSetInt((int*)videobuffer+y*SX+max(0,p1.v.x),0,min(p2.v.x,SX)-max(0,p1.v.x));
-		if (y>p1.v.y) MMXMemSetInt((int*)videobuffer+y*SX+max(0,p1.v.x),0,min(p2.v.x,SX)-max(0,p1.v.x));
+		if (y<p2.v.y) MMXMemSetInt((int*)videobuffer+y*SX+MAX(0,p1.v.x),0,MIN(p2.v.x,SX)-MAX(0,p1.v.x));
+		if (y>p1.v.y) MMXMemSetInt((int*)videobuffer+y*SX+MAX(0,p1.v.x),0,MIN(p2.v.x,SX)-MAX(0,p1.v.x));
 	}
 	renduroute();
 }
