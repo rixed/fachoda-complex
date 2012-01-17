@@ -240,11 +240,9 @@ void initmap(void) {
 void animate_water(void)
 {
 	static float Fphix=0, Fphiy=0;
-	int x,y;
-	float sy;
-	for (y=0; y<SMAP2; y++) {
-		sy=sin(y*2*M_PI/SMAP2+Fphiy);
-		for (x=0; x<SMAP2; x++) {
+	for (int y=0; y<SMAP2; y++) {
+		float sy=sin(y*2*M_PI/SMAP2+Fphiy);
+		for (int x=0; x<SMAP2; x++) {
 			submap[9][x+(y<<NMAP2)]=128+60*(sin(x*4*M_PI/SMAP2+Fphix)+sy);
 			submap_rel_light[9][x+(y<<NMAP2)]=8*(cos(x*4*M_PI/SMAP2+Fphix)+sy);
 		}
@@ -259,7 +257,7 @@ void animate_water(void)
 
 #define H (32<<8)
 
-void coupe (vecic *p1, vecic *p2, vecic *pr) {
+static void do_clip(vecic *p1, vecic *p2, vecic *pr) {
 	pr->v.x = p1->v.x+( ( (H-p1->v.z) * (((p2->v.x-p1->v.x)<<8)/(p2->v.z-p1->v.z)) )>>8 );
 	pr->v.y = p1->v.y+( ( (H-p1->v.z) * (((p2->v.y-p1->v.y)<<8)/(p2->v.z-p1->v.z)) )>>8 );
 	pr->v.z = H;
@@ -288,36 +286,36 @@ void polyclip(vecic *p1, vecic *p2, vecic *p3) {
 		poly(p1,p2,p3);
 		break;
 	case 1:
-		coupe(p1,p2,&pp1);
-		coupe(p1,p3,&pp2);
+		do_clip(p1,p2,&pp1);
+		do_clip(p1,p3,&pp2);
 		poly(&pp1,p2,p3);
 		poly(&pp1,p3,&pp2);
 		break;
 	case 2:
-		coupe(p2,p3,&pp1);
-		coupe(p2,p1,&pp2);
+		do_clip(p2,p3,&pp1);
+		do_clip(p2,p1,&pp2);
 		poly(&pp1,p3,p1);
 		poly(&pp1,p1,&pp2);
 		break;
 	case 3:
-		coupe(p1,p3,&pp1);
-		coupe(p2,p3,&pp2);
+		do_clip(p1,p3,&pp1);
+		do_clip(p2,p3,&pp2);
 		poly(&pp1,&pp2,p3);
 		break;
 	case 4:
-		coupe(p3,p1,&pp1);
-		coupe(p3,p2,&pp2);
+		do_clip(p3,p1,&pp1);
+		do_clip(p3,p2,&pp2);
 		poly(&pp1,p1,p2);
 		poly(&pp1,p2,&pp2);
 		break;
 	case 5:
-		coupe(p1,p2,&pp1);
-		coupe(p3,p2,&pp2);
+		do_clip(p1,p2,&pp1);
+		do_clip(p3,p2,&pp2);
 		poly(&pp2,&pp1,p2);
 		break;
 	case 6:
-		coupe(p2,p1,&pp1);
-		coupe(p3,p1,&pp2);
+		do_clip(p2,p1,&pp1);
+		do_clip(p3,p1,&pp2);
 		poly(&pp1,&pp2,p1);
 		break;
 	}
@@ -828,54 +826,7 @@ void polygouro(vect2dc *p1, vect2dc *p2, vect2dc *p3) {
 //	MMXRestoreFPU();
 }
 
-float zsol(float x, float y) {	// renvoit les coords du sol à cette pos
-	int zi,zj,mzi,mzj;
-	int xi, xx=x*16.+(((WMAP<<NECHELLE)>>1)<<4), medx, minx;
-	int yi, yy=y*16.+(((WMAP<<NECHELLE)>>1)<<4), medy, miny;
-	int iix,iiy,ii,i;
-	int mz1,mz2,mz3,mz4;
-	xi=xx>>(NECHELLE+4);
-	yi=yy>>(NECHELLE+4);
-	i=xi+(yi<<NWMAP);
-#define z1 ((int)map[i].z<<(14-NECHELLE+5))
-#define z2 ((int)map[i+WMAP].z<<(14-NECHELLE+5))
-#define z3 ((int)map[i+WMAP+1].z<<(14-NECHELLE+5))
-#define z4 ((int)map[i+1].z<<(14-NECHELLE+5))
-	medx=xx&((ECHELLE<<4)-1);
-	medy=yy&((ECHELLE<<4)-1);
-	zi=((medy*(z2-z1))>>(NECHELLE+4))+z1;	//z est sur 8 bits, delta z peut etre sur 3 seulement ?
-	zj=((medy*(z3-z4))>>(NECHELLE+4))+z4;
-	iix=(medx<<NMAP2)>>(NECHELLE+4);
-	iiy=(medy<<NMAP2)>>(NECHELLE+4);
-	ii=iix+(iiy<<NMAP2);
-	mz1=((int)submap[submap_get(i)][ii]<<(10+5-NECHELLE+NMAP2));
-	if (iiy!=SMAP2-1) {
-		mz2=((int)submap[submap_get(i)][ii+SMAP2]<<(10+5-NECHELLE+NMAP2));
-		if (iix!=SMAP2-1) {
-			mz3=((int)submap[submap_get(i)][ii+SMAP2+1]<<(10+5-NECHELLE+NMAP2));
-			mz4=((int)submap[submap_get(i)][ii+1]<<(10+5-NECHELLE+NMAP2));
-		} else {
-			mz3=((int)submap[submap_get(i+1)][(iiy+1)<<NMAP2]<<(10+5-NECHELLE+NMAP2));
-			mz4=((int)submap[submap_get(i+1)][iiy<<NMAP2]<<(10+5-NECHELLE+NMAP2));
-		}
-	} else {
-		mz2=((int)submap[submap_get(i+WMAP)][iix]<<(10+5-NECHELLE+NMAP2));
-		if (iix!=SMAP2-1) {
-			mz3=((int)submap[submap_get(i+WMAP)][iix+1]<<(10+5-NECHELLE+NMAP2));
-			mz4=((int)submap[submap_get(i)][ii+1]<<(10+5-NECHELLE+NMAP2));
-		} else {
-			mz3=((int)submap[submap_get(i+WMAP+1)][0]<<(10+5-NECHELLE+NMAP2));
-			mz4=((int)submap[submap_get(i+1)][iiy<<NMAP2]<<(10+5-NECHELLE+NMAP2));
-		}
-	}
-	minx=medx&((1<<(NECHELLE+4-NMAP2))-1);
-	miny=medy&((1<<(NECHELLE+4-NMAP2))-1);
-	mzi=((miny*(mz2-mz1))>>(NECHELLE+4-NMAP2))+mz1;
-	mzj=((miny*(mz3-mz4))>>(NECHELLE+4-NMAP2))+mz4;
-	return ((((medx*(zj-zi))>>4)+(zi<<NECHELLE)) + ((minx*(mzj-mzi))>>4)+(mzi<<(NECHELLE-NMAP2)))/8192.;
-}
-
-float zsolraz(float x, float y) {	// renvoit les coords du sol à cette pos, sans tenir compte de la submap
+float z_flat_ground(float x, float y) {	// renvoit les coords du sol à cette pos, sans tenir compte de la submap
 	int zi,zj;
 	int xi, xx=x*16.+(((WMAP<<NECHELLE)>>1)<<4), medx;
 	int yi, yy=y*16.+(((WMAP<<NECHELLE)>>1)<<4), medy;
@@ -889,7 +840,54 @@ float zsolraz(float x, float y) {	// renvoit les coords du sol à cette pos, sans
 #define z4 ((int)map[i+1].z<<(14-NECHELLE+5))
 	medx=xx&((ECHELLE<<4)-1);
 	medy=yy&((ECHELLE<<4)-1);
-	zi=((medy*(z2-z1))>>(NECHELLE+4))+z1;
+	zi=((medy*(z2-z1))>>(NECHELLE+4))+z1;	//z est sur 8 bits, delta z peut etre sur 3 seulement ?
 	zj=((medy*(z3-z4))>>(NECHELLE+4))+z4;
 	return (((medx*(zj-zi))>>4)+(zi<<NECHELLE))/8192.;
 }
+
+float z_ground(float x, float y) {	// renvoit les coords du sol à cette pos
+	int xx=x*16.+(((WMAP<<NECHELLE)>>1)<<4);
+	int yy=y*16.+(((WMAP<<NECHELLE)>>1)<<4);
+	int xi = xx>>(NECHELLE+4);
+	int yi = yy>>(NECHELLE+4);
+	int i = xi+(yi<<NWMAP);
+	int medx = xx&((ECHELLE<<4)-1);
+	int medy = yy&((ECHELLE<<4)-1);
+	unsigned const si = submap_get(i);
+	unsigned const si1 = submap_get(i+1);
+	float const z_base = z_flat_ground(x, y);
+
+	int iix = (medx<<NMAP2)>>(NECHELLE+4);
+	int iiy = (medy<<NMAP2)>>(NECHELLE+4);
+	int ii = iix+(iiy<<NMAP2);
+	int mz1 = ((int)submap[si][ii]<<(10+5-NECHELLE+NMAP2));
+	int mz2, mz3, mz4;
+	if (iiy!=SMAP2-1) {
+		mz2=((int)submap[si][ii+SMAP2]<<(10+5-NECHELLE+NMAP2));
+		if (iix!=SMAP2-1) {
+			mz3=((int)submap[si][ii+SMAP2+1]<<(10+5-NECHELLE+NMAP2));
+			mz4=((int)submap[si][ii+1]<<(10+5-NECHELLE+NMAP2));
+		} else {
+			mz3=((int)submap[si1][(iiy+1)<<NMAP2]<<(10+5-NECHELLE+NMAP2));
+			mz4=((int)submap[si1][iiy<<NMAP2]<<(10+5-NECHELLE+NMAP2));
+		}
+	} else {
+		unsigned const siw = submap_get(i+WMAP);
+		unsigned const siw1 = submap_get(i+WMAP+1);
+		mz2=((int)submap[siw][iix]<<(10+5-NECHELLE+NMAP2));
+		if (iix!=SMAP2-1) {
+			mz3=((int)submap[siw][iix+1]<<(10+5-NECHELLE+NMAP2));
+			mz4=((int)submap[si][ii+1]<<(10+5-NECHELLE+NMAP2));
+		} else {
+			mz3=((int)submap[siw1][0]<<(10+5-NECHELLE+NMAP2));
+			mz4=((int)submap[si1][iiy<<NMAP2]<<(10+5-NECHELLE+NMAP2));
+		}
+	}
+	int minx = medx&((1<<(NECHELLE+4-NMAP2))-1);
+	int miny = medy&((1<<(NECHELLE+4-NMAP2))-1);
+	int mzi = ((miny*(mz2-mz1))>>(NECHELLE+4-NMAP2))+mz1;
+	int mzj = ((miny*(mz3-mz4))>>(NECHELLE+4-NMAP2))+mz4;
+	return z_base + (((minx*(mzj-mzi))>>4)+(mzi<<(NECHELLE-NMAP2)))/8192.;
+}
+
+

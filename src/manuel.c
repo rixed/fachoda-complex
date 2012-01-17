@@ -3,6 +3,7 @@
 #include <X11/keysym.h>
 #include <math.h>
 #include "proto.h"
+#include "map.h"
 #include "keycodesdef.h"
 
 int DogBot=0;
@@ -49,7 +50,7 @@ void manuel(int b) {
 	} else if ((MouseCtl && kread(0)) || kread(gkeys[kc_fire].kc)) {
 		bot[b].u.x=((xmouse-_DX)*(WMAP/2)*ECHELLE)/zoom+xcarte*ECHELLE;
 		bot[b].u.y=((_DY-ymouse)*(WMAP/2)*ECHELLE)/zoom+ycarte*ECHELLE;
-//		printf("Z=%f\n",zsol(bot[b].u.x,bot[b].u.y));
+//		printf("Z=%f\n",z_ground(bot[b].u.x,bot[b].u.y));
 	}
 	// BOUTON DROIT
 	if ((MouseCtl && kreset(1)) || kreset(gkeys[kc_weapon].kc)) {
@@ -91,7 +92,7 @@ void manuel(int b) {
 		mulv(&u,(drand48()-.5)*600);
 		addv(&obj[0].pos,&u);
 		addv(&obj[0].pos,&obj[bot[visubot].vion].pos);
-		if (obj[0].pos.z<(zs=zsolraz(obj[0].pos.x,obj[0].pos.y)+100)) obj[0].pos.z=zs;
+		if (obj[0].pos.z<(zs=z_flat_ground(obj[0].pos.x,obj[0].pos.y)+100)) obj[0].pos.z=zs;
 	}
 	if (kreset(gkeys[kc_nextbot].kc)) {
 		if (visu!=7) {
@@ -234,7 +235,7 @@ void manuel(int b) {
 			}
 		}
 	} else {
-		float zs=zsol(obj[bot[b].vion].pos.x,obj[bot[b].vion].pos.y);
+		float zs=z_ground(obj[bot[b].vion].pos.x,obj[bot[b].vion].pos.y);
 		if (obj[bot[b].vion].pos.z-zs>500) {
 			double dc=cap(bot[b].u.x-obj[bot[b].vion].pos.x,bot[b].u.y-obj[bot[b].vion].pos.y)-bot[b].cap;
 			float a,n,vit=scalaire(&bot[b].vionvit,&obj[bot[b].vion].rot.x);

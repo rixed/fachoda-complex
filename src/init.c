@@ -18,11 +18,11 @@ void randomhm(matrix *m) {
 	m->y.y=m->x.x;
 }
 void posem(matrix *m, vector *p) {	// tourne légèrement la matrice pour la "poser" sur le sol
-	m->x.z=zsol(p->x+m->x.x,p->y+m->x.y)-zsol(p->x,p->y);
+	m->x.z=z_ground(p->x+m->x.x,p->y+m->x.y)-z_ground(p->x,p->y);
 	renorme(&m->x);
 	m->y.x=-m->x.y;
 	m->y.y=m->x.x;
-	m->y.z=zsol(p->x+m->y.x,p->y+m->y.y)-zsol(p->x,p->y);
+	m->y.z=z_ground(p->x+m->y.x,p->y+m->y.y)-z_ground(p->x,p->y);
 	renorme(&m->y);
 	prodvect(&m->x,&m->y,&m->z);
 }
@@ -129,7 +129,7 @@ void randomvferme(vector *p) {
 		ok=1;
 		randomv(p);
 		mulv(p,ECHELLE*(WMAP-WMAP/4));
-		p->z=zsol(p->x,p->y);
+		p->z=z_ground(p->x,p->y);
 		for (c=0; c<4; c++) for (i=0; i<3; i++) {
 			vector pp;
 			copyv(&pp,&obj[babaseo[0][i][c]].pos);
@@ -187,7 +187,7 @@ void initworld() {
 	for (i=0; i<NBZEPS; i++) {
 		p.x=(drand48()-.5)*(WMAP<<NECHELLE)*0.8;
 		p.y=(drand48()-.5)*(WMAP<<NECHELLE)*0.8;
-		p.z=5000+zsolraz(p.x,p.y);
+		p.z=5000+z_flat_ground(p.x,p.y);
 		zep[i].o=addnobjet(NBNAVIONS+NBBASES+NBMAISONS+NBVEHICS+NBDECOS,&p, &mat_id, 0);
 		copyv(&zep[i].nav,&p);
 		zep[i].angx=zep[i].angy=zep[i].angz=zep[i].anghel=zep[i].vit=0;
@@ -222,7 +222,7 @@ void initworld() {
 		map[a-WMAP+1].submap=0;
 		map[a+WMAP-1].submap=0;
 		map[a-WMAP-1].submap=0;
-		p.z=zsol(p.x,p.y);;
+		p.z=z_ground(p.x,p.y);;
 		copyv(&village[i].p,&p);
 		village[i].o1=nbobj;
 		randomv(&pp);	// une église
@@ -303,7 +303,7 @@ void initworld() {
 			randomv(&dest);
 			mulv(&dest,ECHELLE*(5+10*drand48()));	// prop à la taille de la ville
 			addv(&dest,&village[i].p);
-			dest.z=zsolraz(dest.x,dest.y);
+			dest.z=z_flat_ground(dest.x,dest.y);
 			prospectroute(&village[i].p,&dest);
 //			if (routeidx-d) printf("Road toward %s, %d elmts long\n",village[i].nom,routeidx-d);
 			affjauge(.75/(3.*7.5*NBVILLAGES));
@@ -324,7 +324,7 @@ void initworld() {
 			mulv(&dest,(2+drand48()*3));
 			addv(&dest,&route[ri].i);
 			if (fabs(dest.x)<((WMAP-5)<<(NECHELLE-1)) && fabs(dest.y)<((WMAP-5)<<(NECHELLE-1))) {
-				dest.z=zsolraz(dest.x,dest.y);
+				dest.z=z_flat_ground(dest.x,dest.y);
 				prospectroute(&route[ri].i,&dest);
 			}
 		}
@@ -333,8 +333,8 @@ void initworld() {
 //	printf("%d road elemts for footpaths\n",routeidx-EndRoads);
 /*	{
 		vector u,v;
-		u.x=-10*ECHELLE+2345; u.y=10*ECHELLE+1234; u.z=zsol(u.x,u.y);
-		v.x=10*ECHELLE-2345; v.y=10*ECHELLE+1234; v.z=zsol(v.x,v.y);
+		u.x=-10*ECHELLE+2345; u.y=10*ECHELLE+1234; u.z=z_ground(u.x,u.y);
+		v.x=10*ECHELLE-2345; v.y=10*ECHELLE+1234; v.z=z_ground(v.x,v.y);
 		traceroute(&u,&v);
 	}*/
 	endinitroute();
@@ -497,7 +497,7 @@ void initworld() {
 			copyv(&p,&obj[b].pos);
 			p.y+=i>=NbHosts?10:250;
 			p.x+=300*(i>=NbHosts?(i>>2):i);
-			p.z=20+zsol(p.x,p.y);
+			p.z=20+z_ground(p.x,p.y);
 			copym(&m,&mat_id);
 			m.x.x=0;
 			m.x.y=-1;
@@ -555,7 +555,7 @@ void initworld() {
 			p.x+=(drand48()-.5)*100;
 			p.y+=(drand48()-.5)*100;
 		}
-		p.z=zsol(p.x,p.y);
+		p.z=z_ground(p.x,p.y);
 		if (p.y>0) vehic[i].camp=2; else vehic[i].camp=0;
 		if (p.x>0) vehic[i].camp++;
 		vehic[i].cibv=-1;

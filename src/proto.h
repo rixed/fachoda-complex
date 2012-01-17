@@ -367,8 +367,6 @@ extern uchar *mapcol;
 extern void initmap(void);
 extern void draw_ground_and_objects(void);
 extern void polygouro(vect2dc *p1, vect2dc *p2, vect2dc *p3);
-extern float zsol(float,float);
-extern float zsolraz(float,float);
 // carte.c
 extern vector repere[NBREPMAX];
 extern int zoom, xcarte, ycarte, repidx;

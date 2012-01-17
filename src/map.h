@@ -22,4 +22,10 @@ int submap_get(int k);
 /* Animate submap 9 with a wave pattern */
 void animate_water(void);
 
+/* Return the altitude of the ground at this location */
+float z_ground(float,float);
+
+/* Same as above, but ignore the submap (suppose flat) */
+float z_flat_ground(float,float);
+
 #endif

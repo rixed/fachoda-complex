@@ -66,7 +66,7 @@ float oldcap,curcap,bestcap;
 float note(vector *a, vector *f, vector *i) {
 	float n,dist,zs;
 	vector v;
-	if ((zs=zsolraz(a->x,a->y))<3000 || zs>11500) n=MAXFLOAT;
+	if ((zs=z_flat_ground(a->x,a->y))<3000 || zs>11500) n=MAXFLOAT;
 	else {
 		copyv(&v,a);
 		subv(&v,i);
@@ -79,8 +79,8 @@ float note(vector *a, vector *f, vector *i) {
 			if (n<-M_PI) n+=2*M_PI;
 			else if (n>M_PI) n-=2*M_PI;
 			n=fabs(n);
-			n+=(dist>ECHELLE*10?.0015:.0025)*fabs(zs-zsolraz(i->x,i->y));
-			n+=0.003*fabs(zs-zsolraz(f->x,f->y))/(dist+100);
+			n+=(dist>ECHELLE*10?.0015:.0025)*fabs(zs-z_flat_ground(i->x,i->y));
+			n+=0.003*fabs(zs-z_flat_ground(f->x,f->y))/(dist+100);
 			if (oldcap!=MAXFLOAT) {
 				float dc=curcap-oldcap;
 				if (dc<-M_PI) dc+=2*M_PI;
@@ -121,7 +121,7 @@ void nxtrt(vector i, vector *f, int lastd) {
 			vector a;
 			a.x=(d&1?ll:s)+r.x;
 			a.y=(d&1?s:ll)+r.y;
-			a.z=zsolraz(a.x,a.y);
+			a.z=z_flat_ground(a.x,a.y);
 			if ((notecur=note(&a,f,&i))<bestnote) {
 				bestnote=notecur;
 				bestd=d;
@@ -213,11 +213,11 @@ void prospectroute(vector *i, vector *f) {
 			randomv(&v);
 			mulv(&v,ECHELLE*(EndRoads==-1?2:0.00001));
 			addv(&p1,&v);
-			p1.z=zsolraz(p1.x,p1.y);
+			p1.z=z_flat_ground(p1.x,p1.y);
 			randomv(&v);
 			mulv(&v,ECHELLE*(EndRoads==-1?2:3));
 			addv(&p2,&v);
-			p2.z=zsolraz(p2.x,p2.y);
+			p2.z=z_flat_ground(p2.x,p2.y);
 		}
 		NbElmLim=nbelmlim;
 		traceroute(&p1,&p2);

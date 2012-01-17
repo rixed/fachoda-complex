@@ -2,6 +2,8 @@
 #include <stdio.h>
 #include <math.h>
 #include "proto.h"
+#include "map.h"
+
 int collision(int p, int o){	// l'obj p est-il rentré dans l'obj o ?
 	vector u;
 	if (obj[o].type==NUAGE || obj[o].type==FUMEE || p==o || obj[p].ak!=obj[o].ak) return 0;
@@ -79,10 +81,10 @@ void explose(int oc, int i) {
 //		printf("Obj %d sauvagely burst obj#%d out (type %d)\n",i,oc,obj[oc].type);
 		copyv(&ExplozePos,&obj[i].pos);
 		Exploze=1;
-		if (obj[o1].pos.z<zsol(obj[o1].pos.x,obj[o1].pos.y)+50) {
+		if (obj[o1].pos.z<z_ground(obj[o1].pos.x,obj[o1].pos.y)+50) {
 			obj[o1].model=nobjet[NBNAVIONS+NBBASES+NBMAISONS+NBVEHICS+2].firstpiece;	// CRATERE
 			obj[o1].type=DECO;
-			obj[o1].pos.z=5+zsol(obj[o1].pos.x,obj[o1].pos.y);
+			obj[o1].pos.z=5+z_ground(obj[o1].pos.x,obj[o1].pos.y);
 			obj[o1].objref=-1;
 			copym(&obj[o1].rot,&mat_id);
 			jk=o1+1;

@@ -65,7 +65,7 @@ void addobjet(int mo, vector *p, matrix *m, int or, uchar sol) {
 	obj[nbobj].type=mod[mo].type;
 	obj[nbobj].aff=1;
 	copyv(&obj[nbobj].pos,p);
-	if (sol) obj[nbobj].pos.z+=zsol(p->x,p->y);
+	if (sol) obj[nbobj].pos.z+=z_ground(p->x,p->y);
 	copym(&obj[nbobj].rot,m);
 	obj[nbobj].objref=or;
 	xk=(int)floor(p->x/ECHELLE)+(WMAP>>1);
@@ -253,7 +253,7 @@ void akref(int ak,vector *r) {
 	int y=(ak>>NWMAP)-(WMAP>>1);
 	r->x=(x<<NECHELLE);
 	r->y=(y<<NECHELLE);
-	r->z=zsol(r->x,r->y);
+	r->z=z_ground(r->x,r->y);
 }
 int resurrect(void) {	// jesus revient, jesus reviuent parmis les tiens...
 	int j=NBBOT, jj, bestprix=0;
@@ -551,7 +551,7 @@ parse_error:
 		// PNJ
 		if (!lapause) {
 			// calcul les pos du sol
-			for (i=0; i<NBBOT; i++) bot[i].zs=obj[bot[i].vion].pos.z-zsol(obj[bot[i].vion].pos.x,obj[bot[i].vion].pos.y);
+			for (i=0; i<NBBOT; i++) bot[i].zs=obj[bot[i].vion].pos.z-z_ground(obj[bot[i].vion].pos.x,obj[bot[i].vion].pos.y);
 			NetSend();
 			// mettre entre les deux accès réseau tout ce qui ne dépend
 			// pas des commandes des playbots !
@@ -595,7 +595,7 @@ parse_error:
 				orthov(&obj[i].rot.y,&obj[i].rot.x);
 				prodvect(&obj[i].rot.x,&obj[i].rot.y,&obj[i].rot.z);
 				controlepos(i);
-				if (vieshot[i-debtir]==0 || obj[i].pos.z<zsol(obj[i].pos.x,obj[i].pos.y)) {
+				if (vieshot[i-debtir]==0 || obj[i].pos.z<z_ground(obj[i].pos.x,obj[i].pos.y)) {
 					obj[i].aff=0;	// pour qu'il soit plus affiché
 #ifndef DEMO
 					if (i==nbobj-1) do {
@@ -627,7 +627,7 @@ parse_error:
 					// collision ?
 					for (oc=map[obj[j].ak].first_obj; oc!=-1; oc=obj[oc].next)
 						if (obj[oc].type!=TIR && obj[oc].type!=CAMERA && obj[oc].type!=DECO && (oc<bot[bombe[i].b].vion || oc>=bot[bombe[i].b].vion+nobjet[bot[bombe[i].b].navion].nbpieces) && collision(j,oc)) { explose(oc,j); fg=1; break; }
-					if (fg || obj[j].pos.z<zsol(obj[j].pos.x,obj[j].pos.y)) {
+					if (fg || obj[j].pos.z<z_ground(obj[j].pos.x,obj[j].pos.y)) {
 						if (!fg) {
 							float np;
 							copyv(&p,&obj[j].pos);
@@ -669,7 +669,7 @@ parse_error:
 					controlepos(debris[i].o);
 					mulv(&debris[i].vit,pow(.999,AccelFactor));
 					debris[i].vit.z-=G_FACTOR;
-					zs=zsol(obj[debris[i].o].pos.x,obj[debris[i].o].pos.y);
+					zs=z_ground(obj[debris[i].o].pos.x,obj[debris[i].o].pos.y);
 					if (obj[debris[i].o].pos.z<zs) {
 						obj[debris[i].o].pos.z=zs;
 						debris[i].vit.z=-debris[i].vit.z;
@@ -890,7 +890,7 @@ parse_error:
 					mulv(&obj[0].pos,-loinvisu);
 					addv(&obj[0].pos,&obj[bot[visubot].vion].pos);
 					angvisu1+=0.04;
-					if (obj[0].pos.z<(n=30+zsol(obj[0].pos.x,obj[0].pos.y))) obj[0].pos.z=n;
+					if (obj[0].pos.z<(n=30+z_ground(obj[0].pos.x,obj[0].pos.y))) obj[0].pos.z=n;
 					break;
 				case 2:
 					copym(&obj[0].rot,&mat_id);
@@ -929,7 +929,7 @@ parse_error:
 					copyv(&p,&bot[visubot].vionvit);
 					mulv(&p,-3);
 					addv(&obj[0].pos,&p);
-					if (obj[0].pos.z<(n=30+zsol(obj[0].pos.x,obj[0].pos.y))) obj[0].pos.z=n;
+					if (obj[0].pos.z<(n=30+z_ground(obj[0].pos.x,obj[0].pos.y))) obj[0].pos.z=n;
 					break;
 				case 6:
 					subv3(&obj[bot[visubot].vion].pos,&obj[0].pos,&obj[0].rot.z);
