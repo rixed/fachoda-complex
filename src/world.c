@@ -6,6 +6,7 @@ extern inline void addv(vector *r, vector *a);
 extern inline void addvi(veci *r, veci *a);
 extern inline void subv(vector *r, vector *a);
 extern inline void subvi(veci *r, veci *a);
+extern inline void negvi(veci *r);
 extern inline void mulv(vector *r, float a);
 extern inline void copyv(vector *r, vector *a);
 extern inline void copym(matrix *r, matrix *a);

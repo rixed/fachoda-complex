@@ -25,7 +25,7 @@
 
 struct tile *map;	// The global map: a square of WMAP*WMAP tiles.
 
-static uchar *submap[10];	// The submaps (same structure as the global map, only smaller: SMAP*SMAP)
+static uchar *submap[10];	// The submaps (same structure as the global map, only smaller: SMAP2*SMAP2)
 
 /* Each vector of a submap heighfield have a specific lightning (to be added to the
  * lightning of the tile). It's faster than to compute a proper lightning for every
@@ -257,13 +257,17 @@ void animate_water(void)
  * Map Rendering
  */
 
-#define H (32<<8)
-
+// Clip segment p1-p2 by the frustum zmin plan (p1->z is below FRUSTUM_ZMIN)
+#define FRUSTUM_ZMIN (32<<8)
 static void do_clip(vecic *p1, vecic *p2, vecic *pr) {
-	pr->v.x = p1->v.x+( ( (H-p1->v.z) * (((p2->v.x-p1->v.x)<<8)/(p2->v.z-p1->v.z)) )>>8 );
-	pr->v.y = p1->v.y+( ( (H-p1->v.z) * (((p2->v.y-p1->v.y)<<8)/(p2->v.z-p1->v.z)) )>>8 );
-	pr->v.z = H;
-	pr->c = p1->c;
+	int const dz1 = FRUSTUM_ZMIN - p1->v.z;
+	int const dz2 = p2->v.z - p1->v.z;
+	pr->v.x = p1->v.x + ((dz1 * (((p2->v.x-p1->v.x)<<8)/dz2))>>8);
+	pr->v.y = p1->v.y + ((dz1 * (((p2->v.y-p1->v.y)<<8)/dz2))>>8);
+	pr->v.z = FRUSTUM_ZMIN;
+	pr->c.r = p1->c.r + ((dz1 * ((((int)p2->c.r-p1->c.r)<<8)/dz2))>>8);
+	pr->c.g = p1->c.g + ((dz1 * ((((int)p2->c.g-p1->c.g)<<8)/dz2))>>8);
+	pr->c.b = p1->c.b + ((dz1 * ((((int)p2->c.b-p1->c.b)<<8)/dz2))>>8);
 }
 
 static int color_of_pixel(pixel c) {
@@ -274,15 +278,20 @@ static void poly(vecic *p1, vecic *p2, vecic *p3) {
 	proji(&l1, &p1->v);	// FIXME: should not project the same pt several times!
 	proji(&l2, &p2->v);
 	proji(&l3, &p3->v);
-	polyflat(&l1, &l2, &l3, color_of_pixel(p1->c));
+	pixel mix = {
+		.r = (p1->c.r + p2->c.r + p3->c.r) / 3,
+		.g = (p1->c.g + p2->c.g + p3->c.g) / 3,
+		.b = (p1->c.b + p2->c.b + p3->c.b) / 3,
+	};
+	polyflat(&l1, &l2, &l3, color_of_pixel(mix));
 }
 
 void polyclip(vecic *p1, vecic *p2, vecic *p3) {
 	int i;
-	vecic pp1,pp2;
-	i=p1->v.z<H;
-	i+=(p2->v.z<H)<<1;
-	i+=(p3->v.z<H)<<2;
+	vecic pp1, pp2;
+	i  =  p1->v.z < FRUSTUM_ZMIN;
+	i += (p2->v.z < FRUSTUM_ZMIN)<<1;
+	i += (p3->v.z < FRUSTUM_ZMIN)<<2;
 	switch (i) {
 	case 0:
 		poly(p1,p2,p3);
@@ -320,16 +329,21 @@ void polyclip(vecic *p1, vecic *p2, vecic *p3) {
 		do_clip(p3,p1,&pp2);
 		poly(&pp1,&pp2,p1);
 		break;
+	case 7:
+		// don't draw anything is all points are below zmin
+		break;
 	}
 }
 
 // These are inited by draw_ground_and_objects() and used also by draw_submap()
 static int sxx,syx,sxy,syy,coli,x2,y2,direct;
 static int dirx, diry;
-static veci mx,my,mz;
+static veci d_coinp;	// coinp increment in inner loop
+static veci d_coin;	// coin increment in outer loop
+static veci mz;	// see mx,my in draw_ground_and_objects()
 
 #define MASK2(a) ((a)&(SMAP2-1))
-#define MASK(a) ((a)&(SMAP-1))
+#define MASK(a)  ((a)&(SMAP-1))
 #define MASKW(a) ((a)&(WMAP-1))
 
 // Saturated between 10 and 245
@@ -347,8 +361,6 @@ static int calcasm(int a, int b, int c)
 static void draw_submap(veci coin, int z1, pixel i1, int z2, pixel i2, int z3, pixel i3, int z4, pixel i4, int m) {
 	vecic ptsi[(SMAP2+1)*2];
 	int xx,yx,xy,yy, dx,dy, ay;
-	veci coinp;
-	veci nmx,nmy;
 	int zi, zj, zz, dzz;
 	int dzi = ((z2-z3)<<8)>>NMAP2;
 	int dzj = ((z1-z4)<<8)>>NMAP2;
@@ -361,29 +373,51 @@ static void draw_submap(veci coin, int z1, pixel i1, int z2, pixel i2, int z3, p
 	int bi, bj, bb, dbb;
 	int dbi = ((i2.b-i3.b)<<8)>>NMAP2;
 	int dbj = ((i1.b-i4.b)<<8)>>NMAP2;
-	nmx.x=mx.x>>NMAP2;
-	nmy.x=my.x>>NMAP2;
-	nmx.y=mx.y>>NMAP2;
-	nmy.y=my.y>>NMAP2;
-	nmx.z=mx.z>>NMAP2;
-	nmy.z=my.z>>NMAP2;
-	for (xy=x2, yy=y2, dy=0, ay=0, zi=z3<<8, zj=z4<<8, ri=i3.r<<8, rj=i4.r<<8, gi=i3.g<<8, gj=i4.g<<8, bi=i3.b<<8, bj=i4.b<<8; dy<=SMAP2; dy++, xy+=sxy, yy+=syy, zi+=dzi, zj+=dzj, ri+=dri, rj+=drj, gi+=dgi, gj+=dgj, bi+=dbi, bj+=dbj, ay^=SMAP2+1) {
-		coinp.x=coin.x;
-		coinp.y=coin.y;
-		coinp.z=coin.z;
+	veci n_d_coinp = {
+		.x = d_coinp.x >> NMAP2,
+		.y = d_coinp.y >> NMAP2,
+		.z = d_coinp.z >> NMAP2,
+	};
+	veci n_d_coin = {
+		.x = d_coin.x >> NMAP2,
+		.y = d_coin.y >> NMAP2,
+		.z = d_coin.z >> NMAP2,
+	};
+	for (
+		xy=x2, yy=y2, dy=0, ay=0,
+		zi=z3<<8, zj=z4<<8,
+		ri=i3.r<<8, rj=i4.r<<8,
+		gi=i3.g<<8, gj=i4.g<<8,
+		bi=i3.b<<8, bj=i4.b<<8;
+		dy<=SMAP2;
+		dy++, xy+=sxy, yy+=syy,
+		zi+=dzi, zj+=dzj,
+		ri+=dri, rj+=drj,
+		gi+=dgi, gj+=dgj,
+		bi+=dbi, bj+=dbj,
+		ay^=SMAP2+1,
+		addvi(&coin, &n_d_coin)
+	) {
+		veci coinp = coin;
 		dzz = (zj-zi)>>NMAP2;
 		drr = (rj-ri)>>NMAP2;
 		dgg = (gj-gi)>>NMAP2;
 		dbb = (bj-bi)>>NMAP2;
-		for (xx=xy, yx=yy, dx=0, zz=zi, rr=ri, gg=gi, bb=bi; dx<=SMAP2; dx++, xx+=sxx, yx+=syx, zz+=dzz, rr+=drr, gg+=dgg, bb+=dbb) {
+		for (
+			xx=xy, yx=yy, dx=0, zz=zi,
+			rr=ri, gg=gi, bb=bi;
+			dx<=SMAP2; 
+			dx++, xx+=sxx, yx+=syx, zz+=dzz,
+			rr+=drr, gg+=dgg, bb+=dbb,
+			addvi(&coinp, &n_d_coinp)
+		) {
 			int mm=m;
-			int a=dx+ay, b=MASK2(xx)+(MASK2(yx)<<NMAP2);
-			int z;
-			int nmap;
 			if (dx==SMAP2) mm+=sxx+(syx<<NWMAP);
 			if (dy==SMAP2) mm+=sxy+(syy<<NWMAP);
-			nmap=submap_get(mm);
-			z=(submap[nmap][b]<<10)+(zz>>8);
+			int const nmap = submap_get(mm);
+			int b = MASK2(xx) + (MASK2(yx)<<NMAP2);
+			int const z = (submap[nmap][b]<<10) + (zz>>8);
+			int const a = dx + ay;
 			ptsi[a].c.r=AddSatB(submap_rel_light[nmap][b],rr>>8);
 			ptsi[a].c.g=AddSatB(submap_rel_light[nmap][b],gg>>8);
 			ptsi[a].c.b=AddSatB(submap_rel_light[nmap][b],bb>>8);
@@ -394,46 +428,15 @@ static void draw_submap(veci coin, int z1, pixel i1, int z2, pixel i2, int z3, p
 				polyclip(&ptsi[a-1+direct],coli?&ptsi[dx+(ay^(SMAP2+1))-1]:&ptsi[dx+(ay^(SMAP2+1))],&ptsi[a-direct]);
 				polyclip(coli?&ptsi[a]:&ptsi[a-1],&ptsi[dx+(ay^(SMAP2+1))-1+direct],&ptsi[dx+(ay^(SMAP2+1))-direct]);
 			}
-			switch (dirx) {
-			case 1:
-				addvi(&coinp,&nmx);
-				break;
-			case 2:
-				subvi(&coinp,&nmx);
-				break;
-			case 3:
-				addvi(&coinp,&nmy);
-				break;
-			case 4:
-				subvi(&coinp,&nmy);
-				break;
-			}
-		}
-		switch (diry) {
-		case 1:
-			addvi(&coin,&nmx);
-			break;
-		case 2:
-			subvi(&coin,&nmx);
-			break;
-		case 3:
-			addvi(&coin,&nmy);
-			break;
-		case 4:
-			subvi(&coin,&nmy);
-			break;
 		}
 	}
 }
-void draw_ground_and_objects(void) {
-	vecic ptsi[(SMAP+1)*2];	// integer 3d position + color for a small tile ribbon
-	int pz[(SMAP+1)*2];	// storing the height of this map position << 14, for convenience
-	int ay;
-	int x,y,xx,yx,xy,yy,xk,yk, dx,dy;
+
+void draw_ground_and_objects(void)
+{
+	int x,y;
 	int dmx=0,dmy=0;
 	int lastcare[9], lcidx=0;	// some tiles we want to draw last
-	veci coin, coinp;
-	vector c;
 
 	/* We will draw the world using the painter method.
 	 * Notice that the painter method is only local: the painter
@@ -458,164 +461,224 @@ void draw_ground_and_objects(void) {
 		((fabs(obj[0].rot.z.x) > fabs(obj[0].rot.z.y)) <<2)
 	) {
 	case 0:
-		x=0; y=0; sxx=1; syx=0; sxy=0; syy=1; coli=0; dirx=1; diry=3; dmx=-1; dmy=-1; direct=1; break;
+		x=0; y=0; sxx=1; syx=0; sxy=0; syy=1;
+		coli=0; dirx=1; diry=3; dmx=-1; dmy=-1; direct=1;
+		break;
 	case 1:
-		x=SMAP; y=0; sxx=-1; syx=0; sxy=0; syy=1; coli=1; dirx=2; diry=3; dmx=0; dmy=-1; direct=0; break;
+		x=SMAP; y=0; sxx=-1; syx=0; sxy=0; syy=1;
+		coli=1; dirx=2; diry=3; dmx=0; dmy=-1; direct=0;
+		break;
 	case 2:
-		x=0; y=SMAP; sxx=1; syx=0; sxy=0; syy=-1; coli=1; dirx=1; diry=4; dmx=-1; dmy=0; direct=0; break;
+		x=0; y=SMAP; sxx=1; syx=0; sxy=0; syy=-1;
+		coli=1; dirx=1; diry=4; dmx=-1; dmy=0; direct=0;
+		break;
 	case 3:
-		x=SMAP; y=SMAP; sxx=-1; syx=0; sxy=0; syy=-1; coli=0; dirx=2; diry=4; dmx=dmy=0; direct=1; break;
+		x=SMAP; y=SMAP; sxx=-1; syx=0; sxy=0; syy=-1;
+		coli=0; dirx=2; diry=4; dmx=dmy=0; direct=1;
+		break;
 	case 4:
-		x=0; y=0; sxx=0; syx=1; sxy=1; syy=0; coli=0; dirx=3; diry=1; dmx=-1; dmy=-1; direct=0; break;
+		x=0; y=0; sxx=0; syx=1; sxy=1; syy=0;
+		coli=0; dirx=3; diry=1; dmx=-1; dmy=-1; direct=0;
+		break;
 	case 5:
-		x=SMAP; y=0; sxx=0; syx=1; sxy=-1; syy=0; coli=1; dirx=3; diry=2; dmx=0; dmy=-1; direct=1; break;
+		x=SMAP; y=0; sxx=0; syx=1; sxy=-1; syy=0;
+		coli=1; dirx=3; diry=2; dmx=0; dmy=-1; direct=1;
+		break;
 	case 6:
-		x=0; y=SMAP; sxx=0; syx=-1; sxy=1; syy=0; coli=1; dirx=4; diry=1; dmx=-1; dmy=0; direct=1; break;
+		x=0; y=SMAP; sxx=0; syx=-1; sxy=1; syy=0;
+		coli=1; dirx=4; diry=1; dmx=-1; dmy=0; direct=1;
+		break;
 	case 7:
-		x=SMAP; y=SMAP; sxx=0; syx=-1; sxy=-1; syy=0; coli=0; dirx=4; diry=2; dmx=0; dmy=0; direct=0; break;
+		x=SMAP; y=SMAP; sxx=0; syx=-1; sxy=-1; syy=0;
+		coli=0; dirx=4; diry=2; dmx=0; dmy=0; direct=0;
+		break;
 	}
 	if (x) x2=SMAP2; else x2=0;
 	if (y) y2=SMAP2; else y2=0;
-	x+=-(SMAP>>1)+(int)(obj[0].pos.x/ECHELLE);
-	y+=-(SMAP>>1)+(int)(obj[0].pos.y/ECHELLE);
-	c.x=x*ECHELLE;
-	c.y=y*ECHELLE;
-	c.z=0;
-	x+=WMAP>>1;
-	y+=WMAP>>1;
-	subv(&c,&obj[0].pos);
-	mulmtv(&obj[0].rot,&c,&c);
-	coin.x=c.x*256;
-	coin.y=c.y*256;
-	coin.z=c.z*256;
-	mx.x=obj[0].rot.x.x*ECHELLE*256;
-	my.x=obj[0].rot.x.y*ECHELLE*256;
-	mx.y=obj[0].rot.y.x*ECHELLE*256;
-	my.y=obj[0].rot.y.y*ECHELLE*256;
-	mx.z=obj[0].rot.z.x*ECHELLE*256;
-	my.z=obj[0].rot.z.y*ECHELLE*256;
-	mz.x=obj[0].rot.x.z*8192.;
-	mz.y=obj[0].rot.y.z*8192.;
-	mz.z=obj[0].rot.z.z*8192.;
-	xk=(int)floor(obj[0].pos.x/ECHELLE)+(WMAP>>1)+1;
-	yk=(int)floor(obj[0].pos.y/ECHELLE)+(WMAP>>1)+1;
-	MMXSaveFPU();
-	for (xy=x, yy=y, dy=0, ay=0; dy<=SMAP; dy++, ay^=SMAP+1, xy+=sxy, yy+=syy) {
-		coinp.x=coin.x;
-		coinp.y=coin.y;
-		coinp.z=coin.z;
-		for (xx=xy, yx=yy, dx=0; dx<=SMAP; dx++, xx+=sxx, yx+=syx) {
-			int a=dx+ay, b=MASKW(xx)+(MASKW(yx)<<NWMAP), bb=MASKW(xx+dmx)+(MASKW(yx+dmy)<<NWMAP);
-			int ob=MASKW(xx-1)+(MASKW(yx)<<NWMAP), intens;
-			int const z = map[b].z;
-			pz[a]=z<<14;
-			ptsi[a].v.x=calcasm(coinp.x,z<<14,mz.x);
-			ptsi[a].v.y=calcasm(coinp.y,z<<14,mz.y);
-			ptsi[a].v.z=calcasm(coinp.z,z<<14,mz.z);
-			intens=((z-map[ob].z))+32+64;
+
+	// This vector c goes from camera to the furthest corner of the vision square
+	vector c = {
+		.x = (x-(SMAP>>1))*ECHELLE - fmodf(obj[0].pos.x, (float)ECHELLE),
+		.y = (y-(SMAP>>1))*ECHELLE - fmodf(obj[0].pos.y, (float)ECHELLE),
+		.z = -obj[0].pos.z,
+	};	
+	mulmtv(&obj[0].rot, &c, &c);
+
+	// The same, in 24:8 fixed prec
+	veci coin = {
+		.x = c.x * 256,
+		.y = c.y * 256,
+		.z = c.z * 256,
+	};
+
+	// Position x,y at the furthest corner of the vision square (of length SMAP),
+	// relative to the south-west corner of the world map (of length WMAP)
+	// (provided x goes from west to east and y from south to north).
+	x += (int)(obj[0].pos.x / ECHELLE) - (SMAP>>1) + (WMAP>>1);
+	y += (int)(obj[0].pos.y / ECHELLE) - (SMAP>>1) + (WMAP>>1);
+
+	// mx,my,mz is the transposed of the camera, in 24:8 fixed prec
+	// ie it's the world base relative to camera
+	veci mx,my;
+	mx.x = obj[0].rot.x.x*ECHELLE*256;
+	my.x = obj[0].rot.x.y*ECHELLE*256;
+	mx.y = obj[0].rot.y.x*ECHELLE*256;
+	my.y = obj[0].rot.y.y*ECHELLE*256;
+	mx.z = obj[0].rot.z.x*ECHELLE*256;
+	my.z = obj[0].rot.z.y*ECHELLE*256;
+	// apart that mz is in 19:13
+	mz.x = obj[0].rot.x.z*8192.;
+	mz.y = obj[0].rot.y.z*8192.;
+	mz.z = obj[0].rot.z.z*8192.;
+
+	switch (diry) {
+		case 1:
+			d_coin = mx;
+			break;
+		case 2:
+			d_coin = mx;
+			negvi(&d_coin);
+			break;
+		case 3:
+			d_coin = my;
+			break;
+		case 4:
+			d_coin = my;
+			negvi(&d_coin);
+			break;
+	}
+
+	switch (dirx) {
+		case 1:
+			d_coinp = mx;
+			break;
+		case 2:
+			d_coinp = mx;
+			negvi(&d_coinp);
+			break;
+		case 3:
+			d_coinp = my;
+			break;
+		case 4:
+			d_coinp = my;
+			negvi(&d_coinp);
+			break;
+	}
+
+	// xk,yk is the tile coordinate of the camera's tile
+	int const xk = (int)floor(obj[0].pos.x/ECHELLE)+(WMAP>>1);
+	int const yk = (int)floor(obj[0].pos.y/ECHELLE)+(WMAP>>1);
+
+#	define Z_MIN (-(4*ECHELLE<<8))
+	// xy,yy will loop on all tile locations on the 2nd furthest edge of the vision square
+	// (relative to world map origin)
+	// dy count from 0 to SMAP (length of the vision square)
+	// ay is 0, SMAP+1, 0, SMAP+1, 0, etc...
+	// Also, coin will goes along this furthest side
+	int xy, yy, dy, ay;
+	for (
+		xy = x, yy = y, dy = 0, ay = 0;
+		/*coin.z > Z_MIN &&*/ dy <= SMAP;
+		dy++, ay ^= SMAP+1, xy += sxy, yy += syy,
+		addvi(&coin, &d_coin)
+	) {
+		veci coinp = coin;
+		// xx,yx will loop on all tile locations of the furthest edge of the vision square
+		// (the horizon), from (xy,yy) (ie the furthest location of the line) toward the camera
+		// and eventually behind, SMAP times.
+		// dx count from 0 to SMAP.
+		// coinp will goes along the line.
+		// Both the inner and outer loops are also exited whenever the z goes too far behind (Z_MIN)
+		// FIXME: no we can't do that since when the camera is pointed at the sky the whole landscape
+		//        is <Z_MIN, yet we want to draw the objects (if not the landscape itself).
+		//        There is certainly an optimization, though (like draw close tiles objects
+		//        at the end in all cases).
+		int xx, yx, dx;
+		for (
+			xx = xy, yx = yy, dx = 0;
+			/*coinp.z > Z_MIN &&*/ dx <= SMAP;
+			dx++, xx += sxx, yx += syx,
+			addvi(&coinp, &d_coinp)
+		) {
+			int b = MASKW(xx) + (MASKW(yx)<<NWMAP);	// the current tile
+			int bb = MASKW(xx+dmx) + (MASKW(yx+dmy)<<NWMAP);	// one tile further (??)
+			int ob = MASKW(xx-1) + (MASKW(yx)<<NWMAP);	// the tile at left (for lighting)
+			int const z = map[b].z;	// the altitude of current tile
+
+			static vecic ptsi[(SMAP+1)*2];	// integer 3d position + color for a small tile ribbon
+			static int pz[(SMAP+1)*2];	// storing the height of this map position << 14, for convenience
+
+			int a = dx + ay;
+			pz[a] = z<<14;
+			// ptsi[a] position
+			ptsi[a].v.x = calcasm(coinp.x,z<<14, mz.x);
+			ptsi[a].v.y = calcasm(coinp.y,z<<14, mz.y);
+			ptsi[a].v.z = calcasm(coinp.z,z<<14, mz.z);
+			// Compute ptsi[a] color
+			int intens = ((z-map[ob].z))+32+64;
 			if (intens<64) intens=64;
 			else if (intens>127) intens=127;
 			ptsi[a].c.r=(zcol[z].r*intens)>>7;
 			ptsi[a].c.g=(zcol[z].g*intens)>>7;
 			ptsi[a].c.b=(zcol[z].b*intens)>>7;
-#define KVISU 4
-#define KREMAP 3
-			if (xk-xx>-KREMAP && xk-xx<KREMAP && yk-yx>-KREMAP && yk-yx<KREMAP) {
-				if (dx && dy) {
-					veci c;
-					c.x=coinp.x;
-					c.y=coinp.y;
-					c.z=coinp.z;
-					switch (dirx) {
-					case 1:
-						subvi(&c,&mx);
-						break;
-					case 2:
-						addvi(&c,&mx);
-						break;
-					case 3:
-						subvi(&c,&my);
-						break;
-					case 4:
-						addvi(&c,&my);
-						break;
+
+#			define KREMAP 3
+			int const xk_xx = xk - xx;
+			int const yk_yx = yk - yx;
+			if (dx && dy) {
+				if (// if we are close enough to the camera
+					xk_xx > -KREMAP && xk_xx < KREMAP &&
+					yk_yx > -KREMAP && yk_yx < KREMAP
+				) {
+					// then draw using submap
+					// c is the location of the opposite corner (the one that's close to us)
+					veci c = coinp;
+					subvi(&c, &d_coinp);
+					subvi(&c, &d_coin);
+					last_poly_is_visible = 0;	// awful hack
+					draw_submap(c,
+						pz[a],                  ptsi[a].c,
+						pz[a-1],                ptsi[a-1].c,
+						pz[dx+(ay^(SMAP+1))-1], ptsi[dx+(ay^(SMAP+1))-1].c,
+						pz[dx+(ay^(SMAP+1))],   ptsi[dx+(ay^(SMAP+1))].c,
+						bb);
+					if (last_poly_is_visible && map[bb].has_road) {
+						drawroute(bb);
 					}
-					switch (diry) {
-					case 1:
-						subvi(&c,&mx);
-						break;
-					case 2:
-						addvi(&c,&mx);
-						break;
-					case 3:
-						subvi(&c,&my);
-						break;
-					case 4:
-						addvi(&c,&my);
-						break;
-					}
-					last_poly_is_visible=0;
-					// TODO: is it necessary to draw the submap when it's 0 (flat) ?
-					draw_submap(c,pz[a],ptsi[a].c,pz[a-1],ptsi[a-1].c,pz[dx+(ay^(SMAP+1))-1],ptsi[dx+(ay^(SMAP+1))-1].c,pz[dx+(ay^(SMAP+1))],ptsi[dx+(ay^(SMAP+1))].c,bb);
-					MMXRestoreFPU();
-					if (last_poly_is_visible && (map[bb].has_road)) {
+				} else {
+					// If the tile is far enough that we don't want to draw it's submap
+					last_poly_is_visible = 0;
+					polyclip(
+						&ptsi[a-1+direct],
+						coli ? &ptsi[dx+(ay^(SMAP+1))-1] : &ptsi[dx+(ay^(SMAP+1))],
+						&ptsi[a-direct]);
+					polyclip(
+						coli ? &ptsi[a] : &ptsi[a-1],
+						&ptsi[dx+(ay^(SMAP+1)) -1 + direct],
+						&ptsi[dx+(ay^(SMAP+1)) - direct]);
+					if (last_poly_is_visible && map[bb].has_road) {
 						drawroute(bb);
 					}
 				}
-			} else {
-				// If the tile is far enough that we don't want to draw it's submap
-				if (dx && dy) {
-					last_poly_is_visible=0;
-					polyclip(&ptsi[a-1+direct],coli?&ptsi[dx+(ay^(SMAP+1))-1]:&ptsi[dx+(ay^(SMAP+1))],&ptsi[a-direct]);
-					polyclip(coli?&ptsi[a]:&ptsi[a-1],&ptsi[dx+(ay^(SMAP+1))-1+direct],&ptsi[dx+(ay^(SMAP+1))-direct]);
-					if (last_poly_is_visible && (map[bb].has_road)) {
-						drawroute(bb);
-					}
-				}
-			}
-			if (xk-xx>-KVISU && xk-xx<KVISU && yk-yx>-KVISU && yk-yx<KVISU) {
+			} // else dx || dy -> we are on our first row or column
+#			define KVISU (KREMAP+1)
+			if (
+				xk_xx > -KVISU && xk_xx < KVISU &&
+				yk_yx > -KVISU && yk_yx < KVISU
+			) {
 				if (map[bb].first_obj != -1) {
-					if (xk-xx<-1 || xk-xx>1 || yk-yx<-1 || yk-yx>1) renderer(bb,3);
-					else {
+					if (xk_xx < -1 || xk_xx > 1 || yk_yx < -1 || yk_yx > 1) {
+						renderer(bb,3);
+					} else {
 						renderer(bb,0);
 						lastcare[lcidx++]=bb;
 					}
 				}
-			} else renderer(bb,1);
-			MMXSaveFPU();
-			switch (dirx) {
-			case 1:
-				addvi(&coinp,&mx);
-				break;
-			case 2:
-				subvi(&coinp,&mx);
-				break;
-			case 3:
-				addvi(&coinp,&my);
-				break;
-			case 4:
-				subvi(&coinp,&my);
-				break;
+			} else {
+				renderer(bb, 1);
 			}
-			if (coinp.z<-((int)ECHELLE<<10)) break;
-		}
-		switch (diry) {
-		case 1:
-			addvi(&coin,&mx);
-			break;
-		case 2:
-			subvi(&coin,&mx);
-			break;
-		case 3:
-			addvi(&coin,&my);
-			break;
-		case 4:
-			subvi(&coin,&my);
-			break;
-		}
-		if (coin.z<-((int)ECHELLE<<10)) break;
-	}
-	MMXRestoreFPU();
+		} // end of xx,yx inner loop
+	} // end of yx,yy outer loop
 
 	/* Now that the picture is almost done, render the objects that were so close
 	 * to the camera that we refused to draw them when encountered (see note above
@@ -829,6 +892,7 @@ void polygouro(vect2dc *p1, vect2dc *p2, vect2dc *p3) {
 
 
 // return the ground altitude at this position
+// FIXME: we should max out the precision extracted from the coordinates
 float z_ground(float x, float y, bool with_submap)
 {
 	// This starts as above

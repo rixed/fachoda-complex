@@ -45,12 +45,16 @@
 #define NBPRIMES (4*5)
 #define NBVILLAGES 10
 
+// Total world map length
 #define NWMAP 7
 #define WMAP (1<<NWMAP)
+// Length of the vision square
 #define NMAP 5
 #define SMAP (1<<NMAP)
+// Length of the submap square
 #define NMAP2 3
 #define SMAP2 (1<<NMAP2)
+// Length of 1 world tile
 #define NECHELLE 12
 #define ECHELLE (1<<NECHELLE)
 
@@ -511,6 +515,7 @@ static inline void addv(vector *r, vector *a) { r->x+=a->x; r->y+=a->y; r->z+=a-
 static inline void addvi(veci *r, veci *a) { r->x+=a->x; r->y+=a->y; r->z+=a->z; }
 static inline void subv(vector *r, vector *a) { r->x-=a->x; r->y-=a->y; r->z-=a->z; }
 static inline void subvi(veci *r, veci *a) { r->x-=a->x; r->y-=a->y; r->z-=a->z; }
+static inline void negvi(veci *r) { r->x = -r->x; r->y = -r->y; r->z = -r->z; }
 static inline void mulv(vector *r, float a) { r->x*=a; r->y*=a; r->z*=a; }
 static inline void copyv(vector *r, vector *a) { r->x=a->x; r->y=a->y; r->z=a->z; }
 static inline void copym(matrix *r, matrix *a) { memcpy(r,a,sizeof(matrix)); }
