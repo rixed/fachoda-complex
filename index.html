@@ -171,19 +171,19 @@ on the other hand this is a kind of confidence that only ignorance can brings.</
 	<p>Anyway, I reworked somewhat the landscape generation code, removing dead code
 and fixing things along the way. Most importantly, I documented how this part works.
 The landscape is basically a map of 128x128 bytes, giving the height at that location.
-To each of these tile is added a sub-heighfield of 16x16 that add higher frequency
+To each of these tile is added a sub-heighfield of 8x8 that add higher frequency
 signal. The nice trick is that there are only 10 of these sub-heighfield possible,
 and we merely have another 128x128 bytes array to associate a tile to one of these
 predefined sub-heighfield.</p>
 
 	<p>Then, we have another array of 256 colors that gives us the color of any
 landscape point from its altitude. Then comes the lighting, for with we need another
-10 arrays of 16x16 bytes, giving the relative lightening of this particular sub-tile
+10 arrays of 8x8 bytes, giving the relative lightening of this particular sub-tile
 relative to the underlying tile (sloppy, but the eye won't notice and this avoids
 many dot products). Each polygon of the landscape is then &quot;gouraued&quot;.</p>
 
 	<p>The whole landscape thus fit into:<br/>
-	128*128&nbsp;+&nbsp;10*(16*16)&nbsp;+&nbsp;128*128&nbsp;+&nbsp;256&nbsp;+&nbsp;10*(16*16)&nbsp;=&nbsp;37Kbyte.
+128*128&nbsp;+&nbsp;10*(8*8)&nbsp;+&nbsp;128*128&nbsp;+&nbsp;256&nbsp;+&nbsp;10*(8*8)&nbsp;=&nbsp;34Kbyte.
 </p>
 
 	<p>Regarding the data structures used in the game, I noticed that very few structs
@@ -198,8 +198,8 @@ struct map *map = malloc(128*128*sizeof(*map));
 <p>... where <span class="code">struct map</span> would have a z field, a submap field,
 etc... But here we have all these fields allocated separately in distinct arrays. In
 other words, data are regrouped by usage instead of by "object". This is less easy to
-read but the code may be more cache friendly this way. I will probably not resist the
-temptation to rewrite this object-style, though.</p>
+read but the code may be more cache friendly this way. However, I could not resist the
+temptation to rewrite this with the struct.</p>
 
 <p>So after a few bugfixes, here is how it looks:</p>
 <img src="ingame2.png"/>
