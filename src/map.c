@@ -358,6 +358,11 @@ static int calcasm(int a, int b, int c)
 	return (((int64_t)b*c)>>13)+a;
 }
 
+/*
+ *  p3--p4
+ *  |   |
+ *  p2--p1
+ */
 static void draw_submap(veci coin, int z1, pixel i1, int z2, pixel i2, int z3, pixel i3, int z4, pixel i4, int m) {
 	vecic ptsi[(SMAP2+1)*2];
 	int xx,yx,xy,yy, dx,dy, ay;
@@ -461,35 +466,35 @@ void draw_ground_and_objects(void)
 		((fabs(obj[0].rot.z.x) > fabs(obj[0].rot.z.y)) <<2)
 	) {
 	case 0:
-		x=0; y=0; sxx=1; syx=0; sxy=0; syy=1;
+		x=0;    y=0;    sxx=1;  syx=0;  sxy=0;  syy=1;
 		coli=0; dirx=1; diry=3; dmx=-1; dmy=-1; direct=1;
 		break;
 	case 1:
-		x=SMAP; y=0; sxx=-1; syx=0; sxy=0; syy=1;
+		x=SMAP; y=0;    sxx=-1; syx=0;  sxy=0;  syy=1;
 		coli=1; dirx=2; diry=3; dmx=0; dmy=-1; direct=0;
 		break;
 	case 2:
-		x=0; y=SMAP; sxx=1; syx=0; sxy=0; syy=-1;
+		x=0;    y=SMAP; sxx=1;  syx=0;  sxy=0;  syy=-1;
 		coli=1; dirx=1; diry=4; dmx=-1; dmy=0; direct=0;
 		break;
 	case 3:
-		x=SMAP; y=SMAP; sxx=-1; syx=0; sxy=0; syy=-1;
-		coli=0; dirx=2; diry=4; dmx=dmy=0; direct=1;
+		x=SMAP; y=SMAP; sxx=-1; syx=0;  sxy=0;  syy=-1;
+		coli=0; dirx=2; diry=4; dmx=0;  dmy=0; direct=1;
 		break;
 	case 4:
-		x=0; y=0; sxx=0; syx=1; sxy=1; syy=0;
+		x=0;    y=0;    sxx=0;  syx=1;  sxy=1;  syy=0;
 		coli=0; dirx=3; diry=1; dmx=-1; dmy=-1; direct=0;
 		break;
 	case 5:
-		x=SMAP; y=0; sxx=0; syx=1; sxy=-1; syy=0;
+		x=SMAP; y=0;    sxx=0;  syx=1;  sxy=-1; syy=0;
 		coli=1; dirx=3; diry=2; dmx=0; dmy=-1; direct=1;
 		break;
 	case 6:
-		x=0; y=SMAP; sxx=0; syx=-1; sxy=1; syy=0;
+		x=0;    y=SMAP; sxx=0;  syx=-1; sxy=1;  syy=0;
 		coli=1; dirx=4; diry=1; dmx=-1; dmy=0; direct=1;
 		break;
 	case 7:
-		x=SMAP; y=SMAP; sxx=0; syx=-1; sxy=-1; syy=0;
+		x=SMAP; y=SMAP; sxx=0;  syx=-1; sxy=-1; syy=0;
 		coli=0; dirx=4; diry=2; dmx=0; dmy=0; direct=0;
 		break;
 	}
@@ -568,12 +573,15 @@ void draw_ground_and_objects(void)
 	// xk,yk is the tile coordinate of the camera's tile
 	int const xk = (int)floor(obj[0].pos.x/ECHELLE)+(WMAP>>1);
 	int const yk = (int)floor(obj[0].pos.y/ECHELLE)+(WMAP>>1);
+	
+	vecic ptsi[(SMAP+1)*2];	// integer 3d position + color for a small tile ribbon
+	int pz[(SMAP+1)*2];	// storing the height of this map position << 14, for convenience
 
 #	define Z_MIN (-(4*ECHELLE<<8))
 	// xy,yy will loop on all tile locations on the 2nd furthest edge of the vision square
 	// (relative to world map origin)
-	// dy count from 0 to SMAP (length of the vision square)
-	// ay is 0, SMAP+1, 0, SMAP+1, 0, etc...
+	// dy count from 0 to SMAP (incl) (length of the vision square)
+	// ay is 0, SMAP+1, 0, SMAP+1, 0, etc... for addressing ptsi and pz.
 	// Also, coin will goes along this furthest side
 	int xy, yy, dy, ay;
 	for (
@@ -585,7 +593,7 @@ void draw_ground_and_objects(void)
 		veci coinp = coin;
 		// xx,yx will loop on all tile locations of the furthest edge of the vision square
 		// (the horizon), from (xy,yy) (ie the furthest location of the line) toward the camera
-		// and eventually behind, SMAP times.
+		// and eventually behind, SMAP+1 times.
 		// dx count from 0 to SMAP.
 		// coinp will goes along the line.
 		// Both the inner and outer loops are also exited whenever the z goes too far behind (Z_MIN)
@@ -605,15 +613,12 @@ void draw_ground_and_objects(void)
 			int ob = MASKW(xx-1) + (MASKW(yx)<<NWMAP);	// the tile at left (for lighting)
 			int const z = map[b].z;	// the altitude of current tile
 
-			static vecic ptsi[(SMAP+1)*2];	// integer 3d position + color for a small tile ribbon
-			static int pz[(SMAP+1)*2];	// storing the height of this map position << 14, for convenience
-
-			int a = dx + ay;
+			int const a = dx + ay;
 			pz[a] = z<<14;
 			// ptsi[a] position
-			ptsi[a].v.x = calcasm(coinp.x,z<<14, mz.x);
-			ptsi[a].v.y = calcasm(coinp.y,z<<14, mz.y);
-			ptsi[a].v.z = calcasm(coinp.z,z<<14, mz.z);
+			ptsi[a].v.x = calcasm(coinp.x, z<<14, mz.x);
+			ptsi[a].v.y = calcasm(coinp.y, z<<14, mz.y);
+			ptsi[a].v.z = calcasm(coinp.z, z<<14, mz.z);
 			// Compute ptsi[a] color
 			int intens = ((z-map[ob].z))+32+64;
 			if (intens<64) intens=64;
@@ -625,6 +630,11 @@ void draw_ground_and_objects(void)
 #			define KREMAP 3
 			int const xk_xx = xk - xx;
 			int const yk_yx = yk - yx;
+
+			// First draw the landscape
+			
+			// if dy == 0 then ptsi and pz does not have previous line.
+			// if dx == 0 then ptsi and pz lacks the previous point.
 			if (dx && dy) {
 				if (// if we are close enough to the camera
 					xk_xx > -KREMAP && xk_xx < KREMAP &&
@@ -649,7 +659,7 @@ void draw_ground_and_objects(void)
 					// If the tile is far enough that we don't want to draw it's submap
 					last_poly_is_visible = 0;
 					polyclip(
-						&ptsi[a-1+direct],
+						&ptsi[a - 1 + direct],
 						coli ? &ptsi[dx+(ay^(SMAP+1))-1] : &ptsi[dx+(ay^(SMAP+1))],
 						&ptsi[a-direct]);
 					polyclip(
@@ -661,6 +671,9 @@ void draw_ground_and_objects(void)
 					}
 				}
 			} // else dx || dy -> we are on our first row or column
+
+			// Then draw the objects
+
 #			define KVISU (KREMAP+1)
 			if (
 				xk_xx > -KVISU && xk_xx < KVISU &&
