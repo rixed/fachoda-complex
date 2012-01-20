@@ -112,13 +112,13 @@ void polyflat(vect2d *p1, vect2d *p2, vect2d *p3, int coul) {
 	int xi, yi, lx, i, j, jlim, yfin;
 	int q1, q2, q3, ql, qx, qx2, ql2;
 	pixel32 *vid;
-	
+
 	if (p2->y<p1->y) { tmp=p1; p1=p2; p2=tmp; }
 	if (p3->y<p1->y) { tmp=p1; p1=p3; p3=tmp; }
 	if (p3->y<p2->y) { tmp=p2; p2=p3; p3=tmp; }
 	if (p1->y==p2->y && p1->x>p2->x) { tmp=p1; p1=p2; p2=tmp; }
 	if (p3->y<0 || p1->y>=SY) return;
-	
+
 //	if (p3->y==p2->y) p3->y++;
 //	if (p1->y==p2->y) p1->y--;
 
@@ -135,13 +135,13 @@ void polyflat(vect2d *p1, vect2d *p2, vect2d *p3, int coul) {
 	}
 	lx = 1<<vf;
 	xi=p1->x<<vf;
-	
+
 	q1=((p3->x-p1->x)<<vf)/(p3->y-p1->y);	// et le cas p3y=p1y ?? maintenant il faut le traiter à part !
 	if (p1->y!=p2->y) {
 		q2=((p2->x-p1->x)<<vf)/(p2->y-p1->y);
 	} else {	// on a forcément p1x<p2x
 		q2 = MAXINT;
-		lx = (p2->x-p1->x+1)<<vf;	
+		lx = (p2->x-p1->x+1)<<vf;
 	}
 	if (p3->y!=p2->y) {
 		q3=((p3->x-p2->x)<<vf)/(p3->y-p2->y);
@@ -171,9 +171,9 @@ void polyflat(vect2d *p1, vect2d *p2, vect2d *p3, int coul) {
 		lx-=yi*ql;
 		yi=0;
 	}
-debtrace:	
+debtrace:
 	vid=videobuffer+(yi)*SX;
-	
+
 	for (i=0; i<2; i++, yfin=p3->y, ql=ql2, qx=qx2){
 		while (yi<yfin && yi<SY) {
 			jlim=(lx+xi)>>vf; j=xi>>vf;

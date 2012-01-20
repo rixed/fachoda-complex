@@ -57,7 +57,7 @@ void initroute() {
 	for (i=0; i<(1<<NHASH); i++)
 		for (j=0; j<NBREPHASH; j++)
 			map2route[i][j]=-1;
-	
+
 }
 void endinitroute() {
 	route=(route_s*)realloc(route,routeidx*sizeof(route_s));

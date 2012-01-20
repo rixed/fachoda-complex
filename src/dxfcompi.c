@@ -61,14 +61,14 @@ void saveall(FILE *f) { // sauvegarde dans le fichier
 	fwrite(&ptsobj,sizeof(vector),nbpt,f);
 	fwrite(&facesobj,sizeof(facelight),nbface,f);
 }
-	
+
 int main(int nbarg, char **arg) {
 	FILE *in,*out=NULL;
 	int i,j, np0, np1, np2, np3;
 	float d;
 	vector pt[4];
 	char msg[260],objname[260];
-	
+
 	if (nbarg<2 || nbarg>4) { printf("dxfcompi fichin [taille_de_l'objet [flag_centre]]\n"); exit(-1); };
 	if (resize=(nbarg>2)) printf("Resizing OK\n");
 	centre=1; /*if (centre=(nbarg==4))*/ printf("Centering OK\n");
@@ -77,7 +77,7 @@ int main(int nbarg, char **arg) {
 		sscanf(arg[2],"%lf",&size);
 		if (size<=0) { printf("ga?\n"); exit(-1); };
 	}
-	while(1) {	
+	while(1) {
 		while(1) {	// parse le header jusqu'à ce qu'on trouve une 3DFACE
 			fscanf(in,"%d",&i);
 			if (i==0) {

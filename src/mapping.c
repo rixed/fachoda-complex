@@ -189,7 +189,7 @@ void polyphong(vect2dlum *p1, vect2dlum *p2, vect2dlum *p3, int coul) {
 	int q1, q2, q3, ql, p1x, p1y, p2x, p2y, qx, qx2, ql2, px,py,px2,py2;
 	int a, aa, k, x, y, atmp, l;
 	pixel32 *vid;
-	
+
 	int coul_r = coul & 0xff;
 	int coul_g = (coul >> 8) & 0xff;
 	int coul_b = (coul >> 16) & 0xff;
@@ -199,12 +199,12 @@ void polyphong(vect2dlum *p1, vect2dlum *p2, vect2dlum *p3, int coul) {
 	if (p3->v.y<p2->v.y) { tmp=p2; p2=p3; p3=tmp; }
 	if (p1->v.y==p2->v.y && p1->v.x>p2->v.x) { tmp=p1; p1=p2; p2=tmp; }
 	if (p3->v.y<0 || p1->v.y>SY) return;
-	
+
 //	if (p1->v.y==p2->v.y) p1->v.y--;	// de l'avantage d'une grosse rézo...
 //	if (p3->v.y==p2->v.y) p3->v.y++;
-	
+
 	yi=p1->v.y; y=p1->yl<<vf;
-	
+
 	if (p3->v.y==p1->v.y) {
 		if (p1->v.x>p3->v.x) { tmp=p1; p1=p3; p3=tmp; }
 		if (p2->v.x<p3->v.x) { tmp=p2; p2=p3; p3=tmp; }
@@ -220,15 +220,15 @@ void polyphong(vect2dlum *p1, vect2dlum *p2, vect2dlum *p3, int coul) {
 		MMXPhongInit(aa,50);
 		goto debtrace;
 	}
-	
+
 	xi=p1->v.x<<vf;
 	x=p1->xl<<vf;
 	lx = 1<<vf;
-	
+
 	q1=((p3->v.x-p1->v.x)<<vf)/(p3->v.y-p1->v.y);
 	p1x=((p3->xl-p1->xl)<<vf)/(p3->v.y-p1->v.y);	// vecteurs quotients dans la "texture"
 	p1y=((p3->yl-p1->yl)<<vf)/(p3->v.y-p1->v.y);
-	
+
 	if (p1->v.y!=p2->v.y) {
 		q2=((p2->v.x-p1->v.x)<<vf)/(p2->v.y-p1->v.y);
 		p2x=((p2->xl-p1->xl)<<vf)/(p2->v.y-p1->v.y);
@@ -242,7 +242,7 @@ void polyphong(vect2dlum *p1, vect2dlum *p2, vect2dlum *p3, int coul) {
 	} else {
 		q3 = MAXINT;
 	}
-	
+
 	if (q1<=q2) {
 		int p3x,p3y;
 		ql = (q2-q1)|1;		// le taux d'accroissement de la taille du segment (en évitant 0);
@@ -262,7 +262,7 @@ void polyphong(vect2dlum *p1, vect2dlum *p2, vect2dlum *p3, int coul) {
 		int p3x,p3y;
 		ql = (q1-q2)|1;
 		ql2= q1-q3;
-		qx=q2; qx2=q3;	
+		qx=q2; qx2=q3;
 		dx=((p1x-p2x)<<vf)/ql;
 		dy=((p1y-p2y)<<vf)/ql;
 		if (p3->v.y!=p2->v.y) {
@@ -273,7 +273,7 @@ void polyphong(vect2dlum *p1, vect2dlum *p2, vect2dlum *p3, int coul) {
 		}
 		px=p2x; px2=p3x; py=p2y; py2=p3y;
 	}
-	
+
 	a=(dx*dx+dy*dy)>>vf;
 	aa=a+a;
 	MMXPhongInit(aa,50);
@@ -294,7 +294,7 @@ void polyphong(vect2dlum *p1, vect2dlum *p2, vect2dlum *p3, int coul) {
 	}
 debtrace:
 	vid=videobuffer+(yi)*SX;
-	
+
 	for (i=0; i<2; i++, yfin=p3->v.y, ql=ql2, qx=qx2, px=px2, py=py2){
 		while (yi<yfin && yi<SY) {
 			k=(dx*(x>>vf)+dy*(y>>vf))<<1;

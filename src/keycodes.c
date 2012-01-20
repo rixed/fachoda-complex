@@ -6,10 +6,10 @@ kc_s gkeys[NBKEYS] = {
 	{9,"Quit"},
 	{29,"Yes"},
 	{57,"No"},
-	
+
 	{21,"Motor +5%"},
 	{20,"Motor -5%"},
-	
+
 	{71,"External views"},
 	{72,"Travelling view"},
 	{70,"Internal views"},
@@ -29,7 +29,7 @@ kc_s gkeys[NBKEYS] = {
 	{105,"Look on your right"},
 	{99,"Look up"},
 	{106,"Bend toward the instrument panel"},
-	
+
 	{42,"Gear"},
 	{41,"Flaps"},
 	{56,"Brakes"},
@@ -42,7 +42,7 @@ kc_s gkeys[NBKEYS] = {
 	{84,"Center stick"},
 	{65,"Fire"},
 	{109,"Change weapon"},
-	
+
 	{110,"Pause"},
 	{36,"See Highscores"},
 	{53,"Accelerated mode"},
@@ -50,7 +50,7 @@ kc_s gkeys[NBKEYS] = {
 	{75,"Map mode"},
 	{96,"Suicide"},
 	{39,"Flag the map at plane's position"},
-	
+
 	{43,"Emergency UP! (...?)"},
 	{52,"Gun this plane (...?)"}
 };

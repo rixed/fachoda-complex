@@ -132,18 +132,18 @@ int loadsample(sample_e samp, char *fn, char loop) {
 			}
 			else total+=length;
 		}
-		
+
 		confirm_id = esd_confirm_sample_cache(esound_sock);
 		if (sample_id!=confirm_id) {
 			printf("error while caching sample <%d>: confirm returned %d\n",sample_id,confirm_id);
 		}
-		
+
 		reget_sample_id=esd_sample_getid(esound_sock,fn);
 		printf("reget of sample %s id is <%d>\n",fn,reget_sample_id);
 		if ((reget_sample_id != sample_id) || reget_sample_id < 0) {
 			printf( "sample id's do not make sense!\n");
 		}
-		
+
 		printf("sample uploaded, %d bytes\n",total);
 		esound_sampid[samp]=reget_sample_id;
 		esound_samploop[samp]=loop;

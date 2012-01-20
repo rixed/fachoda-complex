@@ -1,5 +1,4 @@
-CFLAGS   := $(CFLAGS) -std=c99 -W -Wall ${shell sdl-config --cflags}
-CPPFLAGS := $(CPPFLAGS) -D_GNU_SOURCE
+CFLAGS   := $(CFLAGS) -std=c99 -W -Wall -D_GNU_SOURCE ${shell sdl-config --cflags}
 LDFLAGS  := $(LDFLAGS) -lm -ljpeg ${shell sdl-config --libs}
 
 SRCS = \
@@ -14,13 +13,19 @@ OBJS = ${subst .c,.o,$(SRCS)}
 fachoda: $(OBJS)
 	$(CC) -o $@ $(CFLAGS) $(LDFLAGS) $^
 
-.PHONY: clean distclean
+.PHONY: clean distclean cscope clear
 
 clean:
 	rm -f *.o *.dep core core.*
 
 distclean: clean
-	rm -f fachoda fachoda.sdl fachodasrv
+	rm -f fachoda fachoda.sdl fachodasrv cscope.out
+
+cscope:
+	cscope -Rb $(CPPFLAGS)
+
+clear:
+	find . -type f -\( -name '*.c' -o -name '*.h' -\) | xargs sed -i -e 's/[ \t]\+$$//'
 
 .depend: $(SRCS)
 	rm -f .depend ;

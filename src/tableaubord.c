@@ -135,7 +135,7 @@ void loadtbtile(char *fn) {
 		}
 	}
 	delta=((SYTB<<2)-320)/13;
-	
+
 	rvert=(SYTB-3*delta)/4;
 	xvert=delta+rvert;
 	yvert=SYTB>>2;
@@ -148,7 +148,7 @@ void loadtbtile(char *fn) {
 		gradutb(xvert,yvert,M_PI-a,rvert-5,rvert-1,0x3030FF);
 		gradutb(xvert,yvert,M_PI+a,rvert-5,rvert-1,0xFF3030);
 	}
-	
+
 	xassi=xvert;
 	yassi=3*yvert;
 	rassi=rvert;
@@ -159,7 +159,7 @@ void loadtbtile(char *fn) {
 	gradutb(xassi,yassi,-2*M_PI/3,rassi-8,rassi-1,0xD0D0D0);
 	gradutb(xassi,yassi,-M_PI/6,rassi-6,rassi-1,0xD0D0D0);
 	gradutb(xassi,yassi,-5*M_PI/6,rassi-6,rassi-1,0xD0D0D0);
-	
+
 	xspeed=xvert+rvert*2+delta;
 	yspeed=yvert;
 	rspeed=rvert;
@@ -174,7 +174,7 @@ void loadtbtile(char *fn) {
 		gradutb(xspeed,yspeed,M_PI/2-a,rspeed-6,rspeed-4,a<1.5?0xD0D0D0:(a<4.5?0x20E020:0xE02020));
 		a+=.01;
 	} while (a<M_PI*1.9);
-	
+
 	xthrust=xspeed;
 	ythrust=yassi;
 	rthrust=rvert;
@@ -186,13 +186,13 @@ void loadtbtile(char *fn) {
 		gradutb(xthrust,ythrust,a,rthrust-4,rthrust-1,0xD0D0D0);
 	}
 	for (a=-M_PI; a<0; a+=.001) gradutb(xthrust,ythrust,a,rthrust*.55,rthrust*.8,a<-2?0x2020A0:(a<-.7?0x303030:0xA02020));
-	
+
 	xinclin=xthrust+rthrust+delta;
 	yinclin=delta*3;
 	hinclin=SYTB-6*delta;
 	dxinclin=hinclin*.1;
 	rectangleZ(xinclin,yinclin,dxinclin,hinclin,0x03030);
-	
+
 	ralti=rvert;
 	xalti=xinclin+dxinclin+delta+ralti;
 	yalti=yvert;
@@ -204,7 +204,7 @@ void loadtbtile(char *fn) {
 		if (!(x&1)) pcharady(x+16,(int*)tbback+(int)(xalti+.6*ralti*cos(a))+((int)(yalti-4+.6*ralti*sin(a)))*SXTB,0xE0E0E0,SXTB);
 	}
 	cercletb(xalti,yalti,1,0xA0A0A0);
-	
+
 	rbous=rvert;
 	xbous=xalti;
 	ybous=yassi;
@@ -220,7 +220,7 @@ void loadtbtile(char *fn) {
 	xsoute=xalti+ralti+delta;
 	ysoute=delta*4;
 	rectangleZ(xsoute-1,ysoute-1,32,22,0x404010);
-	
+
 	rgear=(32-delta)/4;
 	xgear=xsoute+rgear;
 	ygear=ysoute+22+delta+rgear;
@@ -237,7 +237,7 @@ void loadtbtile(char *fn) {
 	yauto=yfrein;
 	rauto=rgear;
 	disqueZ(xauto,yauto,rauto,0);
-	
+
 }
 void drawtbback() {
 	int y;
@@ -358,7 +358,7 @@ void drawtbcadrans(int b) {
 	disqueL(xvert,yvert,rvert);
 	// inclinaison par rapport à la vitesse
 	a=scalaire(&bot[b].vionvit,&obj[bot[b].vion].rot.z);
-#define amax 10	
+#define amax 10
 	i=(hinclin>>1)*(1.+a/amax);
 	if (i<0) i=0;
 	for (; i<hinclin; i++)

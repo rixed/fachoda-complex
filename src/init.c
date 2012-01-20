@@ -93,7 +93,7 @@ void addbabase(int c) {
 		p.y=(yb-(WMAP>>1))*ECHELLE+ECHELLE/2;
 		p.z=0;
 		babaseo[0][x][c]=addnobjet(NBNAVIONS, &p, &mat_id, 1);	// la piste
-	
+
 		copyv(&pp,&p);
 		pp.x+=(drand48()-.5)*ECHELLE*.4;
 		pp.y+=(drand48()+.5)*ECHELLE*.2;

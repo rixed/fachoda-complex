@@ -29,13 +29,13 @@ void main() {
 	XInitImage(&img);
 	XPutImage(disp, win, gc, &img, 0,0, 0,0, SX,SY);
 	XMapWindow(disp,win);
-	
+
 	fontname=XListFonts(disp,"-*-clean-*-*-*-*-*-*-*-*-*-*-*-*",1,&i);
 	xfont=XLoadQueryFont(disp,fontname[0]);
 	XFreeFontNames(fontname);
 	XSetState(disp,gc,0xFFFF00,0,GXcopy,0xFFFFFF);
 	XSetFont(disp,gc,xfont->fid);
-	
+
 	for (u=0, y=0; y<7; y++)
 		for (x=0; x<16; x++, u++) {
 			char let;

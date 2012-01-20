@@ -264,7 +264,7 @@ int jauge(int vi, int max) {
 		if (kread(0) || kread(1)) {
 			if (kzc==0) return;
 		}
-		
+
 	} while (1);
 }*/
 int present() {

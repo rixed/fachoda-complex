@@ -2,7 +2,7 @@ enum {
 	kc_esc,
 	kc_yes,
 	kc_no,
-	
+
 /*	kc_motor0,
 	kc_motor1,
 	kc_motor2,
@@ -16,7 +16,7 @@ enum {
 	kc_motor10,*/
 	kc_motormore,
 	kc_motorless,
-	
+
 	kc_externview,
 	kc_travelview,
 	kc_internview,
@@ -36,7 +36,7 @@ enum {
 	kc_rightview,
 	kc_upview,
 	kc_movetowardview,
-	
+
 	kc_gear,
 	kc_flaps,
 	kc_brakes,
@@ -49,7 +49,7 @@ enum {
 	kc_center,
 	kc_fire,
 	kc_weapon,
-	
+
 	kc_pause,
 	kc_highscores,
 	kc_accelmode,
@@ -57,7 +57,7 @@ enum {
 	kc_mapmode,
 	kc_suicide,
 	kc_markpos,
-	
+
 	kc_alti,
 	kc_gunned
 } kc_e;

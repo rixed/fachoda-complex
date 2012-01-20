@@ -126,7 +126,7 @@ void explose(int oc, int i) {
 				}
 				prime[j].reward=0;
 			}
-		}	
+		}
 	}
 }
 void hitgun(int oc, int i) {

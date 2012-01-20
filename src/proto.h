@@ -262,7 +262,7 @@ typedef struct {
 	int dist;
 } voiture_s;
 enum {VOICEGEAR, VOICESHOT, VOICEMOTOR, VOICEEXTER, VOICEALERT };
-	
+
 // naw.c
 extern char hostname[250];
 extern vector ExplozePos; extern int Exploze;

@@ -679,7 +679,7 @@ parse_error:
 							randomhm(&obj[debris[i].o].rot);
 							debris[i].o=-1;
 						}
-							
+
 					}
 				}
 			}
@@ -780,7 +780,7 @@ parse_error:
 			for (i=0; i<NBBOT; i++) control(i);
 			for (i=0; i<NBTANKBOTS; i++) controlvehic(i);
 			for (i=0; i<NBZEPS; i++) controlzep(i);
-			
+
 			// fait tourner les moulins
 			AngleMoulin+=drand48()*.2*AccelFactor;
 			m.x.x=1; m.x.y=0; m.x.z=0;
@@ -884,7 +884,7 @@ parse_error:
 					break;
 				case 1:
 					obj[0].rot.y.x=0; obj[0].rot.y.y=0; obj[0].rot.y.z=-1;
-					obj[0].rot.x.x=cos(angvisu1); obj[0].rot.x.y=sin(angvisu1); obj[0].rot.x.z=0; 
+					obj[0].rot.x.x=cos(angvisu1); obj[0].rot.x.y=sin(angvisu1); obj[0].rot.x.z=0;
 					obj[0].rot.z.x=-sin(angvisu1); obj[0].rot.z.y=cos(angvisu1); obj[0].rot.z.z=0;
 					copyv(&obj[0].pos,&obj[0].rot.z);
 					mulv(&obj[0].pos,-loinvisu);
@@ -900,7 +900,7 @@ parse_error:
 					break;
 				case 3:
 					obj[0].rot.y.x=0; obj[0].rot.y.y=0; obj[0].rot.y.z=-1;
-					obj[0].rot.x.x=cos(angvisu1); obj[0].rot.x.y=sin(angvisu1); obj[0].rot.x.z=0; 
+					obj[0].rot.x.x=cos(angvisu1); obj[0].rot.x.y=sin(angvisu1); obj[0].rot.x.z=0;
 					obj[0].rot.z.x=-sin(angvisu1); obj[0].rot.z.y=cos(angvisu1); obj[0].rot.z.z=0;
 					copyv(&obj[0].pos,&obj[0].rot.z);
 					mulv(&obj[0].pos,-loinvisu);
@@ -909,7 +909,7 @@ parse_error:
 					break;
 				case 4:
 					obj[0].rot.y.x=0; obj[0].rot.y.y=0; obj[0].rot.y.z=-1;
-					obj[0].rot.x.x=cos(angvisu1); obj[0].rot.x.y=sin(angvisu1); obj[0].rot.x.z=0; 
+					obj[0].rot.x.x=cos(angvisu1); obj[0].rot.x.y=sin(angvisu1); obj[0].rot.x.z=0;
 					obj[0].rot.z.x=-sin(angvisu1); obj[0].rot.z.y=cos(angvisu1); obj[0].rot.z.z=0;
 					copyv(&obj[0].pos,&obj[0].rot.z);
 					mulv(&obj[0].pos,-loinvisu);
@@ -1050,7 +1050,7 @@ parse_error:
 					}
 				}
 				oldgold=bot[bmanu].gold;
-				
+
 				if (AfficheHS) {
 					int y=(SY-(20+2)*9)>>1;
 					pstr("LE TOP 20 DE LA FRIME",y,0xFFFFFF);
