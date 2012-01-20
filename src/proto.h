@@ -2,6 +2,7 @@
 #define PROTO_H_120116
 
 #include <string.h>
+#include <stdbool.h>
 
 #define MIN(a,b) ((a)<=(b)?(a):(b))
 #define MAX(a,b) ((b)<=(a)?(a):(b))
@@ -48,12 +49,6 @@
 // Total world map length
 #define NWMAP 7
 #define WMAP (1<<NWMAP)
-// Length of the vision square
-#define NMAP 5
-#define SMAP (1<<NMAP)
-// Length of the submap square
-#define NMAP2 3
-#define SMAP2 (1<<NMAP2)
 // Length of 1 world tile
 #define NECHELLE 12
 #define ECHELLE (1<<NECHELLE)
@@ -75,9 +70,13 @@ typedef struct {
 typedef struct {
 	float x,y,z;
 } vector;
+#define PRIVECTOR "f,%f,%f"
+#define PVECTOR(v) v.x, v.y, v.z
 typedef struct {
 	int x,y,z;
 } veci;
+#define PRIVECI "f,%f,%f"
+#define PVECI(v, p) ((float)v.x)/(1<<p), ((float)v.y)/(1<<p), ((float)v.z)/(1<<p)
 typedef struct {
 	veci v;
 	pixel c;
@@ -326,12 +325,13 @@ extern void mixplot(int x, int y, int r, int g, int b);
 extern void plotmouse(int x,int y);
 extern void plotcursor(int x,int y);
 extern void cercle(int x, int y, int radius, int c);
-extern void polyflat(vect2d *p1, vect2d *p2, vect2d *p3, int color);
+extern bool polyflat(vect2d *p1, vect2d *p2, vect2d *p3, int color);
 extern void drawline(vect2dlum *p1, vect2dlum *p2, int col);
 extern void drawline2(vect2d *p1, vect2d *p2, int col);
 extern void calcposaind(int i);
 extern void calcposa(void);
-extern void renderer(int ak, int fast);
+enum render_part { GROUND, CLOUDS, SKY, ALL };	// ALL = GROUND+SKY
+extern void renderer(int ak, enum render_part);
 // txt.c
 extern void pcharady(int m, int *v, int c, int off);
 extern int TextClipX1,TextClipX2,TextColfont;

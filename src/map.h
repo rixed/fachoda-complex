@@ -18,7 +18,10 @@ extern struct tile *map;
 extern pixel zcol[256];
 
 /* Given a tile index k, return its submap number */
-int submap_get(int k);
+static inline int submap_get(int k)
+{
+	return map[k].has_road ? 0 : map[k].submap;
+}
 
 /* Animate submap 9 with a wave pattern */
 void animate_water(void);

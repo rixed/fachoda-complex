@@ -3,8 +3,16 @@
 #include <stdint.h>
 #include <math.h>
 #include <values.h>
-#include <assert.h>
 #include "map.h"
+
+// Length of the vision square
+#define VIEW_LEN_N 5
+#define VIEW_LEN (1 << VIEW_LEN_N)
+// Length of the submap square
+#define SUBMAP_LEN_N 3
+#define SUBMAP_LEN (1 << SUBMAP_LEN_N)
+
+#define MASK_W(a) ((a) & (WMAP-1))
 
 /* The map is the central structure of the game.
  * It's a simple square heightfield of unsigned bytes
@@ -12,7 +20,7 @@
  *
  * There are 11 of these maps.
  * The most important one is the global map, of side length WMAP (128).
- * The other ones are the submaps, of length SMAP2 (16), representing the height of
+ * The other ones are the submaps, of length SUBMAP_LEN (16), representing the height of
  * each world map tile.
  * We have 10 of them, 9 is for water (animated), while 0
  * is completely flat for the airfields and roads. Each other tile of
@@ -25,28 +33,20 @@
 
 struct tile *map;	// The global map: a square of WMAP*WMAP tiles.
 
-static uchar *submap[10];	// The submaps (same structure as the global map, only smaller: SMAP2*SMAP2)
+/* The submaps (same structure as the global map, only smaller: SUBMAP_LEN*SUBMAP_LEN).
+ * These (positive) heights are added to the main map heights, so that submaped tiles
+ * are always slightly higher. Thus, transition between submaped close tiles and tiles
+ * farther away show no gap.
+ */
+static uchar *submap[10];
 
 /* Each vector of a submap heighfield have a specific lightning (to be added to the
  * lightning of the tile). It's faster than to compute a proper lightning for every
  * polygon!
  */
-static char *submap_rel_light[ARRAY_LEN(submap)];
+static signed char *submap_rel_light[ARRAY_LEN(submap)];
 
-int submap_get(int k)
-{
-	return map[k].has_road ? 0 : map[k].submap;
-}
-
-/* This is an awfull hack to skip drawing of roads when the ground is seen from below
- * (for instance, roads on the other side of a hill). Problems:
- * - this flag is set by the polygouro function, while it should be set by the draw_ground
- *   method itself, which should choose internaly whether to draw road or not (based on this
- *   and distance, for instance)
- * - this currently works because roads are only possible on flat submap (thus the last polygouro
- *   will have the correct information)
- */
-static int last_poly_is_visible;
+extern inline int submap_get(int k);
 
 /* Ground colors are chosen merely based on the height of the map.
  * So this array gives the color of any altitude.
@@ -66,10 +66,10 @@ static void random_submap(
 	uchar *m,		// first z
 	int smap        // length ot the total map
 ) {
-	int ss=s>>1;
+	int ss = s >> 1;
 	if (! ss) return;
 
-	double sf=Accident*(double)s/smap;
+	double sf = Accident * (double)s/smap;
 	// offset of first corner of the square
 	size_t const sx = z_off * x;
 	size_t const sy = z_off * y * smap;
@@ -98,13 +98,13 @@ static void random_submap(
 }
 
 static void smooth_map(uchar *m, int smap, int s, size_t z_off){
-	for (int i=0; i<s; i++) {
+	for (int i = 0; i < s; i++) {
 		size_t yo = 0, yn;
-		for (int y=0; y<smap; y++, yo=yn) {
+		for (int y = 0; y < smap; y++, yo = yn) {
 			size_t xo = 0, xn;
-			yn = y==smap-1 ? 0 : yo + z_off*smap;
-			for (int x=0; x<smap; x++, xo=xn) {
-				xn = x==smap-1 ? 0 : xo + z_off;
+			yn = y == smap-1 ? 0 : yo + z_off*smap;
+			for (int x = 0; x < smap; x++, xo = xn) {
+				xn = x == smap-1 ? 0 : xo + z_off;
 				m[xo+yo] = (m[xo+yo] + m[xn+yo] + m[xo+yn]) / 3;
 			}
 		}
@@ -112,12 +112,12 @@ static void smooth_map(uchar *m, int smap, int s, size_t z_off){
 }
 
 static void make_map(uchar *m, int smooth_factor, int mapzmax, int map_length, size_t z_off) {
-	m[0]=255;
+	m[0] = 255;	// ?
 	random_submap(0, 0, map_length, z_off, m, map_length);
 
 	/* Scale all heights (remember height are unsigned bytes)
 	 * so that we have all values from 0 to mapzmax */
-	int zmin=MAXINT, zmax=-MAXINT;
+	int zmin = MAXINT, zmax = -MAXINT;
 	size_t const map_size = map_length * map_length;
 	for (size_t i = 0; i < map_size; i += z_off) {
 		int const z = m[i];
@@ -210,30 +210,30 @@ void initmap(void) {
 
 	// Build submaps
 	for (unsigned i = 0; i < ARRAY_LEN(submap); i++) {
-		submap[i] = calloc(SMAP2*SMAP2, sizeof(*submap[i]));
+		submap[i] = calloc(SUBMAP_LEN*SUBMAP_LEN, sizeof(*submap[i]));
 	}
-	make_map(submap[0], 10,  5, SMAP2, 1);	// flat
-	make_map(submap[1], 2, 100, SMAP2, 1);	// mostly flat
-	make_map(submap[2], 2, 190, SMAP2, 1);	// mostly flat
-	make_map(submap[3], 2, 230, SMAP2, 1);	// mostly flat
-	make_map(submap[4], 1, 250, SMAP2, 1);	// mountain tops
-	make_map(submap[5], 1, 250, SMAP2, 1);	// mountain tops
-	make_map(submap[6], 3, 253, SMAP2, 1);	// middle lands
-	make_map(submap[7], 3, 253, SMAP2, 1);	// middle lands
-	make_map(submap[8], 2, 253, SMAP2, 1);	// middle lands
-	make_map(submap[9], 0,   2, SMAP2, 1);	// reserved for water: we will move this heighfield
+	make_map(submap[0], 10,  5, SUBMAP_LEN, 1);	// flat
+	make_map(submap[1], 2, 100, SUBMAP_LEN, 1);	// mostly flat
+	make_map(submap[2], 2, 190, SUBMAP_LEN, 1);	// mostly flat
+	make_map(submap[3], 2, 230, SUBMAP_LEN, 1);	// mostly flat
+	make_map(submap[4], 1, 250, SUBMAP_LEN, 1);	// mountain tops
+	make_map(submap[5], 1, 250, SUBMAP_LEN, 1);	// mountain tops
+	make_map(submap[6], 3, 253, SUBMAP_LEN, 1);	// middle lands
+	make_map(submap[7], 3, 253, SUBMAP_LEN, 1);	// middle lands
+	make_map(submap[8], 2, 253, SUBMAP_LEN, 1);	// middle lands
+	make_map(submap[9], 0,   2, SUBMAP_LEN, 1);	// reserved for water: we will move this heighfield
 	// compure relative lighting.
 	for (unsigned i = 0; i < ARRAY_LEN(submap); i++) {
-		submap_rel_light[i]=(char*)malloc(SMAP2*SMAP2*sizeof(char));
-		for (y=0; y<SMAP2; y++) {
-			for (x=0; x<SMAP2; x++) {
+		submap_rel_light[i]=malloc(SUBMAP_LEN*SUBMAP_LEN*sizeof(char));
+		for (y=0; y<SUBMAP_LEN; y++) {
+			for (x=0; x<SUBMAP_LEN; x++) {
 				double in;
-				int z=submap[i][x+y*SMAP2];
-				if (x) in=((z-submap[i][x-1+y*SMAP2])/200.+1.)*.5;
-				else in=((z-submap[i][SMAP2-1+y*SMAP2])/200.+1.)*.5;
+				int z=submap[i][x+y*SUBMAP_LEN];
+				if (x) in=((z-submap[i][x-1+y*SUBMAP_LEN])/200.+1.)*.5;
+				else in=((z-submap[i][SUBMAP_LEN-1+y*SUBMAP_LEN])/200.+1.)*.5;
 				if (in<0) in=0;
 				else if (in>1) in=1;
-				submap_rel_light[i][x+y*SMAP2]=90*(in-.5);
+				submap_rel_light[i][x+y*SUBMAP_LEN]=90*(in-.5);
 			}
 		}
 	}
@@ -242,11 +242,11 @@ void initmap(void) {
 void animate_water(void)
 {
 	static float Fphix=0, Fphiy=0;
-	for (int y=0; y<SMAP2; y++) {
-		float sy=sin(y*2*M_PI/SMAP2+Fphiy);
-		for (int x=0; x<SMAP2; x++) {
-			submap[9][x+(y<<NMAP2)]=128+60*(sin(x*4*M_PI/SMAP2+Fphix)+sy);
-			submap_rel_light[9][x+(y<<NMAP2)]=8*(cos(x*4*M_PI/SMAP2+Fphix)+sy);
+	for (int y=0; y<SUBMAP_LEN; y++) {
+		float sy=sin(y*2*M_PI/SUBMAP_LEN+Fphiy);
+		for (int x=0; x<SUBMAP_LEN; x++) {
+			submap[9][x+(y<<SUBMAP_LEN_N)]=128+60*(sin(x*4*M_PI/SUBMAP_LEN+Fphix)+sy);
+			submap_rel_light[9][x+(y<<SUBMAP_LEN_N)]=8*(cos(x*4*M_PI/SUBMAP_LEN+Fphix)+sy);
 		}
 	}
 	Fphiy+=.03*AccelFactor;
@@ -256,6 +256,16 @@ void animate_water(void)
 /*
  * Map Rendering
  */
+
+/* This is an awful hack to skip drawing of roads when the ground is seen from below
+ * (for instance, roads on the other side of a hill). Problems:
+ * - this flag is set by the polygouro function, while it should be set by the draw_ground
+ *   method itself, which should choose internally whether to draw road or not (based on this
+ *   and distance, for instance)
+ * - this currently works because roads are only possible on flat submap (thus the last polygouro
+ *   will have the correct information)
+ */
+static int last_poly_is_visible;
 
 // Clip segment p1-p2 by the frustum zmin plan (p1->z is below FRUSTUM_ZMIN)
 #define FRUSTUM_ZMIN (32<<8)
@@ -274,16 +284,20 @@ static int color_of_pixel(pixel c) {
 	return (c.r<<16) + (c.g<<8) + (c.b);
 }
 static void poly(vecic *p1, vecic *p2, vecic *p3) {
-	vect2d l1,l2,l3;
-	proji(&l1, &p1->v);	// FIXME: should not project the same pt several times!
-	proji(&l2, &p2->v);
-	proji(&l3, &p3->v);
+	vect2dc l1,l2,l3;
+	proji(&l1.v, &p1->v);	// FIXME: should not project the same pt several times!
+	l1.c = p1->c;
+	proji(&l2.v, &p2->v);
+	l2.c = p2->c;
+	proji(&l3.v, &p3->v);
+	l3.c = p3->c;
 	pixel mix = {
-		.r = (p1->c.r + p2->c.r + p3->c.r) / 3,
-		.g = (p1->c.g + p2->c.g + p3->c.g) / 3,
-		.b = (p1->c.b + p2->c.b + p3->c.b) / 3,
+		.r = (l1.c.r + l2.c.r + l3.c.r) / 3,
+		.g = (l1.c.g + l2.c.g + l3.c.g) / 3,
+		.b = (l1.c.b + l2.c.b + l3.c.b) / 3,
 	};
-	polyflat(&l1, &l2, &l3, color_of_pixel(mix));
+	last_poly_is_visible = polyflat(&l1.v, &l2.v, &l3.v, color_of_pixel(mix));
+//	polygouro(&l1, &l2, &l3);
 }
 
 void polyclip(vecic *p1, vecic *p2, vecic *p3) {
@@ -335,372 +349,377 @@ void polyclip(vecic *p1, vecic *p2, vecic *p3) {
 	}
 }
 
-// These are inited by draw_ground_and_objects() and used also by draw_submap()
-static int sxx,syx,sxy,syy,coli,x2,y2,direct;
-static int dirx, diry;
-static veci d_coinp;	// coinp increment in inner loop
-static veci d_coin;	// coin increment in outer loop
-static veci mz;	// see mx,my in draw_ground_and_objects()
-
-#define MASK2(a) ((a)&(SMAP2-1))
-#define MASK(a)  ((a)&(SMAP-1))
-#define MASKW(a) ((a)&(WMAP-1))
-
-// Saturated between 10 and 245
-static uchar AddSatB(int a, int b) {
-	int c=a+b;
-	if (c<10) c=10;
-	else if (c>245) c=245;
-	return c;
-}
-static int calcasm(int a, int b, int c)
-{
-	return (((int64_t)b*c)>>13)+a;
-}
-
-/*
- *  p3--p4
- *  |   |
- *  p2--p1
+/* We will draw the world using the painter method.
+ * Notice that the painter method is only local: the painter
+ * does not necessarily sort by distance all what he has to draw and proceed to
+ * draw things in that order. He proceed that way to draw a portion of the painting,
+ * then can switch to another portion of its drawing which distance is unrelated
+ * to the portion he just left. So, he sort only locally.
+ * We do the same here: we do not sort all the world's tiles but merely select a
+ * way to traverse the world map so that we avoid overdrawing an object with another
+ * one that's farther away (notice there are no zbuffer).
+ * It's mostly enough to traverse the map along its rows and columns, starting
+ * from the farther corner and proceeding toward the camera (obj[0]).
+ * So here we consider the direction the camera is looking at and choose
+ * the traversal parameters accordingly.
+ * (why only "mostly enough"? Because the objects within the tiles are allowed
+ * to cross the tiles boundaries - we deal with this with the defered_tiles list).
  */
-static void draw_submap(veci coin, int z1, pixel i1, int z2, pixel i2, int z3, pixel i3, int z4, pixel i4, int m) {
-	vecic ptsi[(SMAP2+1)*2];
-	int xx,yx,xy,yy, dx,dy, ay;
-	int zi, zj, zz, dzz;
-	int dzi = ((z2-z3)<<8)>>NMAP2;
-	int dzj = ((z1-z4)<<8)>>NMAP2;
-	int ri, rj, rr, drr;
-	int dri = ((i2.r-i3.r)<<8)>>NMAP2;
-	int drj = ((i1.r-i4.r)<<8)>>NMAP2;
-	int gi, gj, gg, dgg;
-	int dgi = ((i2.g-i3.g)<<8)>>NMAP2;
-	int dgj = ((i1.g-i4.g)<<8)>>NMAP2;
-	int bi, bj, bb, dbb;
-	int dbi = ((i2.b-i3.b)<<8)>>NMAP2;
-	int dbj = ((i1.b-i4.b)<<8)>>NMAP2;
-	veci n_d_coinp = {
-		.x = d_coinp.x >> NMAP2,
-		.y = d_coinp.y >> NMAP2,
-		.z = d_coinp.z >> NMAP2,
-	};
-	veci n_d_coin = {
-		.x = d_coin.x >> NMAP2,
-		.y = d_coin.y >> NMAP2,
-		.z = d_coin.z >> NMAP2,
-	};
+/*                                Y
+ *                  case 2       ^        case 3
+ *                       ^       |       ^
+ *                        \      |      /
+ *                         \     |     /
+ *                          \    |    /
+ *          case 6 <-___     \   |   /     ___-> case 7
+ *                      \___  \  |  /  ___/
+ *                          \__\ | /__/
+ *                              \|/
+ *                   -----------------------------> X
+ *                            __/|\__
+ *                        ___/ / | \ \___
+ *                    ___/    /  |  \    \___
+ *          case 4 <-/       /   |   \       \-> case 5
+ *                          /    |    \
+ *                         /           \
+ *                        /             \
+ *                       v               v
+ *                     case 0          case 1
+ *
+ * map[0] is down there
+ */
+/* Also, we want to draw     But what we have in tiles[] is
+ * each tile like this:      this (l is either 0 or 1):
+ *
+ *  NW-------NE               [dx-1][!l]---[dx][!l]
+ *   | \     |                     |          |
+ *   |   \   |                     |          |
+ *   |     \ |                     |          |
+ *  SW-------SE                [dx-1][l]----[dx][l] <- current one
+ *
+ * Notice that we don't know the orientation of this tile.
+ * In case 1, for instance, current point will be NW.
+ */
+/* To finish, note that map[x,y] gives the tile which south-west corner
+ * lies at position x,y.
+ * So the first tile to draw is this one only if we are facing south-west! */
+
+struct orient_param {
+	int start_x_dir;
+	int start_y_dir;
+	enum corner { SW, NW, SE, NE } f0, f1, f2, f3;	// f0 is the farthest, f0-f1 is the inner loop, f0-f2 the outer loop
+	int inner_dx, inner_dy;
+	int outer_dx, outer_dy;
+	int dl1, dx1,
+		dl2, dx2,
+		dl3, dx3,
+		dl4, dx4;
+	int dmx, dmy;	// when we are at x,y, the tile is map[x+dmx,y+dmy] (ie. where is SW?)
+};
+
+static void render_map(
+	int corner_x, int corner_y,
+	struct orient_param const *orient,
+	unsigned length_n,
+	unsigned nb_params, int (*param)[4], // each param has 4 values (order sw, nw, se, ne)
+	unsigned nb_add_params,	// number of parameters set by get_z
+	void (*get_z)(int x, int y, int *current),
+	void (*render_tile)(
+		int x, int y, struct orient_param const *orient,
+		int *sw, int *nw, int *se, int *ne)
+) {
+	int const length = 1 << length_n;
+
+	// Starting tile (further away)
+	int const start_x = corner_x + (orient->start_x_dir << length_n);
+	int const start_y = corner_y + (orient->start_y_dir << length_n);
+
+	int tiles[length+1][2][nb_params+nb_add_params];
+	int oincr1_p[nb_params];	// to goes from value f0 to value f2
+	int oincr2_p[nb_params];	// to goes from value f1 to value f3
+	for (unsigned p = 0; p < nb_params; p++) {
+		oincr1_p[p] = (param[p][orient->f2] - param[p][orient->f0]) >> length_n;
+		oincr2_p[p] = (param[p][orient->f3] - param[p][orient->f1]) >> length_n;
+	}
+
+	// Outer loop, along the 2nd farther edge of the view square
+	/* FIXME: Both the inner and outer loops could also be exited whenever the z goes too far behind.
+	 *        We can't do that since when the camera is pointed at the sky the whole landscape
+	 *        is <Z_MIN, yet we want to draw the objects (if not the landscape itself).
+	 *        There is certainly room for optimization, though (like draw close tiles objects
+	 *        at the end in all cases). Ideally, we'd like no know when the whole space perpendicular
+	 *        to a tile is completely behind us.
+	 */
 	for (
-		xy=x2, yy=y2, dy=0, ay=0,
-		zi=z3<<8, zj=z4<<8,
-		ri=i3.r<<8, rj=i4.r<<8,
-		gi=i3.g<<8, gj=i4.g<<8,
-		bi=i3.b<<8, bj=i4.b<<8;
-		dy<=SMAP2;
-		dy++, xy+=sxy, yy+=syy,
-		zi+=dzi, zj+=dzj,
-		ri+=dri, rj+=drj,
-		gi+=dgi, gj+=dgj,
-		bi+=dbi, bj+=dbj,
-		ay^=SMAP2+1,
-		addvi(&coin, &n_d_coin)
+		int ox = start_x, oy = start_y, od = 0, l = 0;
+		od <= length;
+		ox += orient->outer_dx,
+		oy += orient->outer_dy,
+		od ++,
+		l ^= 1
 	) {
-		veci coinp = coin;
-		dzz = (zj-zi)>>NMAP2;
-		drr = (rj-ri)>>NMAP2;
-		dgg = (gj-gi)>>NMAP2;
-		dbb = (bj-bi)>>NMAP2;
+		int iparam[nb_params];
+		for (unsigned p = 0; p < nb_params; p++) {
+			iparam[p] = param[p][orient->f0];
+		}
+
+		int iincr_p[nb_params];	// to goes from value f0 to value f1
+		for (unsigned p = 0; p < nb_params; p++) {
+			iincr_p[p] = (param[p][orient->f1] - param[p][orient->f0]) >> length_n;
+		}
+
+		// Inner loop, along the farther edge of the view square
 		for (
-			xx=xy, yx=yy, dx=0, zz=zi,
-			rr=ri, gg=gi, bb=bi;
-			dx<=SMAP2; 
-			dx++, xx+=sxx, yx+=syx, zz+=dzz,
-			rr+=drr, gg+=dgg, bb+=dbb,
-			addvi(&coinp, &n_d_coinp)
+			int ix = ox, iy = oy, id = 0;
+			id <= length;
+			ix += orient->inner_dx,
+			iy += orient->inner_dy,
+			id ++
 		) {
-			int mm=m;
-			if (dx==SMAP2) mm+=sxx+(syx<<NWMAP);
-			if (dy==SMAP2) mm+=sxy+(syy<<NWMAP);
-			int const nmap = submap_get(mm);
-			int b = MASK2(xx) + (MASK2(yx)<<NMAP2);
-			int const z = (submap[nmap][b]<<10) + (zz>>8);
-			int const a = dx + ay;
-			ptsi[a].c.r=AddSatB(submap_rel_light[nmap][b],rr>>8);
-			ptsi[a].c.g=AddSatB(submap_rel_light[nmap][b],gg>>8);
-			ptsi[a].c.b=AddSatB(submap_rel_light[nmap][b],bb>>8);
-			ptsi[a].v.x=calcasm(coinp.x,z,mz.x);
-			ptsi[a].v.y=calcasm(coinp.y,z,mz.y);
-			ptsi[a].v.z=calcasm(coinp.z,z,mz.z);
-			if (dx && dy) {
-				polyclip(&ptsi[a-1+direct],coli?&ptsi[dx+(ay^(SMAP2+1))-1]:&ptsi[dx+(ay^(SMAP2+1))],&ptsi[a-direct]);
-				polyclip(coli?&ptsi[a]:&ptsi[a-1],&ptsi[dx+(ay^(SMAP2+1))-1+direct],&ptsi[dx+(ay^(SMAP2+1))-direct]);
+			// Store tile altitude and current parameters in tiles[id][l]
+			for (unsigned p = 0; p < nb_params; p++) {
+				tiles[id][l][p] = iparam[p];
 			}
+			get_z(ix, iy, tiles[id][l]);
+
+			if (od > 0 && id > 0) {
+				render_tile(ix, iy, orient,
+					tiles[id-orient->dx1][l^orient->dl1],	// SW
+					tiles[id-orient->dx2][l^orient->dl2],	// NW
+					tiles[id-orient->dx3][l^orient->dl3],	// SE
+					tiles[id-orient->dx4][l^orient->dl4]);	// NE
+			}
+
+			for (unsigned p = 0; p < nb_params; p++) {
+				iparam[p] += iincr_p[p];
+			}
+		}
+		for (unsigned p = 0; p < nb_params; p++) {
+			param[p][orient->f0] += oincr1_p[p];
+			param[p][orient->f1] += oincr2_p[p];
 		}
 	}
 }
 
+// These are inited by draw_ground_and_objects() and used also by it's callbacks
+static veci mx, my, mz;	// World map base relative to camera, in 24:8 fixed prec.
+static int camera_x, camera_y;	// location of the camera in map[]
+static int defered_tiles[9], nb_defered_tiles;	// some tiles which objects we want to draw last
+
+// For rendering submap tiles
+static int map_x, map_y;	// location of our submap
+
+static int add_sat(int a, int b, int max)
+{
+	int const c = a + b;
+	if (c > max) return max;
+	else if (c < 0) return 0;
+	return c;
+}
+
+static void get_submap_z(int x, int y, int *params)
+{
+	int m_x = map_x, m_y = map_y;
+	if (x == SUBMAP_LEN) {
+		x = 0;
+		m_x = MASK_W(m_x + 1);
+	}
+	if (y == SUBMAP_LEN) {
+		y = 0;
+		m_y = MASK_W(m_y + 1);
+	}
+
+	int const smap = submap_get(m_x + (m_y << NWMAP));
+	int const sm = x + (y << SUBMAP_LEN_N);
+	int const z = submap[smap][sm];
+	params[6] = params[0] + ((mz.x * z) >> 10);
+	params[7] = params[1] + ((mz.y * z) >> 10);
+	params[8] = params[2] + ((mz.z * z) >> 10);
+
+	int const rel_light = submap_rel_light[smap][sm] << 8;
+	params[9]  = add_sat(params[3], rel_light, 0xFF00);
+	params[10] = add_sat(params[4], rel_light, 0xFF00);
+	params[11] = add_sat(params[5], rel_light, 0xFF00);
+}
+
+// For rendering map tiles
+
+static void get_map_z(int x, int y, int *params)
+{
+	int const z      = map[MASK_W(x) + (MASK_W(y)<<NWMAP)].z;
+	int const z_next = map[MASK_W(x-1) + (MASK_W(y)<<NWMAP)].z;
+
+	int intens = ((z-z_next))+32+64;
+	if (intens<64) intens=64;
+	else if (intens>127) intens=127;
+
+	// params: x, y, z (of the grid) + x y z of the ground + r g b
+	params[3] = params[0] + ((mz.x * (z<<2)) >> 8);
+	params[4] = params[1] + ((mz.y * (z<<2)) >> 8);
+	params[5] = params[2] + ((mz.z * (z<<2)) >> 8);
+	params[6] = (zcol[z].r * intens)<<1;
+	params[7] = (zcol[z].g * intens)<<1;
+	params[8] = (zcol[z].b * intens)<<1;
+}
+
+static void draw_tile(int *sw, int *nw, int *se, int *ne, int xo, int ro)
+{
+	// Draw a mere tile, without submap
+	vecic p1 = {
+		.v = { .x=sw[xo], .y=sw[xo+1], .z=sw[xo+2] },
+		.c = { .r=sw[ro]>>8, .g=sw[ro+1]>>8, .b=sw[ro+2]>>8 }
+	};
+	vecic p2 = {
+		.v = { .x=nw[xo], .y=nw[xo+1], .z=nw[xo+2] },
+		.c = { .r=nw[ro]>>8, .g=nw[ro+1]>>8, .b=nw[ro+2]>>8 }
+	};
+	vecic p3 = {
+		.v = { .x=se[xo], .y=se[xo+1], .z=se[xo+2] },
+		.c = { .r=se[ro]>>8, .g=se[ro+1]>>8, .b=se[ro+2]>>8 }
+	};
+	vecic p4 = {
+		.v = { .x=ne[xo], .y=ne[xo+1], .z=ne[xo+2] },
+		.c = { .r=ne[ro]>>8, .g=ne[ro+1]>>8, .b=ne[ro+2]>>8 }
+	};
+	polyclip(&p1, &p2, &p3);
+	polyclip(&p4, &p3, &p2);
+}
+
+static void render_submap_tile(int x, int y, struct orient_param const *orient, int *sw, int *nw, int *se, int *ne)
+{
+	(void)x; (void)y; (void)orient;
+	draw_tile(sw, nw, se, ne, 6, 9);
+}
+
+static void render_map_tile(int x, int y, struct orient_param const *orient, int *sw, int *nw, int *se, int *ne)
+{
+	map_x = x + orient->dmx;
+	map_y = y + orient->dmy;
+	int const m = MASK_W(map_x) + (MASK_W(map_y)<<NWMAP);
+	int const dx = abs(map_x - camera_x);
+	int const dy = abs(map_y - camera_y);
+
+	// First draw the landscape
+
+	last_poly_is_visible = 0;	// FIXME: please find me an elegant substitute
+
+#	define DIST_REMAP 3
+	if (dx < DIST_REMAP && dy < DIST_REMAP) {
+		// Draw a more detailed view of the ground, using submaps
+		// We need to interpolate colors and altitudes
+		int params[6][4];
+		for (unsigned p = 0; p < 6; p++) {
+			params[p][SW] = sw[p+3];
+			params[p][NW] = nw[p+3];
+			params[p][SE] = se[p+3];
+			params[p][NE] = ne[p+3];
+		}
+		render_map(
+			0, 0, orient, SUBMAP_LEN_N,
+			6, params, 6,	// to the original x,y,z,r,g,b, add new x,y,z,r,g,b of the ground
+			get_submap_z,
+			render_submap_tile
+		);
+	} else {
+		draw_tile(sw, nw, se, ne, 3, 6);
+	}
+
+	// Draw roads
+	if (last_poly_is_visible && map[m].has_road) {
+		drawroute(m);
+	}
+
+	// Then draw the objects
+
+#	define DIST_VISU 5
+	if (dx < 2 && dy < 2) {
+		if (map[m].first_obj != -1) {
+			renderer(m, GROUND);
+			defered_tiles[nb_defered_tiles++] = m;
+		}
+	} else if (dx < DIST_VISU && dy < DIST_VISU) {
+		if (map[m].first_obj != -1) {
+			renderer(m, ALL);
+		}
+	} else {
+		renderer(m, CLOUDS);
+	}
+}
+
+// Return the coordinates of map[x,y] relative to camera
+static void cam_to_tile(int *v, int x, int y)
+{
+	vector v_ = { (x-WMAP/2)<<NECHELLE, (y-WMAP/2)<<NECHELLE, 0. };
+	subv(&v_, &obj[0].pos);
+	mulmtv(&obj[0].rot, &v_, &v_);
+	v[0] = v_.x*256.;
+	v[4] = v_.y*256.;
+	v[8] = v_.z*256.;
+}
+
 void draw_ground_and_objects(void)
 {
-	int x,y;
-	int dmx=0,dmy=0;
-	int lastcare[9], lcidx=0;	// some tiles we want to draw last
-
-	/* We will draw the world using the painter method.
-	 * Notice that the painter method is only local: the painter
-	 * does not necessarily sort by distance all what he has to draw and proceed to
-	 * draw things in that order. He proceed that way to draw a portion of the painting,
-	 * then can switch to another portion of its drawing which distance is unrelated
-	 * to the portion he just left. So, he sort only localy.
-	 * We do the same here: we do not sort all the world's tiles but merely select a
-	 * way to traverse the world map so that we avoid overdrawing an object with another
-	 * one that's farther away (remember there are no zbuffer neither).
-	 * It's mostly enough to traverse the map along its rows and columns, starting
-	 * from the farther corner and proceeding toward the camera (obj[0]).
-	 * So here we consider the direction the camera is looking at and choose
-	 * the traversal parameters accordingly.
-	 * (why only "mostly enough"? Because the objects within the tiles are allowed
-	 * to cross the tiles boundaries - we deal with this with the abovementionned
-	 * lastcare list).
-	 */
-	switch (
+	// Compute our orientation
+	unsigned o =
 		(obj[0].rot.z.x > 0) |
 		((obj[0].rot.z.y > 0) <<1) |
-		((fabs(obj[0].rot.z.x) > fabs(obj[0].rot.z.y)) <<2)
-	) {
-	case 0:
-		x=0;    y=0;    sxx=1;  syx=0;  sxy=0;  syy=1;
-		coli=0; dirx=1; diry=3; dmx=-1; dmy=-1; direct=1;
-		break;
-	case 1:
-		x=SMAP; y=0;    sxx=-1; syx=0;  sxy=0;  syy=1;
-		coli=1; dirx=2; diry=3; dmx=0; dmy=-1; direct=0;
-		break;
-	case 2:
-		x=0;    y=SMAP; sxx=1;  syx=0;  sxy=0;  syy=-1;
-		coli=1; dirx=1; diry=4; dmx=-1; dmy=0; direct=0;
-		break;
-	case 3:
-		x=SMAP; y=SMAP; sxx=-1; syx=0;  sxy=0;  syy=-1;
-		coli=0; dirx=2; diry=4; dmx=0;  dmy=0; direct=1;
-		break;
-	case 4:
-		x=0;    y=0;    sxx=0;  syx=1;  sxy=1;  syy=0;
-		coli=0; dirx=3; diry=1; dmx=-1; dmy=-1; direct=0;
-		break;
-	case 5:
-		x=SMAP; y=0;    sxx=0;  syx=1;  sxy=-1; syy=0;
-		coli=1; dirx=3; diry=2; dmx=0; dmy=-1; direct=1;
-		break;
-	case 6:
-		x=0;    y=SMAP; sxx=0;  syx=-1; sxy=1;  syy=0;
-		coli=1; dirx=4; diry=1; dmx=-1; dmy=0; direct=1;
-		break;
-	case 7:
-		x=SMAP; y=SMAP; sxx=0;  syx=-1; sxy=-1; syy=0;
-		coli=0; dirx=4; diry=2; dmx=0; dmy=0; direct=0;
-		break;
-	}
-	if (x) x2=SMAP2; else x2=0;
-	if (y) y2=SMAP2; else y2=0;
+		((fabs(obj[0].rot.z.x) > fabs(obj[0].rot.z.y)) <<2);
 
-	// This vector c goes from camera to the furthest corner of the vision square
-	vector c = {
-		.x = (x-(SMAP>>1))*ECHELLE - fmodf(obj[0].pos.x, (float)ECHELLE),
-		.y = (y-(SMAP>>1))*ECHELLE - fmodf(obj[0].pos.y, (float)ECHELLE),
-		.z = -obj[0].pos.z,
-	};	
-	mulmtv(&obj[0].rot, &c, &c);
-
-	// The same, in 24:8 fixed prec
-	veci coin = {
-		.x = c.x * 256,
-		.y = c.y * 256,
-		.z = c.z * 256,
+	// The parameters driving the traversal of the map depend on this orientation
+	static struct orient_param const orient_param[8] = {
+		{ 0,0, SW,SE,NW,NE, +1,0, 0,+1, 1,1, 0,1, 1,0, 0,0, -1,-1 },
+		{ 1,0, SE,SW,NE,NW, -1,0, 0,+1, 1,0, 0,0, 1,1, 0,1,  0,-1 },
+		{ 0,1, NW,NE,SW,SE, +1,0, 0,-1, 0,1, 1,1, 0,0, 1,0, -1,0 },
+		{ 1,1, NE,NW,SE,SW, -1,0, 0,-1, 0,0, 1,0, 0,1, 1,1, 0,0 },
+		{ 0,0, SW,NW,SE,NE, 0,+1, +1,0, 1,1, 1,0, 0,1, 0,0, -1,-1 },
+		{ 1,0, SE,NE,SW,NW, 0,+1, -1,0, 0,1, 0,0, 1,1, 1,0, 0,-1 },
+		{ 0,1, NW,SW,NE,SE, 0,-1, +1,0, 1,0, 1,1, 0,0, 0,1, -1,0 },
+		{ 1,1, NE,SE,NW,SW, 0,-1, -1,0, 0,0, 0,1, 1,0, 1,1, 0,0 },
 	};
+	struct orient_param const *orient = orient_param+o;
 
-	// Position x,y at the furthest corner of the vision square (of length SMAP),
-	// relative to the south-west corner of the world map (of length WMAP)
-	// (provided x goes from west to east and y from south to north).
-	x += (int)(obj[0].pos.x / ECHELLE) - (SMAP>>1) + (WMAP>>1);
-	y += (int)(obj[0].pos.y / ECHELLE) - (SMAP>>1) + (WMAP>>1);
+	mx.x = obj[0].rot.x.x * (ECHELLE<<8);
+	mx.y = obj[0].rot.y.x * (ECHELLE<<8);
+	mx.z = obj[0].rot.z.x * (ECHELLE<<8);
+	my.x = obj[0].rot.x.y * (ECHELLE<<8);
+	my.y = obj[0].rot.y.y * (ECHELLE<<8);
+	my.z = obj[0].rot.z.y * (ECHELLE<<8);
+	mz.x = obj[0].rot.x.z * (ECHELLE<<8);
+	mz.y = obj[0].rot.y.z * (ECHELLE<<8);
+	mz.z = obj[0].rot.z.z * (ECHELLE<<8);
 
-	// mx,my,mz is the transposed of the camera, in 24:8 fixed prec
-	// ie it's the world base relative to camera
-	veci mx,my;
-	mx.x = obj[0].rot.x.x*ECHELLE*256;
-	my.x = obj[0].rot.x.y*ECHELLE*256;
-	mx.y = obj[0].rot.y.x*ECHELLE*256;
-	my.y = obj[0].rot.y.y*ECHELLE*256;
-	mx.z = obj[0].rot.z.x*ECHELLE*256;
-	my.z = obj[0].rot.z.y*ECHELLE*256;
-	// apart that mz is in 19:13
-	mz.x = obj[0].rot.x.z*8192.;
-	mz.y = obj[0].rot.y.z*8192.;
-	mz.z = obj[0].rot.z.z*8192.;
+	// On what tile are we ? (beware that obj[0].pos might be < 0)
+	camera_x = (int)((obj[0].pos.x + (WMAP<<(NECHELLE-1)))/ ECHELLE);
+	camera_y = (int)((obj[0].pos.y + (WMAP<<(NECHELLE-1)))/ ECHELLE);
 
-	switch (diry) {
-		case 1:
-			d_coin = mx;
-			break;
-		case 2:
-			d_coin = mx;
-			negvi(&d_coin);
-			break;
-		case 3:
-			d_coin = my;
-			break;
-		case 4:
-			d_coin = my;
-			negvi(&d_coin);
-			break;
-	}
+	// Position of the lowest corner of the square to render
+	int const corner_x = camera_x - (VIEW_LEN>>1);
+	int const corner_y = camera_y - (VIEW_LEN>>1);
 
-	switch (dirx) {
-		case 1:
-			d_coinp = mx;
-			break;
-		case 2:
-			d_coinp = mx;
-			negvi(&d_coinp);
-			break;
-		case 3:
-			d_coinp = my;
-			break;
-		case 4:
-			d_coinp = my;
-			negvi(&d_coinp);
-			break;
-	}
+	// The corners location, relative to camera, in 24:8 fixed prec
+	int corners[3][4];
+	cam_to_tile(&corners[0][SW], corner_x, corner_y);
+	cam_to_tile(&corners[0][NW], corner_x, corner_y+VIEW_LEN);
+	cam_to_tile(&corners[0][SE], corner_x+VIEW_LEN, corner_y);
+	cam_to_tile(&corners[0][NE], corner_x+VIEW_LEN, corner_y+VIEW_LEN);
 
-	// xk,yk is the tile coordinate of the camera's tile
-	int const xk = (int)floor(obj[0].pos.x/ECHELLE)+(WMAP>>1);
-	int const yk = (int)floor(obj[0].pos.y/ECHELLE)+(WMAP>>1);
-	
-	vecic ptsi[(SMAP+1)*2];	// integer 3d position + color for a small tile ribbon
-	int pz[(SMAP+1)*2];	// storing the height of this map position << 14, for convenience
+	nb_defered_tiles = 0;
 
-#	define Z_MIN (-(4*ECHELLE<<8))
-	// xy,yy will loop on all tile locations on the 2nd furthest edge of the vision square
-	// (relative to world map origin)
-	// dy count from 0 to SMAP (incl) (length of the vision square)
-	// ay is 0, SMAP+1, 0, SMAP+1, 0, etc... for addressing ptsi and pz.
-	// Also, coin will goes along this furthest side
-	int xy, yy, dy, ay;
-	for (
-		xy = x, yy = y, dy = 0, ay = 0;
-		/*coin.z > Z_MIN &&*/ dy <= SMAP;
-		dy++, ay ^= SMAP+1, xy += sxy, yy += syy,
-		addvi(&coin, &d_coin)
-	) {
-		veci coinp = coin;
-		// xx,yx will loop on all tile locations of the furthest edge of the vision square
-		// (the horizon), from (xy,yy) (ie the furthest location of the line) toward the camera
-		// and eventually behind, SMAP+1 times.
-		// dx count from 0 to SMAP.
-		// coinp will goes along the line.
-		// Both the inner and outer loops are also exited whenever the z goes too far behind (Z_MIN)
-		// FIXME: no we can't do that since when the camera is pointed at the sky the whole landscape
-		//        is <Z_MIN, yet we want to draw the objects (if not the landscape itself).
-		//        There is certainly an optimization, though (like draw close tiles objects
-		//        at the end in all cases).
-		int xx, yx, dx;
-		for (
-			xx = xy, yx = yy, dx = 0;
-			/*coinp.z > Z_MIN &&*/ dx <= SMAP;
-			dx++, xx += sxx, yx += syx,
-			addvi(&coinp, &d_coinp)
-		) {
-			int b = MASKW(xx) + (MASKW(yx)<<NWMAP);	// the current tile
-			int bb = MASKW(xx+dmx) + (MASKW(yx+dmy)<<NWMAP);	// one tile further (??)
-			int ob = MASKW(xx-1) + (MASKW(yx)<<NWMAP);	// the tile at left (for lighting)
-			int const z = map[b].z;	// the altitude of current tile
-
-			int const a = dx + ay;
-			pz[a] = z<<14;
-			// ptsi[a] position
-			ptsi[a].v.x = calcasm(coinp.x, z<<14, mz.x);
-			ptsi[a].v.y = calcasm(coinp.y, z<<14, mz.y);
-			ptsi[a].v.z = calcasm(coinp.z, z<<14, mz.z);
-			// Compute ptsi[a] color
-			int intens = ((z-map[ob].z))+32+64;
-			if (intens<64) intens=64;
-			else if (intens>127) intens=127;
-			ptsi[a].c.r=(zcol[z].r*intens)>>7;
-			ptsi[a].c.g=(zcol[z].g*intens)>>7;
-			ptsi[a].c.b=(zcol[z].b*intens)>>7;
-
-#			define KREMAP 3
-			int const xk_xx = xk - xx;
-			int const yk_yx = yk - yx;
-
-			// First draw the landscape
-			
-			// if dy == 0 then ptsi and pz does not have previous line.
-			// if dx == 0 then ptsi and pz lacks the previous point.
-			if (dx && dy) {
-				if (// if we are close enough to the camera
-					xk_xx > -KREMAP && xk_xx < KREMAP &&
-					yk_yx > -KREMAP && yk_yx < KREMAP
-				) {
-					// then draw using submap
-					// c is the location of the opposite corner (the one that's close to us)
-					veci c = coinp;
-					subvi(&c, &d_coinp);
-					subvi(&c, &d_coin);
-					last_poly_is_visible = 0;	// awful hack
-					draw_submap(c,
-						pz[a],                  ptsi[a].c,
-						pz[a-1],                ptsi[a-1].c,
-						pz[dx+(ay^(SMAP+1))-1], ptsi[dx+(ay^(SMAP+1))-1].c,
-						pz[dx+(ay^(SMAP+1))],   ptsi[dx+(ay^(SMAP+1))].c,
-						bb);
-					if (last_poly_is_visible && map[bb].has_road) {
-						drawroute(bb);
-					}
-				} else {
-					// If the tile is far enough that we don't want to draw it's submap
-					last_poly_is_visible = 0;
-					polyclip(
-						&ptsi[a - 1 + direct],
-						coli ? &ptsi[dx+(ay^(SMAP+1))-1] : &ptsi[dx+(ay^(SMAP+1))],
-						&ptsi[a-direct]);
-					polyclip(
-						coli ? &ptsi[a] : &ptsi[a-1],
-						&ptsi[dx+(ay^(SMAP+1)) -1 + direct],
-						&ptsi[dx+(ay^(SMAP+1)) - direct]);
-					if (last_poly_is_visible && map[bb].has_road) {
-						drawroute(bb);
-					}
-				}
-			} // else dx || dy -> we are on our first row or column
-
-			// Then draw the objects
-
-#			define KVISU (KREMAP+1)
-			if (
-				xk_xx > -KVISU && xk_xx < KVISU &&
-				yk_yx > -KVISU && yk_yx < KVISU
-			) {
-				if (map[bb].first_obj != -1) {
-					if (xk_xx < -1 || xk_xx > 1 || yk_yx < -1 || yk_yx > 1) {
-						renderer(bb,3);
-					} else {
-						renderer(bb,0);
-						lastcare[lcidx++]=bb;
-					}
-				}
-			} else {
-				renderer(bb, 1);
-			}
-		} // end of xx,yx inner loop
-	} // end of yx,yy outer loop
+	render_map(
+		corner_x, corner_y, orient,
+		VIEW_LEN_N,
+		3, corners, 6,
+		get_map_z, render_map_tile);
 
 	/* Now that the picture is almost done, render the objects that were so close
 	 * to the camera that we refused to draw them when encountered (see note above
 	 * about the "mostly enough")
 	 */
-	for (int i=0; i < lcidx; i++) {
-		renderer(lastcare[i], 2);
+	for (int i = 0; i < nb_defered_tiles; i++) {
+		renderer(defered_tiles[i], SKY);
 	}
 }
+
 #define Gourovf 8	// NE PAS CHANGER !
 #define Gourovfm (1>>Gourovf)
 int Gouroxi, Gouroyi, Gourolx, Gouroql, Gouroqx, Gouroqr, Gouroqg, Gouroqb, Gourocoulr, Gourocoulg, Gourocoulb, *Gourovid, Gourody, Gouroir, Gouroig, Gouroib;
@@ -930,45 +949,42 @@ float z_ground(float x, float y, bool with_submap)
 	// then the altitude in between these points when x=medx, in (0:16>>6)*(8:16>>6) = (8:32>>12) = 8:20, then further degraded into 8:16
 	int const z_base = (((medx>>6)*((zj-zi)>>6))>>4) + zi;
 	float const z_base_f = z_base / 1024.;	// we want altitude * 64.
-	if (! with_submap) {
-//		assert(z_base_f > 0 && z_base_f < 64.*256.);
-		return z_base_f;
-	}
+	if (! with_submap) return z_base_f;
 
 	// iix, iiy: coord within the tile in 0:3 fixed prec, ie subtile we are in in submap si
 	unsigned const si = submap_get(i);
-	int const iix = (medx<<NMAP2)>>(NECHELLE+4);
-	int const iiy = (medy<<NMAP2)>>(NECHELLE+4);
-	int const ii = iix+(iiy<<NMAP2);
+	int const iix = (medx<<SUBMAP_LEN_N)>>(NECHELLE+4);
+	int const iiy = (medy<<SUBMAP_LEN_N)>>(NECHELLE+4);
+	int const ii = iix+(iiy<<SUBMAP_LEN_N);
 	// mz1 is the nord-west corner of the submap, the only one we can fetch for sure from si, in 8:0 fixed prec
 	int const mz1 = submap[si][ii];
 	int mz2, mz3, mz4;
-	if (iiy != SMAP2-1) {	// not last row
-		mz2 = submap[si][ii+SMAP2];
-		if (iix != SMAP2-1) { // not last column
-			mz3 = submap[si][ii+SMAP2+1];
+	if (iiy != SUBMAP_LEN-1) {	// not last row
+		mz2 = submap[si][ii+SUBMAP_LEN];
+		if (iix != SUBMAP_LEN-1) { // not last column
+			mz3 = submap[si][ii+SUBMAP_LEN+1];
 			mz4 = submap[si][ii+1];
 		} else {
 			unsigned const si1 = submap_get(i+1);
-			mz3 = submap[si1][(iiy+1)<<NMAP2];
-			mz4 = submap[si1][iiy<<NMAP2];
+			mz3 = submap[si1][(iiy+1)<<SUBMAP_LEN_N];
+			mz4 = submap[si1][iiy<<SUBMAP_LEN_N];
 		}
 	} else {	// last row
 		unsigned const siw = submap_get(i+WMAP);
 		mz2 = submap[siw][iix];
-		if (iix!=SMAP2-1) {
+		if (iix!=SUBMAP_LEN-1) {
 			mz3 = submap[siw][iix+1];
 			mz4 = submap[si][ii+1];
 		} else {
 			unsigned const si1 = submap_get(i+1);
 			unsigned const siw1 = submap_get(i+WMAP+1);
 			mz3 = submap[siw1][0];
-			mz4 = submap[si1][iiy<<NMAP2];
+			mz4 = submap[si1][iiy<<SUBMAP_LEN_N];
 		}
 	}
 	// minx, miny: our location within the subtile, in 0:13
-	int const minx = medx & (((ECHELLE<<4)>>NMAP2)-1);
-	int const miny = medy & (((ECHELLE<<4)>>NMAP2)-1);
+	int const minx = medx & (((ECHELLE<<4)>>SUBMAP_LEN_N)-1);
+	int const miny = medy & (((ECHELLE<<4)>>SUBMAP_LEN_N)-1);
 	// mzi, mzj: altitudes of the left and right edge of the submap, in 0:13*8:0 = 8:13 fixed prec
 	int const mzi = miny*(mz2-mz1) + (mz1<<13);
 	int const mzj = miny*(mz3-mz4) + (mz4<<13);
@@ -976,7 +992,6 @@ float z_ground(float x, float y, bool with_submap)
 	int const z = (minx>>4)*((mzj-mzi)>>4) + (mzi<<5);
 	// add submap altitude (divided by 16) to ground level altitude
 	float const ret = z_base_f + (z/(16.*4096.));	// return z * 64.
-//	assert(ret > 0 && ret < 64.*256.);
 	return ret;
 }
 

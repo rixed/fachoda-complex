@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <stdio.h>
+#include <stdbool.h>
 #include <math.h>
 #include <values.h>
 #include "map.h"
@@ -107,7 +108,7 @@ void cercle(int x, int y, int radius, int c) {
 
 	} while (++xoff <= yoff);
 }
-void polyflat(vect2d *p1, vect2d *p2, vect2d *p3, int coul) {
+bool polyflat(vect2d *p1, vect2d *p2, vect2d *p3, int coul) {
 	vect2d *tmp;
 	int xi, yi, lx, i, j, jlim, yfin;
 	int q1, q2, q3, ql, qx, qx2, ql2;
@@ -117,7 +118,7 @@ void polyflat(vect2d *p1, vect2d *p2, vect2d *p3, int coul) {
 	if (p3->y<p1->y) { tmp=p1; p1=p3; p3=tmp; }
 	if (p3->y<p2->y) { tmp=p2; p2=p3; p3=tmp; }
 	if (p1->y==p2->y && p1->x>p2->x) { tmp=p1; p1=p2; p2=tmp; }
-	if (p3->y<0 || p1->y>=SY) return;
+	if (p3->y<0 || p1->y>=SY) return false;
 
 //	if (p3->y==p2->y) p3->y++;
 //	if (p1->y==p2->y) p1->y--;
@@ -188,6 +189,7 @@ debtrace:
 		}
 	}
 	MMXRestoreFPU();
+	return true;
 }
 void drawline(vect2dlum *p1, vect2dlum *p2, int col) {
 	int s, x,y,xi, dy;
@@ -430,7 +432,7 @@ void plotfumee(int x, int y, int r) {
 		} else newyoff=0;
 	} while (++xoff <= yoff);
 }
-void renderer(int ak, int fast){	// fast=0->ombres+ objets au sol, =1->nuages; =2->objets volants + nuages; =3->tout
+void renderer(int ak, enum render_part fast){
 	int o, p, no, coul;
 	vector c,t,pts3d;
 	int mo;
