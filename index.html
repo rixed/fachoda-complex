@@ -206,6 +206,61 @@ temptation to rewrite this with the struct.</p>
 <p>As you can see acid colors are gone, but I need to get back this Gouraud shading
 that was lost when ditching MMX code.</p>
 
+<h2>Day 3</h2>
+
+<p>I had a hard time trying to figure out how the landscape drawing functions
+were working. I had only some vague memories about some of the tricks used there,
+like the absence of sort or the multiple levels of details. In the process I've rewritten
+the code from scratch, fixing a few bugs along the way (and probably introduced new ones).
+The resulting code is easier to understand and have gained in generality, without
+giving up significant optimisations. In the future, one could easily add new levels of
+detail, for instance.</p>
+
+<p>So how are frames rendered, exactly?</p>
+
+<p>First, depending on the orientation of the camera, a map traversal order is chosen.
+We will perform an outer loop over one dimension and an inner loop over the other
+dimension, but we have 8 cases (4 possible starting corners and for each two possible
+outer dimensions). We choose to start from the farthest corner, with inner loop along the
+edge that stays farther away from the camera. Thus, tiles are painted roughly in decreasing
+distance order.<p>
+
+<p>Just after a tile is rendered, the objects belonging to the space above it are painted.
+So we have to sort the objects within a tile in isolation, so that the sorting algorithm
+is dominated by the constant factor and mostly independent on the number of total objects
+in the world (IIRC objects are sorted using insertion sort, which is nice here since
+most of the time objects and camera move only a little from one frame to the next).</p>
+
+<p>To reduce even further the number of objects to sort in one go, objects are grouped
+by categories: grounded (shadows, houses, ground vehicles...), flying, clouds... Since
+there is (almost) no way that a cloud may be draw after a ground vehicle for instance (since
+you won't be able to drag the camera under a vehicle and watch at the sky...)</p>
+
+<p>But of course objects are allowed to cross tiles boundaries, so when this happen you
+can see some rendering artifact (like the ground below you suddenly showing up above your
+plane noise for one frame). To deal with this, objects belonging to the 9 closest tiles
+are not drawn before everything else is.</p>
+
+<p>Tiles are rendered using simple Gouraud shaded triangles. Whenever a tile is close enough,
+we draw its submap instead, which is the same algorithm with these variations:</p>
+<ul>
+<li>World map wrap but submaps do not (you fetch data from neighboring submap instead);</li>
+<li>Altitude of submap is added to interpolated altitude of underlying tile;</li>
+<li>Color of submap comes from color of interpolated color of underlying tile, corrected by a
+    relative lighting.</p>
+</ul>
+<p>For these reasons the original program used distinct functions for traversing world map
+and submap. At the cost of a few function pointers, the new version use the same grid iterator,
+which can interpolate any set of parameters, for traversing both the world global map or a submap.
+This is much easier to grasp, but would have been even better with anonymous local functions;
+but plain C does not allow this and I have no time to rewrite everything in another language
+such as OCaml.</p>
+
+<p>Here is the result, once restored the gouraud shading function that was missing in
+the previous screenshots (as a bonus, the map is back!):</p>
+<img src="ingame3.png"/>
+<img src="map3.png"/>
+
     <h2>Download</h2>
     <p>
       You can download this project in either
