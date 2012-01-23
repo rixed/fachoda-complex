@@ -118,7 +118,9 @@ void backgroundline(int *v,int sx,int dz,int z,int coul) {
 		MMXMemSetInt(v,coul,sx);
 	}
 }
-void background() {
+
+static void background(void)
+{
 	int z1,z2, dz1,dz2;
 	int dz, x, i, xfin;
 	int zfront[3] = {64<<8,0,-64<<8};
@@ -131,8 +133,9 @@ void background() {
 		{cieldark,0,soldark,-1}
 	};
 	int *vid;
-	MMXSaveFPU();
-	z1=z2=(focale*cam.rot.z.z-_DY*cam.rot.y.z+30)*256;	// 30 pour descendre un peut la ligne d'horizon
+
+	// Compute position of the horizon (notice it's artificially lowered by 30 pixels)
+	z1=z2=(focale*cam.rot.z.z-_DY*cam.rot.y.z+30)*256;
 	z1-=(_DX*cam.rot.x.z)*256;
 	z2+=(_DX*cam.rot.x.z)*256;
 	dz1=cam.rot.y.z*256;
@@ -178,8 +181,8 @@ void background() {
 			if (x<SX) backgroundline(vid+x,SX-x,dz,z1,coulfront[Dark][i+1]);
 		}
 	}
-	MMXRestoreFPU();
 }
+
 void balanceX(int o, double s) {	// balance l'obj o poue lui mettre la tete en haut
 	double d;
 	vector yp;

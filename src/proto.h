@@ -426,10 +426,6 @@ extern vector DogBotDir;
 extern float DogBotDist;
 // soleil
 extern void animsoleil(void);
-extern pixel *SolMap;
-extern double SolPicPh[20], SolPicOmega[20];
-extern int *SolImgAdy;
-extern int phix;
 extern void initsol(void);
 extern void affsoleil(vector *L);
 // sound
@@ -507,9 +503,12 @@ static inline int add_sat(int a, int b, int max)
 	return c;
 }
 
+static inline float proj1(float p, float z) {
+	return (p * focale) / z;
+}
 static inline void proj(vect2d *e, vector *p) {
-	e->x=_DX+p->x*focale/p->z;
-	e->y=_DY+p->y*focale/p->z;
+	e->x = _DX + proj1(p->x, p->z);
+	e->y = _DY + proj1(p->y, p->z);
 }
 static inline void proji(vect2d *e, veci *p) {
 	e->x=_DX+p->x*focale/p->z;
@@ -604,8 +603,6 @@ static inline void mulmtv(matrix *n, vector *v, vector *r) {
 	r->z = n->z.x*t.x+n->z.y*t.y+n->z.z*t.z;
 }
 static inline void neg(vector *v) { v->x=-v->x; v->y=-v->y; v->z=-v->z; }
-extern inline void proj(vect2d *e, vector *p);
-static inline float proj1(float p, float z) { return(p*focale/z); }
 static inline void subv3(vector *a, vector *b, vector *r) {	// il faut r!=a,b
 	r->x = a->x-b->x;
 	r->y = a->y-b->y;
