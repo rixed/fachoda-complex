@@ -283,9 +283,6 @@ static void do_clip(vecic *p1, vecic *p2, vecic *pr) {
 	pr->c.b = p1->c.b + ((dz1 * ((((int)p2->c.b-p1->c.b)<<8)/dz2))>>8);
 }
 
-static int color_of_pixel(pixel c) {
-	return (c.r<<16) + (c.g<<8) + (c.b);
-}
 static void poly(vecic *p1, vecic *p2, vecic *p3) {
 	vect2dc l1,l2,l3;
 	proji(&l1.v, &p1->v);	// FIXME: should not project the same pt several times!
@@ -300,7 +297,7 @@ static void poly(vecic *p1, vecic *p2, vecic *p3) {
 		.b = (l1.c.b + l2.c.b + l3.c.b) / 3,
 	};
 	if (flat_shadding) {
-		some_poly_were_visible = polyflat(&l1.v, &l2.v, &l3.v, color_of_pixel(mix));
+		some_poly_were_visible = polyflat(&l1.v, &l2.v, &l3.v, mix);
 	} else {
 		some_poly_were_visible = poly_gouraud(&l1, &l2, &l3);
 	}
@@ -515,13 +512,7 @@ static int defered_tiles[9], nb_defered_tiles;	// some tiles which objects we wa
 // For rendering submap tiles
 static int map_x, map_y;	// location of our submap
 
-static int add_sat(int a, int b, int max)
-{
-	int const c = a + b;
-	if (c > max) return max;
-	else if (c < 0) return 0;
-	return c;
-}
+extern inline int add_sat(int a, int b, int max);
 
 static void get_submap_z(int x, int y, int *params)
 {

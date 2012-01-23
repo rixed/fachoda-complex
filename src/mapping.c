@@ -4,9 +4,14 @@
 #include "proto.h"
 
 int *mapping;
-uchar *preca;
+static uchar preca[256];
 
+#define MAX_PRECA 180
 void initmapping() {
+	for (int a = 0; a < 256; a++) {
+		preca[a] = MAX_PRECA * exp(-a/50.);
+	}
+
 	mapping=(int*)malloc(256*256*sizeof(int));
 }
 
@@ -183,16 +188,12 @@ void polymap(vect2dm *p1, vect2dm *p2, vect2dm *p3) {
 //	MMXRestoreFPU();
 }
 
-void polyphong(vect2dlum *p1, vect2dlum *p2, vect2dlum *p3, int coul) {
+void polyphong(vect2dlum *p1, vect2dlum *p2, vect2dlum *p3, pixel coul) {
 	vect2dlum *tmp;
 	int xi, yi, lx, dx, dy, i, j, jlim, yfin;
 	int q1, q2, q3, ql, p1x, p1y, p2x, p2y, qx, qx2, ql2, px,py,px2,py2;
 	int a, aa, k, x, y, atmp, l;
 	pixel32 *vid;
-
-	int coul_r = coul & 0xff;
-	int coul_g = (coul >> 8) & 0xff;
-	int coul_b = (coul >> 16) & 0xff;
 
 	if (p2->v.y<p1->v.y) { tmp=p1; p1=p2; p2=tmp; }
 	if (p3->v.y<p1->v.y) { tmp=p1; p1=p3; p3=tmp; }
@@ -217,7 +218,6 @@ void polyphong(vect2dlum *p1, vect2dlum *p2, vect2dlum *p3, int coul) {
 		lx <<= vf;
 		a=(dx*dx+dy*dy)>>vf;
 		aa=a+a;
-		MMXPhongInit(aa,50);
 		goto debtrace;
 	}
 
@@ -276,7 +276,6 @@ void polyphong(vect2dlum *p1, vect2dlum *p2, vect2dlum *p3, int coul) {
 
 	a=(dx*dx+dy*dy)>>vf;
 	aa=a+a;
-	MMXPhongInit(aa,50);
 	// clipper les y<0 ! sinon ca fait des pauses !
 	yfin=p2->v.y;
 	if (p2->v.y<0) {
@@ -310,13 +309,12 @@ debtrace:
 			if (jlim>SX-1) jlim=SX-1;
 			if (j<jlim) {
 				for (; j!=jlim; j++) {
-					int cc;
-					cc=l>0 && l<(1<<24) ? preca[l>>16]:0;
-					vid[j].r=(int)coul_r+(int)cc<256?coul_r+cc:255;
-					vid[j].g=(int)coul_g+(int)cc<256?coul_g+cc:255;
-					vid[j].b=(int)coul_b+(int)cc<256?coul_b+cc:255;
-					l+=k+atmp;
-					atmp+=aa;
+					unsigned const cc = l <= 0 ? MAX_PRECA : l >= (1<<24) ? 0 : preca[l>>16];
+					vid[j].r = add_sat(coul.r, cc, 255);
+					vid[j].g = add_sat(coul.g, cc, 255);
+					vid[j].b = add_sat(coul.b, cc, 255);
+					l += k + atmp;
+					atmp += aa;
 				}
 			}
 			xi+=qx; yi++;

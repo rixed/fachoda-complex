@@ -20,7 +20,6 @@ void MMXFlat(int *dst, int n, int coul) {
 void MMXSaveFPU(void) {}
 void MMXRestoreFPU(void) {}
 void MMXFlatInit(void) {}
-void MMXPhongInit(int aa, int intcol) { (void)aa; (void)intcol; }
 
 extern void catchalarm(int sig);
 

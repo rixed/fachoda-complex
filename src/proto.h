@@ -64,6 +64,9 @@ typedef unsigned char uchar;
 typedef struct {
 	uchar b,g,r;
 } pixel;
+static inline int color_of_pixel(pixel c) {
+	return (c.r<<16) + (c.g<<8) + (c.b);
+}
 typedef struct {
 	uchar b,g,r,u;
 } pixel32;
@@ -325,7 +328,7 @@ extern void mixplot(int x, int y, int r, int g, int b);
 extern void plotmouse(int x,int y);
 extern void plotcursor(int x,int y);
 extern void cercle(int x, int y, int radius, int c);
-extern bool polyflat(vect2d *p1, vect2d *p2, vect2d *p3, int color);
+extern bool polyflat(vect2d *p1, vect2d *p2, vect2d *p3, pixel color);
 extern void drawline(vect2dlum *p1, vect2dlum *p2, int col);
 extern void drawline2(vect2d *p1, vect2d *p2, int col);
 extern void calcposaind(int i);
@@ -412,8 +415,7 @@ extern void controlzep(int z);
 extern void polymap(vect2dm *p1, vect2dm *p2, vect2dm *p3);
 extern void initmapping(void);
 extern int *mapping;
-extern uchar *preca;
-extern void polyphong(vect2dlum *p1, vect2dlum *p2, vect2dlum *p3, int c);
+extern void polyphong(vect2dlum *p1, vect2dlum *p2, vect2dlum *p3, pixel c);
 // manuel.c
 extern void NextDogBot(void);
 extern void manuel(int b);
@@ -462,7 +464,6 @@ extern int invaders(void);
 // extern int vague[4][4][4];	// vague, camp, colonne
 extern int myc, myv, myt;
 // code.as
-extern void MMXPhongInit(int aa,int intcol);
 extern void MMXFlatInit(void);
 extern void MMXSaveFPU(void);
 extern void MMXAddSat(int*,int);
@@ -497,6 +498,14 @@ extern void drawroute(int bb/*, vecic *ptref*/);
 extern void affjauge(float j);
 extern void initworld(void);
 extern void randomhm(matrix *m);
+
+static inline int add_sat(int a, int b, int max)
+{
+	int const c = a + b;
+	if (c > max) return max;
+	else if (c < 0) return 0;
+	return c;
+}
 
 static inline void proj(vect2d *e, vector *p) {
 	e->x=_DX+p->x*focale/p->z;

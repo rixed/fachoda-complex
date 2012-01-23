@@ -9,13 +9,6 @@
 vect2dlum *pts2d;
 matrix *oL;
 void initrender() {
-	double r;
-	int a;
-	preca = calloc(8*(256+2+256),1);
-	for (r=0, a=0; a<256+2; a++, r+=1) {
-		preca[8*a]=preca[8*a+2]=preca[8*a+4]=preca[8*a+6]=255.*exp(-r/50.);
-		preca[8*a+1]=preca[8*a+3]=preca[8*a+5]=preca[8*a+7]=0;
-	}
 	pts2d=(vect2dlum*)malloc(3000*sizeof(vect2dlum));	// nbpts max par objets
 #define MAXNO 5000
 	oL=(matrix*)malloc(MAXNO*sizeof(matrix));	// nb objet max dans un ak
@@ -108,7 +101,10 @@ void cercle(int x, int y, int radius, int c) {
 
 	} while (++xoff <= yoff);
 }
-bool polyflat(vect2d *p1, vect2d *p2, vect2d *p3, int coul) {
+
+extern inline int color_of_pixel(pixel c);
+
+bool polyflat(vect2d *p1, vect2d *p2, vect2d *p3, pixel coul) {
 	vect2d *tmp;
 	int xi, yi, lx, i, j, jlim, yfin;
 	int q1, q2, q3, ql, qx, qx2, ql2;
@@ -181,7 +177,7 @@ debtrace:
 			if (j<0) j=0;
 			if (jlim>SX) jlim=SX;
 			if (j<jlim) {
-				MMXFlat((int*)vid+j,jlim-j,coul);
+				MMXFlat((int*)vid+j, jlim-j, color_of_pixel(coul));
 			}
 			xi+=qx; yi++;
 			lx+=ql;
@@ -432,8 +428,14 @@ void plotfumee(int x, int y, int r) {
 		} else newyoff=0;
 	} while (++xoff <= yoff);
 }
+
+static void darken(uchar *b)
+{
+	*b = *b - ((*b>>2) & 0x3F);
+}
+
 void renderer(int ak, enum render_part fast){
-	int o, p, no, coul;
+	int o, p, no;
 	vector c,t,pts3d;
 	int mo;
 	double rayonapparent=0;
@@ -504,7 +506,8 @@ void renderer(int ak, enum render_part fast){
 						polyflat(
 							&pts2d[mod[obj[o].model].fac[1][p].p[0]].v,
 							&pts2d[mod[obj[o].model].fac[1][p].p[1]].v,
-							&pts2d[mod[obj[o].model].fac[1][p].p[2]].v, 0);
+							&pts2d[mod[obj[o].model].fac[1][p].p[2]].v,
+							(pixel){ .r = 0, .g = 0, .b = 0});
 				}
 			}
 		}
@@ -598,18 +601,26 @@ void renderer(int ak, enum render_part fast){
 												}
 												polymap(&pt[0],&pt[1],&pt[2]);
 											} else {
-												coul=*(int*)&mod[obj[o].model].fac[mo][p].color;
+												pixel coul = mod[obj[o].model].fac[mo][p].color;
 												if (Dark) {
-													if (obj[o].type!=TABBORD) coul=coul-((coul>>2)&0x3F3F3F);
-													else coul=coul-((coul>>2)&0x003F3F);
+													if (obj[o].type != TABBORD) {
+														darken(&coul.r);
+													}
+													darken(&coul.g);
+													darken(&coul.b);
 												}
 												if (pts2d[mod[obj[o].model].fac[mo][p].p[0]].xl!=MAXINT && pts2d[mod[obj[o].model].fac[mo][p].p[1]].xl!=MAXINT && pts2d[mod[obj[o].model].fac[mo][p].p[2]].xl!=MAXINT)
-													polyphong(&pts2d[mod[obj[o].model].fac[mo][p].p[0]],&pts2d[mod[obj[o].model].fac[mo][p].p[1]],&pts2d[mod[obj[o].model].fac[mo][p].p[2]],coul);
+													polyphong(
+														&pts2d[mod[obj[o].model].fac[mo][p].p[0]],
+														&pts2d[mod[obj[o].model].fac[mo][p].p[1]],
+														&pts2d[mod[obj[o].model].fac[mo][p].p[2]],
+														coul);
 												else
 													polyflat(
 														&pts2d[mod[obj[o].model].fac[mo][p].p[0]].v,
 														&pts2d[mod[obj[o].model].fac[mo][p].p[1]].v,
-														&pts2d[mod[obj[o].model].fac[mo][p].p[2]].v, coul);
+														&pts2d[mod[obj[o].model].fac[mo][p].p[2]].v, 
+														coul);
 											}
 										}
 									}
