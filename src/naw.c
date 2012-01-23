@@ -1061,23 +1061,6 @@ parse_error:
 					}
 				}
 				plotcursor(xmouse,ymouse);
-		/*		p1.x=_DX+   0*cos(bolop)-  -50*sin(bolop);
-				p1.y=_DY+   0*sin(bolop)+  -50*cos(bolop);
-				p2.x=_DX+ -90*cos(bolop)-   160*sin(bolop);
-				p2.y=_DY+ -90*sin(bolop)+   160*cos(bolop);
-				p3.x=_DX+ -70*cos(bolop)-   80*sin(bolop);
-				p3.y=_DY+ -70*sin(bolop)+   80*cos(bolop);
-				p4.x=_DX+ -5*cos(bolop)-  -80*sin(bolop);
-				p4.y=_DY+ -5*sin(bolop)+  -80*cos(bolop);
-				MMXSaveFPU();
-				polygouro(&p1,&p2,&p3);
-				polygouro(&p4,&p1,&p3);
-				plot(p1.x-_DX,p1.y-_DY,0xFFFFFF);
-				plot(p2.x-_DX,p2.y-_DY,0xFFFFFF);
-				plot(p3.x-_DX,p3.y-_DY,0xFFFFFF);
-				plot(p2.x-_DX,p2.y-_DY,0xFFFFFF);
-				MMXRestoreFPU();
-				bolop+=.02;*/
 				buffer2video();
 			}
 		}

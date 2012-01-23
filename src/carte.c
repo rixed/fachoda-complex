@@ -88,8 +88,8 @@ void rendumapbg() {
 			bpoint(&p2,x+1,y);
 			bpoint(&p3,x,y+1);
 			bpoint(&p4,x+1,y+1);
-			polygouro(&p1,&p2,&p3);
-			polygouro(&p3,&p2,&p4);
+			poly_gouraud(&p1,&p2,&p3);
+			poly_gouraud(&p3,&p2,&p4);
 		}
 	}
 	bpoint(&p1,0,0);

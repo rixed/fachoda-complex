@@ -257,15 +257,18 @@ void animate_water(void)
  * Map Rendering
  */
 
+// Set to true for flat shadded landscape
+bool flat_shadding = false;
+
 /* This is an awful hack to skip drawing of roads when the ground is seen from below
  * (for instance, roads on the other side of a hill). Problems:
- * - this flag is set by the polygouro function, while it should be set by the draw_ground
+ * - this flag is set by the poly_gouraud function, while it should be set by the draw_ground
  *   method itself, which should choose internally whether to draw road or not (based on this
  *   and distance, for instance)
- * - this currently works because roads are only possible on flat submap (thus the last polygouro
+ * - this currently works because roads are only possible on flat submap (thus the last poly_gouraud
  *   will have the correct information)
  */
-static int last_poly_is_visible;
+static int some_poly_were_visible;
 
 // Clip segment p1-p2 by the frustum zmin plan (p1->z is below FRUSTUM_ZMIN)
 #define FRUSTUM_ZMIN (32<<8)
@@ -296,8 +299,11 @@ static void poly(vecic *p1, vecic *p2, vecic *p3) {
 		.g = (l1.c.g + l2.c.g + l3.c.g) / 3,
 		.b = (l1.c.b + l2.c.b + l3.c.b) / 3,
 	};
-	last_poly_is_visible = polyflat(&l1.v, &l2.v, &l3.v, color_of_pixel(mix));
-//	polygouro(&l1, &l2, &l3);
+	if (flat_shadding) {
+		some_poly_were_visible = polyflat(&l1.v, &l2.v, &l3.v, color_of_pixel(mix));
+	} else {
+		some_poly_were_visible = poly_gouraud(&l1, &l2, &l3);
+	}
 }
 
 void polyclip(vecic *p1, vecic *p2, vecic *p3) {
@@ -537,9 +543,9 @@ static void get_submap_z(int x, int y, int *params)
 	params[8] = params[2] + ((mz.z * z) >> 10);
 
 	int const rel_light = submap_rel_light[smap][sm] << 8;
-	params[9]  = add_sat(params[3], rel_light, 0xFF00);
-	params[10] = add_sat(params[4], rel_light, 0xFF00);
-	params[11] = add_sat(params[5], rel_light, 0xFF00);
+	params[9]  = add_sat(params[3], rel_light, 0xFFFF);
+	params[10] = add_sat(params[4], rel_light, 0xFFFF);
+	params[11] = add_sat(params[5], rel_light, 0xFFFF);
 }
 
 // For rendering map tiles
@@ -601,7 +607,7 @@ static void render_map_tile(int x, int y, struct orient_param const *orient, int
 
 	// First draw the landscape
 
-	last_poly_is_visible = 0;	// FIXME: please find me an elegant substitute
+	some_poly_were_visible = 0;	// FIXME: please find me an elegant substitute
 
 #	define DIST_REMAP 3
 	if (dx < DIST_REMAP && dy < DIST_REMAP) {
@@ -625,7 +631,7 @@ static void render_map_tile(int x, int y, struct orient_param const *orient, int
 	}
 
 	// Draw roads
-	if (last_poly_is_visible && map[m].has_road) {
+	if (some_poly_were_visible && map[m].has_road) {
 		drawroute(m);
 	}
 
@@ -722,11 +728,10 @@ void draw_ground_and_objects(void)
 
 #define Gourovf 8	// NE PAS CHANGER !
 #define Gourovfm (1>>Gourovf)
-int Gouroxi, Gouroyi, Gourolx, Gouroql, Gouroqx, Gouroqr, Gouroqg, Gouroqb, Gourocoulr, Gourocoulg, Gourocoulb, *Gourovid, Gourody, Gouroir, Gouroig, Gouroib;
-/*
-void Gouro() {
+static int Gouroxi, Gouroyi, Gourolx, Gouroql, Gouroqx, Gouroqr, Gouroqg, Gouroqb, Gourocoulr, Gourocoulg, Gourocoulb, *Gourovid, Gourody, Gouroir, Gouroig, Gouroib;
+
+void gouraud_section(void) {
 	int cr, cg, cb;
-	MMXGouro();
 	if (Gouroyi<0) {
 		if (Gouroyi<-Gourody) {
 			Gouroyi+=Gourody;
@@ -748,7 +753,8 @@ void Gouro() {
 	}
 	Gourovid=(int*)videobuffer+Gouroyi*SX;
 	while (Gourody>0 && Gouroyi<SY) {
-		i=Gouroxi>>Gourovf; ilim=i-(Gourolx>>Gourovf);
+		int i=Gouroxi>>Gourovf;
+		int ilim=i-(Gourolx>>Gourovf);
 		if (ilim<0) ilim=0;
 		cr=Gourocoulr;
 		cg=Gourocoulg;
@@ -775,27 +781,26 @@ void Gouro() {
 		Gourody--;
 		Gouroyi++;
 	}
-}*/
-void MMXGouro(void) {}
-void MMXGouroPreca(int ib, int ig, int ir) { (void)ib; (void)ig; (void)ir; }
+}
 
-void polygouro(vect2dc *p1, vect2dc *p2, vect2dc *p3) {
-	vect2dc *tmp, *pmax, *pmin;
+bool poly_gouraud(vect2dc *p1, vect2dc *p2, vect2dc *p3) {
+	vect2dc *tmp, *p_maxx, *p_minx;
 	int q1, q2, q3=0, qxx, ql2;
 	int qr1, qr2, qr3=0, qg1, qg2, qg3=0, qb1, qb2, qb3=0, qrr, qgg, qbb;
+	// order points in ascending Y
 	if (p2->v.y<p1->v.y) { tmp=p1; p1=p2; p2=tmp; }
 	if (p3->v.y<p1->v.y) { tmp=p1; p1=p3; p3=tmp; }
 	if (p3->v.y<p2->v.y) { tmp=p2; p2=p3; p3=tmp; }
-	if (p3->v.y<0 || p1->v.y>SY) return;
-	pmin=pmax=p1;
-	if (p2->v.x>pmax->v.x) pmax=p2;
-	if (p3->v.x>pmax->v.x) pmax=p3;
-	if (pmax->v.x<0) return;
-	if (p2->v.x<pmin->v.x) pmin=p2;
-	if (p3->v.x<pmin->v.x) pmin=p3;
-	if (pmin->v.x>SX) return;
+	if (p3->v.y<0 || p1->v.y>SY) return false;
+	// bounds along X
+	p_minx=p_maxx=p1;
+	if (p2->v.x>p_maxx->v.x) p_maxx=p2;
+	if (p3->v.x>p_maxx->v.x) p_maxx=p3;
+	if (p_maxx->v.x<0) return false;
+	if (p2->v.x<p_minx->v.x) p_minx=p2;
+	if (p3->v.x<p_minx->v.x) p_minx=p3;
+	if (p_minx->v.x>SX) return false;
 	Gouroyi=p1->v.y;
-	last_poly_is_visible=1;
 	if (p1->v.y!=p2->v.y) {
 		Gouroxi=p1->v.x<<Gourovf;
 		Gourocoulb=p1->c.b<<Gourovf;
@@ -809,7 +814,7 @@ void polygouro(vect2dc *p1, vect2dc *p2, vect2dc *p3) {
 		qr2=(((int)(p3->c.r-p1->c.r))<<Gourovf)/(p3->v.y-p1->v.y);
 		qg2=(((int)(p3->c.g-p1->c.g))<<Gourovf)/(p3->v.y-p1->v.y);
 		qb2=(((int)(p3->c.b-p1->c.b))<<Gourovf)/(p3->v.y-p1->v.y);
-		if (p3->v.y-p2->v.y) {
+		if (p3->v.y != p2->v.y) {
 			q3=((p3->v.x-p2->v.x)<<Gourovf)/(p3->v.y-p2->v.y);
 			qr3=(((int)(p3->c.r-p2->c.r))<<Gourovf)/(p3->v.y-p2->v.y);
 			qg3=(((int)(p3->c.g-p2->c.g))<<Gourovf)/(p3->v.y-p2->v.y);
@@ -817,11 +822,11 @@ void polygouro(vect2dc *p1, vect2dc *p2, vect2dc *p3) {
 		}
 		Gourolx = Gourovfm;
 		if (q1<=q2) {
-			if(!(Gouroql=q2-q1)) Gouroql=1;		// le taux d'accroissement de la taille du segment (en évitant 0);
-			if(!(ql2=q2-q3)) ql2=-1;
+			if(0 == (Gouroql=q2-q1)) Gouroql=1;		// increasing ratio of the scanline length, avoiding 0
+			if(0 == (ql2=q2-q3)) ql2=-1;
 			Gouroqx=q2; qxx=q2;
 			Gouroqr=qr2; Gouroqg=qg2; Gouroqb=qb2; qrr=qr2; qgg=qg2; qbb=qb2;
-			if (p2->v.y-p1->v.y>p3->v.y-p2->v.y) {
+			if (p2->v.y-p1->v.y > p3->v.y-p2->v.y) {
 #define QLPREC (Gourovfm/4)
 				if (Gouroql>QLPREC) {
 					Gouroir=((qr1-qr2)<<Gourovf)/Gouroql;
@@ -836,11 +841,11 @@ void polygouro(vect2dc *p1, vect2dc *p2, vect2dc *p3) {
 				} else Gouroir=Gouroig=Gouroib=0;
 			}
 		} else {	// q1>q2
-			if (!(Gouroql=q1-q2)) Gouroql=1;
-			if (!(ql2=q3-q2)) ql2=-1;
+			if (0 == (Gouroql=q1-q2)) Gouroql=1;
+			if (0 == (ql2=q3-q2)) ql2=-1;
 			Gouroqx=q1; qxx=q3;
 			Gouroqr=qr1; Gouroqg=qg1; Gouroqb=qb1; qrr=qr3; qgg=qg3; qbb=qb3;
-			if (p2->v.y-p1->v.y>p3->v.y-p2->v.y) {
+			if (p2->v.y-p1->v.y > p3->v.y-p2->v.y) {
 				if (Gouroql>QLPREC) {
 					Gouroir=((qr2-qr1)<<Gourovf)/Gouroql;
 					Gouroig=((qg2-qg1)<<Gourovf)/Gouroql;
@@ -854,15 +859,14 @@ void polygouro(vect2dc *p1, vect2dc *p2, vect2dc *p3) {
 				} else Gouroir=Gouroig=Gouroib=0;
 			}
 		}
-		MMXGouroPreca(Gouroib,Gouroig,Gouroir);
 		Gourody=p2->v.y-p1->v.y;
-		MMXGouro();
+		gouraud_section();
 		Gouroqx=qxx; Gouroql=ql2;
 		Gouroqr=qrr; Gouroqg=qgg; Gouroqb=qbb;
 		Gourody=p3->v.y-p2->v.y+1;
-		MMXGouro();
-	} else {	// base plate
-		if (p3->v.y>p2->v.y) {	// triangle qd meme
+		gouraud_section();
+	} else {	// flat base
+		if (p3->v.y > p2->v.y) {	// a triangle nonetheless
 			q2=((p3->v.x-p1->v.x)<<Gourovf)/(p3->v.y-p1->v.y);
 			qr2=(((int)(p3->c.r-p1->c.r))<<Gourovf)/(p3->v.y-p1->v.y);
 			qg2=(((int)(p3->c.g-p1->c.g))<<Gourovf)/(p3->v.y-p1->v.y);
@@ -871,7 +875,7 @@ void polygouro(vect2dc *p1, vect2dc *p2, vect2dc *p3) {
 			qr3=(((int)(p3->c.r-p2->c.r))<<Gourovf)/(p3->v.y-p2->v.y);
 			qg3=(((int)(p3->c.g-p2->c.g))<<Gourovf)/(p3->v.y-p2->v.y);
 			qb3=(((int)(p3->c.b-p2->c.b))<<Gourovf)/(p3->v.y-p2->v.y);
-			if (p2->v.x>=p1->v.x) {
+			if (p2->v.x >= p1->v.x) {
 				Gouroxi=p2->v.x<<Gourovf;
 				Gourocoulb=p2->c.b<<Gourovf;
 				Gourocoulg=p2->c.g<<Gourovf;
@@ -891,35 +895,33 @@ void polygouro(vect2dc *p1, vect2dc *p2, vect2dc *p3) {
 				Gourocoulg=p1->c.g<<Gourovf;
 				Gourocoulr=p1->c.r<<Gourovf;
 				Gourolx = (p1->v.x-p2->v.x)<<Gourovf;
-				if(!(Gouroql=q2-q3)) Gouroql=-1;
+				if(0 == (Gouroql=q2-q3)) Gouroql=-1;
 				Gouroqx=q2;
 				Gouroqr=qr2; Gouroqg=qg2; Gouroqb=qb2;
-				if (Gouroql<-QLPREC) {
+				if (Gouroql < -QLPREC) {
 					Gouroir=((qr3-qr2)<<Gourovf)/Gouroql;
 					Gouroig=((qg3-qg2)<<Gourovf)/Gouroql;
 					Gouroib=((qb3-qb2)<<Gourovf)/Gouroql;
 				} else Gouroir=Gouroib=Gouroig=0;
 			}
-			MMXGouroPreca(Gouroib,Gouroig,Gouroir);
 			Gourody=p3->v.y-p1->v.y+1;
-			MMXGouro();
-		} else {	// trait plat
-			Gouroxi=pmax->v.x<<Gourovf;
-			if(!(Gourolx=(pmax->v.x-pmin->v.x)<<Gourovf)) Gourolx=Gourovfm;
-			Gourocoulb=pmax->c.b<<Gourovf;
-			Gourocoulg=pmax->c.g<<Gourovf;
-			Gourocoulr=pmax->c.r<<Gourovf;
-			if (Gourolx>QLPREC) {
-				Gouroir=(pmin->c.r-pmax->c.r)<<Gourovf/Gourolx;
-				Gouroig=(pmin->c.g-pmax->c.g)<<Gourovf/Gourolx;
-				Gouroib=(pmin->c.b-pmax->c.b)<<Gourovf/Gourolx;
+			gouraud_section();
+		} else {	// flat segment
+			Gouroxi=p_maxx->v.x<<Gourovf;
+			if(!(Gourolx=(p_maxx->v.x-p_minx->v.x)<<Gourovf)) Gourolx=Gourovfm;
+			Gourocoulb=p_maxx->c.b<<Gourovf;
+			Gourocoulg=p_maxx->c.g<<Gourovf;
+			Gourocoulr=p_maxx->c.r<<Gourovf;
+			if (Gourolx > QLPREC) {
+				Gouroir=(p_minx->c.r-p_maxx->c.r)<<Gourovf/Gourolx;
+				Gouroig=(p_minx->c.g-p_maxx->c.g)<<Gourovf/Gourolx;
+				Gouroib=(p_minx->c.b-p_maxx->c.b)<<Gourovf/Gourolx;
 			} else Gouroir=Gouroig=Gouroib=0;
-			MMXGouroPreca(Gouroib,Gouroig,Gouroir);
 			Gourody=1;
-			MMXGouro();
+			gouraud_section();
 		}
 	}
-//	MMXRestoreFPU();
+	return true;
 }
 
 

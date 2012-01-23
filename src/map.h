@@ -29,4 +29,14 @@ void animate_water(void);
 /* Return the altitude of the ground at this location, with or without submap */
 float z_ground(float, float, bool);
 
+/* Landscape generation (with roads, villages and so on */
+void initmap(void);
+
+/* Draw the landscape and all objects above it */
+void draw_ground_and_objects(void);
+
+/* Draw a single Gouraud shaded triangle.
+ * @return true if the triangle was actually visible. */
+bool poly_gouraud(vect2dc *p1, vect2dc *p2, vect2dc *p3);
+
 #endif

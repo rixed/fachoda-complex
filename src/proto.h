@@ -368,9 +368,6 @@ extern int campactu;
 extern void polyclip(vecic *p1, vecic *p2, vecic *p3);
 extern pixel *colormap;
 extern uchar *mapcol;
-extern void initmap(void);
-extern void draw_ground_and_objects(void);
-extern void polygouro(vect2dc *p1, vect2dc *p2, vect2dc *p3);
 // carte.c
 extern vector repere[NBREPMAX];
 extern int zoom, xcarte, ycarte, repidx;
@@ -478,8 +475,6 @@ extern void MMXMemSetInt(int *deb, int coul, int n);
 extern void MMXAddSatInt(int *deb, int coul, int n);
 extern void MMXCopyToScreen(int *dest, int *src, int sx, int sy, int width);
 extern void MMXCopy(int *dest, int *src, int nbr);
-extern void MMXGouroPreca(int,int,int);
-extern void MMXGouro(void);
 extern void fuplot(int x, int y, int r);
 extern uchar *BigFont;
 extern uchar font[112][10];
