@@ -107,7 +107,7 @@ extern inline int color_of_pixel(pixel c);
 bool polyflat(vect2d *p1, vect2d *p2, vect2d *p3, pixel coul) {
 	vect2d *tmp;
 	int xi, yi, lx, i, j, jlim, yfin;
-	int q1, q2, q3, ql, qx, qx2, ql2;
+	int q1, q2, q3, ql, qx, qx2 = 0, ql2 = 0;
 	pixel32 *vid;
 
 	if (p2->y<p1->y) { tmp=p1; p1=p2; p2=tmp; }
@@ -127,7 +127,6 @@ bool polyflat(vect2d *p1, vect2d *p2, vect2d *p3, pixel coul) {
 		xi=p1->x<<vf;
 		lx = (p2->x - p1->x +1)<<vf;
 		yfin = yi+1;
-		MMXFlatInit();
 		goto debtrace;
 	}
 	lx = 1<<vf;
@@ -154,7 +153,6 @@ bool polyflat(vect2d *p1, vect2d *p2, vect2d *p3, pixel coul) {
 		ql2= q1-q3;
 		qx=q2; qx2=q3;
 	}
-	MMXFlatInit();
 	// clipper les y<0 ! sinon ca fait des pauses !
 	yfin=p2->y;
 	if (p2->y<0) {
@@ -173,18 +171,19 @@ debtrace:
 
 	for (i=0; i<2; i++, yfin=p3->y, ql=ql2, qx=qx2){
 		while (yi<yfin && yi<SY) {
-			jlim=(lx+xi)>>vf; j=xi>>vf;
-			if (j<0) j=0;
-			if (jlim>SX) jlim=SX;
-			if (j<jlim) {
-				MMXFlat((int*)vid+j, jlim-j, color_of_pixel(coul));
+			jlim = (lx+xi)>>vf;
+			j = xi>>vf;
+			if (j < 0) j = 0;
+			if (jlim > SX) jlim = SX;
+			if (j < jlim) {
+				MMXMemSetInt((int*)(vid+j), color_of_pixel(coul), jlim-j);
 			}
-			xi+=qx; yi++;
-			lx+=ql;
-			vid+=SX;
+			xi += qx;
+			yi++;
+			lx += ql;
+			vid += SX;
 		}
 	}
-	MMXRestoreFPU();
 	return true;
 }
 void drawline(vect2dlum *p1, vect2dlum *p2, int col) {
@@ -324,7 +323,6 @@ void plotphare(int x, int y, int r) {
 #	if 0
 	int balance=-r, xoff=0, yoff=r, newyoff=1;
 	if (r==0 || x-r>=SX || x+r<0 || y-r>=SY || y+r<0 || r>SX) return;
-	MMXSaveFPU();
 	zfac=(190<<8)/r;
 	do {
 		if (newyoff) {
@@ -341,7 +339,6 @@ void plotphare(int x, int y, int r) {
 			newyoff=1;
 		} else newyoff=0;
 	} while (xoff <= yoff);
-	MMXRestoreFPU();
 #	endif
 }
 
@@ -455,27 +452,27 @@ void renderer(int ak, enum render_part fast){
 	}
 	// reclasser les objets en R2
 	if (fast==0 || fast==3) {	// 1-> pas la peine et 2-> deja fait.
-	o=map[ak].first_obj;
-	if (obj[o].next!=-1)	do {	// le if est utile ssi il n'y a qu'un seul objet
-		int n=obj[o].next, ii=o;
-		//for (p=0; p!=-1; p=obj[p].next) printf("%d<",p);
-		//printf("\n");
-		while (ii!=-1 && obj[n].distance<obj[ii].distance) ii=obj[ii].prec;
-		if (ii!=o) { // réinsère
-			obj[o].next=obj[n].next;
-			if (obj[o].next!=-1) obj[obj[o].next].prec=o;
-			obj[n].prec=ii;
-			if (ii==-1) {
-				obj[n].next=map[ak].first_obj;
-				map[ak].first_obj=n;
-				obj[obj[n].next].prec=n;
-			} else {
-				obj[n].next=obj[ii].next;
-				obj[ii].next=n;
-				obj[obj[n].next].prec=n;
-			}
-		} else o=obj[o].next;
-	} while (o!=-1 && obj[o].next!=-1);
+		o=map[ak].first_obj;
+		if (obj[o].next!=-1) do {	// le if est utile ssi il n'y a qu'un seul objet
+			int n=obj[o].next, ii=o;
+			//for (p=0; p!=-1; p=obj[p].next) printf("%d<",p);
+			//printf("\n");
+			while (ii!=-1 && obj[n].distance<obj[ii].distance) ii=obj[ii].prec;
+			if (ii!=o) { // réinsère
+				obj[o].next=obj[n].next;
+				if (obj[o].next!=-1) obj[obj[o].next].prec=o;
+				obj[n].prec=ii;
+				if (ii==-1) {
+					obj[n].next=map[ak].first_obj;
+					map[ak].first_obj=n;
+					obj[obj[n].next].prec=n;
+				} else {
+					obj[n].next=obj[ii].next;
+					obj[ii].next=n;
+					obj[obj[n].next].prec=n;
+				}
+			} else o=obj[o].next;
+		} while (o!=-1 && obj[o].next!=-1);
 	}
 	// affichage des ombres
 	o=map[ak].first_obj; no=0;
@@ -487,7 +484,7 @@ void renderer(int ak, enum render_part fast){
 #define DISTLUM 300.
 			mulv(&oL[no].x,DISTLUM);
 			mulv(&oL[no].y,DISTLUM);
-  			if (aff && (z=z_ground(obj[o].pos.x,obj[o].pos.y, true))>obj[o].pos.z-500) {
+			if (aff && (z=z_ground(obj[o].pos.x,obj[o].pos.y, true))>obj[o].pos.z-500) {
 				for (p=0; p<mod[obj[o].model].nbpts[1]; p++) {
 					mulmv(&obj[o].rot, &mod[obj[o].model].pts[1][p], &pts3d);
 					addv(&pts3d,&obj[o].pos);
@@ -500,14 +497,14 @@ void renderer(int ak, enum render_part fast){
 				}
 				for (p=0; p<mod[obj[o].model].nbfaces[1]; p++) {
 					if (scalaire(&mod[obj[o].model].fac[1][p].norm,&oL[no].z)<=0 &&
-					    pts2d[mod[obj[o].model].fac[1][p].p[0]].v.x != MAXINT &&
-						 pts2d[mod[obj[o].model].fac[1][p].p[1]].v.x != MAXINT &&
-						 pts2d[mod[obj[o].model].fac[1][p].p[2]].v.x != MAXINT)
+							pts2d[mod[obj[o].model].fac[1][p].p[0]].v.x != MAXINT &&
+							pts2d[mod[obj[o].model].fac[1][p].p[1]].v.x != MAXINT &&
+							pts2d[mod[obj[o].model].fac[1][p].p[2]].v.x != MAXINT)
 						polyflat(
-							&pts2d[mod[obj[o].model].fac[1][p].p[0]].v,
-							&pts2d[mod[obj[o].model].fac[1][p].p[1]].v,
-							&pts2d[mod[obj[o].model].fac[1][p].p[2]].v,
-							(pixel){ .r = 0, .g = 0, .b = 0});
+								&pts2d[mod[obj[o].model].fac[1][p].p[0]].v,
+								&pts2d[mod[obj[o].model].fac[1][p].p[1]].v,
+								&pts2d[mod[obj[o].model].fac[1][p].p[2]].v,
+								(pixel){ .r = 0, .g = 0, .b = 0});
 				}
 			}
 		}
@@ -519,108 +516,109 @@ void renderer(int ak, enum render_part fast){
 	if (fast!=1) while (obj[o].next!=-1 /*&& (viewall || obj[obj[o].next].distance<TL2)*/) { o=obj[o].next; no++; }
 	do {
 		if (fast==3 || (fast==1 && obj[o].type==NUAGE) || (fast==0 && (obj[o].type==CIBGRAT || obj[o].type==VEHIC || obj[o].type==PHARE || obj[o].type==DECO || obj[o].type==GRAV)) || (fast==2 && (obj[o].type==AVION || obj[o].type==ZEPPELIN || obj[o].type==FUMEE || obj[o].type==TIR || obj[o].type==BOMB || obj[o].type==TABBORD || obj[o].type==NUAGE))) {
-		if (obj[o].aff && obj[o].posc.z>-mod[obj[o].model].rayon) {	// il faut déjà que l'objet soit un peu devant la caméra et que ce soit pas un objet à passer...
-			int visu;
-			if (obj[o].posc.z>0) {
-				// on va projetter ce centre à l'écran
-				proj(&e,&obj[o].posc);
-				rayonapparent = proj1(mod[obj[o].model].rayon,obj[o].posc.z);
-				visu = e.x>-rayonapparent && e.x<SX+rayonapparent && e.y>-rayonapparent && e.y<SY+rayonapparent;
-			} else {	// verifier la formule qd meme...
-				if (obj[o].type!=NUAGE && obj[o].type!=FUMEE) {
-					double r = mod[obj[o].model].rayon*sqrt(focale*focale+_DX*_DX)/_DX;
-					visu = obj[o].posc.z > focale*fabs(obj[o].posc.x)/_DX - r;
-					r = mod[obj[o].model].rayon*sqrt(focale*focale+_DY*_DY)/_DY;
-					visu = visu && (obj[o].posc.z > focale*fabs(obj[o].posc.y)/_DY - r);
-					rayonapparent = SX;
-				} else visu=0;
-			}
-			// la sphère est-elle visible ?
-			if (visu) {
-				if (obj[o].type==NUAGE) {
-					if (Dark) plotfumee(e.x,e.y,rayonapparent);
-					else plotnuage(e.x,e.y,rayonapparent);
+			if (obj[o].aff && obj[o].posc.z>-mod[obj[o].model].rayon) {	// il faut déjà que l'objet soit un peu devant la caméra et que ce soit pas un objet à passer...
+				int visu;
+				if (obj[o].posc.z>0) {
+					// on va projetter ce centre à l'écran
+					proj(&e,&obj[o].posc);
+					rayonapparent = proj1(mod[obj[o].model].rayon,obj[o].posc.z);
+					visu = e.x>-rayonapparent && e.x<SX+rayonapparent && e.y>-rayonapparent && e.y<SY+rayonapparent;
+				} else {	// verifier la formule qd meme...
+					if (obj[o].type!=NUAGE && obj[o].type!=FUMEE && obj[o].type!=PHARE) {
+						double r = mod[obj[o].model].rayon*sqrt(focale*focale+_DX*_DX)/_DX;
+						visu = obj[o].posc.z > focale*fabs(obj[o].posc.x)/_DX - r;
+						r = mod[obj[o].model].rayon*sqrt(focale*focale+_DY*_DY)/_DY;
+						visu = visu && (obj[o].posc.z > focale*fabs(obj[o].posc.y)/_DY - r);
+						rayonapparent = SX;
+					} else visu=0;
 				}
-				else if (obj[o].type==FUMEE) {
-					if (rayonfumee[o-firstfumee]) plotfumee(e.x,e.y,((int)rayonapparent*rayonfumee[o-firstfumee])>>9);
-				} else {
-					if (rayonapparent>.3) {
-						if (rayonapparent<.5) plot(e.x-_DX,e.y-_DY,0x0);
-						else {
-						//	if (rayonapparent>=7) mo=0; else mo=1;
-							if (obj[o].distance<(ECHELLE*ECHELLE*.14)) mo=0; else mo=1;
-							// on calcule alors la pos de la cam dans le repère de l'objet, ie ObjT*(campos-objpos)
-							mulmtv(&obj[o].rot,&obj[o].t,&c);
-							neg(&c);
-							// on calcule aussi la position de tous les points de l'objet dans le repere de la camera, ie CamT*Obj*u
-							mulmt3(&co,&cam.rot,&obj[o].rot);
-							for (p=0; p<mod[obj[o].model].nbpts[mo]; p++) {
-								mulmv(&co, &mod[obj[o].model].pts[mo][p], &pts3d);
-								addv(&pts3d,&obj[o].posc);
-								if (pts3d.z>0) proj(&pts2d[p].v,&pts3d);
-								else pts2d[p].v.x = MAXINT;
-								// on calcule aussi les projs des
-								// norms dans le plan lumineux infiniment éloigné
-								if (scalaire(&mod[obj[o].model].norm[mo][p],&oL[no].z)<0) {
-									pts2d[p].xl = scalaire(&mod[obj[o].model].norm[mo][p],&oL[no].x);
-									pts2d[p].yl = scalaire(&mod[obj[o].model].norm[mo][p],&oL[no].y);
-								} else pts2d[p].xl = MAXINT;
-							}
-							if (obj[o].type==TIR) {
-								if (pts2d[0].v.x!=MAXINT && pts2d[1].v.x!=MAXINT) drawline(&pts2d[0],&pts2d[1],0xFFA0F0);
-							} else {
-								for (p=0; p<mod[obj[o].model].nbfaces[mo]; p++) {
-									// test de visibilité entre cam et normale
-									copyv(&t,&mod[obj[o].model].pts[mo][mod[obj[o].model].fac[mo][p].p[0]]);
-									subv(&t,&c);
-									if (scalaire(&t,&mod[obj[o].model].fac[mo][p].norm)<=0) {
-										if (pts2d[mod[obj[o].model].fac[mo][p].p[0]].v.x != MAXINT &&
-											 pts2d[mod[obj[o].model].fac[mo][p].p[1]].v.x != MAXINT &&
-											 pts2d[mod[obj[o].model].fac[mo][p].p[2]].v.x != MAXINT) {
-											if (obj[o].type==TABBORD && p>=mod[obj[o].model].nbfaces[mo]-2) {
-												vect2dm pt[3];
-												int i;
-												for (i=0; i<3; i++) {
-													pt[i].v.x=pts2d[mod[obj[o].model].fac[mo][p].p[i]].v.x;
-													pt[i].v.y=pts2d[mod[obj[o].model].fac[mo][p].p[i]].v.y;
-												}
-												if (p-(mod[obj[o].model].nbfaces[mo]-2)) {
-													pt[2].mx=MARGE;
-													pt[2].my=SYTB+MARGE;
-													pt[0].mx=SXTB+MARGE;
-													pt[0].my=MARGE;
-													pt[1].mx=SXTB+MARGE;
-													pt[1].my=SYTB+MARGE;
-												} else {
-													pt[0].mx=MARGE;
-													pt[0].my=SYTB+MARGE;
-													pt[1].mx=MARGE;
-													pt[1].my=MARGE;
-													pt[2].mx=SXTB+MARGE;
-													pt[2].my=MARGE;
-												}
-												polymap(&pt[0],&pt[1],&pt[2]);
-											} else {
-												pixel coul = mod[obj[o].model].fac[mo][p].color;
-												if (Dark) {
-													if (obj[o].type != TABBORD) {
-														darken(&coul.r);
+				// la sphère est-elle visible ?
+				if (visu) {
+					if (obj[o].type==NUAGE) {
+						if (Dark) plotfumee(e.x,e.y,rayonapparent);
+						else plotnuage(e.x,e.y,rayonapparent);
+					}
+					else if (obj[o].type==FUMEE) {
+						if (rayonfumee[o-firstfumee]) plotfumee(e.x,e.y,((int)rayonapparent*rayonfumee[o-firstfumee])>>9);
+					} else {
+						if (rayonapparent>.3) {
+							if (rayonapparent<.5) plot(e.x-_DX,e.y-_DY,0x0);
+							else {
+								//	if (rayonapparent>=7) mo=0; else mo=1;
+								if (obj[o].distance<(ECHELLE*ECHELLE*.14)) mo=0; else mo=1;
+								// on calcule alors la pos de la cam dans le repère de l'objet, ie ObjT*(campos-objpos)
+								mulmtv(&obj[o].rot,&obj[o].t,&c);
+								neg(&c);
+								// on calcule aussi la position de tous les points de l'objet dans le repere de la camera, ie CamT*Obj*u
+								mulmt3(&co,&cam.rot,&obj[o].rot);
+								for (p=0; p<mod[obj[o].model].nbpts[mo]; p++) {
+									mulmv(&co, &mod[obj[o].model].pts[mo][p], &pts3d);
+									addv(&pts3d,&obj[o].posc);
+									if (pts3d.z>0) proj(&pts2d[p].v,&pts3d);
+									else pts2d[p].v.x = MAXINT;
+									// on calcule aussi les projs des
+									// norms dans le plan lumineux infiniment éloigné
+									if (scalaire(&mod[obj[o].model].norm[mo][p],&oL[no].z)<0) {
+										pts2d[p].xl = scalaire(&mod[obj[o].model].norm[mo][p],&oL[no].x);
+										pts2d[p].yl = scalaire(&mod[obj[o].model].norm[mo][p],&oL[no].y);
+									} else pts2d[p].xl = MAXINT;
+								}
+								if (obj[o].type==TIR) {
+									if (pts2d[0].v.x!=MAXINT && pts2d[1].v.x!=MAXINT) drawline(&pts2d[0],&pts2d[1],0xFFA0F0);
+								} else {
+									for (p=0; p<mod[obj[o].model].nbfaces[mo]; p++) {
+										// test de visibilité entre cam et normale
+										copyv(&t,&mod[obj[o].model].pts[mo][mod[obj[o].model].fac[mo][p].p[0]]);
+										subv(&t,&c);
+										if (scalaire(&t,&mod[obj[o].model].fac[mo][p].norm)<=0) {
+											if (pts2d[mod[obj[o].model].fac[mo][p].p[0]].v.x != MAXINT &&
+													pts2d[mod[obj[o].model].fac[mo][p].p[1]].v.x != MAXINT &&
+													pts2d[mod[obj[o].model].fac[mo][p].p[2]].v.x != MAXINT) {
+												if (obj[o].type==TABBORD && p>=mod[obj[o].model].nbfaces[mo]-2) {
+													vect2dm pt[3];
+													int i;
+													for (i=0; i<3; i++) {
+														pt[i].v.x=pts2d[mod[obj[o].model].fac[mo][p].p[i]].v.x;
+														pt[i].v.y=pts2d[mod[obj[o].model].fac[mo][p].p[i]].v.y;
 													}
-													darken(&coul.g);
-													darken(&coul.b);
+													if (p-(mod[obj[o].model].nbfaces[mo]-2)) {
+														pt[2].mx=MARGE;
+														pt[2].my=SYTB+MARGE;
+														pt[0].mx=SXTB+MARGE;
+														pt[0].my=MARGE;
+														pt[1].mx=SXTB+MARGE;
+														pt[1].my=SYTB+MARGE;
+													} else {
+														pt[0].mx=MARGE;
+														pt[0].my=SYTB+MARGE;
+														pt[1].mx=MARGE;
+														pt[1].my=MARGE;
+														pt[2].mx=SXTB+MARGE;
+														pt[2].my=MARGE;
+													}
+													polymap(&pt[0],&pt[1],&pt[2]);
+												} else {
+													pixel coul = mod[obj[o].model].fac[mo][p].color;
+													if (Dark) {
+														if (obj[o].type != TABBORD) {
+															darken(&coul.r);
+														}
+														darken(&coul.g);
+														darken(&coul.b);
+													}
+													if (pts2d[mod[obj[o].model].fac[mo][p].p[0]].xl!=MAXINT && pts2d[mod[obj[o].model].fac[mo][p].p[1]].xl!=MAXINT && pts2d[mod[obj[o].model].fac[mo][p].p[2]].xl!=MAXINT)
+														polyphong(
+																&pts2d[mod[obj[o].model].fac[mo][p].p[0]],
+																&pts2d[mod[obj[o].model].fac[mo][p].p[1]],
+																&pts2d[mod[obj[o].model].fac[mo][p].p[2]],
+																coul);
+													else
+														polyflat(
+																&pts2d[mod[obj[o].model].fac[mo][p].p[0]].v,
+																&pts2d[mod[obj[o].model].fac[mo][p].p[1]].v,
+																&pts2d[mod[obj[o].model].fac[mo][p].p[2]].v, 
+																coul);
 												}
-												if (pts2d[mod[obj[o].model].fac[mo][p].p[0]].xl!=MAXINT && pts2d[mod[obj[o].model].fac[mo][p].p[1]].xl!=MAXINT && pts2d[mod[obj[o].model].fac[mo][p].p[2]].xl!=MAXINT)
-													polyphong(
-														&pts2d[mod[obj[o].model].fac[mo][p].p[0]],
-														&pts2d[mod[obj[o].model].fac[mo][p].p[1]],
-														&pts2d[mod[obj[o].model].fac[mo][p].p[2]],
-														coul);
-												else
-													polyflat(
-														&pts2d[mod[obj[o].model].fac[mo][p].p[0]].v,
-														&pts2d[mod[obj[o].model].fac[mo][p].p[1]].v,
-														&pts2d[mod[obj[o].model].fac[mo][p].p[2]].v, 
-														coul);
 											}
 										}
 									}
@@ -628,13 +626,12 @@ void renderer(int ak, enum render_part fast){
 							}
 						}
 					}
-				}
-				if (Dark && obj[o].type==PHARE) {	// HALO
-					plotphare(e.x,e.y,rayonapparent*4+1);
+					if (Dark && obj[o].type==PHARE) {	// HALO
+						plotphare(e.x,e.y,rayonapparent*4+1);
+					}
 				}
 			}
 		}
-		}
-	if (fast!=1) { o=obj[o].prec; no--; } else o=obj[o].next;
+		if (fast!=1) { o=obj[o].prec; no--; } else o=obj[o].next;
 	} while (o!=-1);
 }

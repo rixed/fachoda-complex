@@ -160,7 +160,6 @@ void drawseg(int x1, int x2, int y, int c) {
 void disqueintro(int x, int y, int r, int c) {
 	int balance=-r, xoff=0, yoff=r, newyoff=1;
 	if (r<=0 || x-r>=SX || x+r<0 || y-r>=SY || y+r<0 || r>SX) return;
-//	MMXSaveFPU();
 	do {
 		if (newyoff) {
 			drawseg(x-xoff,x+xoff,y+yoff,c);
@@ -176,7 +175,6 @@ void disqueintro(int x, int y, int r, int c) {
 			newyoff=1;
 		} else newyoff=0;
 	} while (++xoff <= yoff);
-//	MMXRestoreFPU();
 }
 #define RAYONBOUTTON 40
 void button(int x, int y, char *label,char highlight) {

@@ -150,12 +150,10 @@ void affjauge(float j) {
 	int nx,y,xx;
 	nx=10+(int)(nj*(SX-20.));
 	if (nx>x) {
-		MMXSaveFPU();
 		for (y=_DY-(SY>>3); y<_DY+(SY>>3); y++)
 			for (xx=x; xx<nx; xx++)
 				//*(int*)&videobuffer[y*SX+xx]=0x3060A0;
 				MMXAddSatC((int*)&videobuffer[y*SX+xx],0x001080);
-		MMXRestoreFPU();
 		buffer2video();
 		x=nx;
 	}

@@ -14,12 +14,6 @@ void MMXMemSetInt(int *deb, int coul, int n) {
 void MMXCopy(int *dst, int *src, int n) {	// by the time I suppose glibc became quite good at this :-)
 	memcpy(dst, src, n*4);
 }
-void MMXFlat(int *dst, int n, int coul) {
-	MMXMemSetInt(dst, coul, n);
-}
-void MMXSaveFPU(void) {}
-void MMXRestoreFPU(void) {}
-void MMXFlatInit(void) {}
 
 extern void catchalarm(int sig);
 

@@ -181,10 +181,8 @@ void drawroute(int k) {
 				pt[3].v.z=pt3d[3].z*256;
 				pt[0].c=pt[2].c=route[r].e.c;
 				pt[1].c=pt[3].c=route[r+1].e.c;
-				MMXSaveFPU();
 				polyclip(&pt[1],&pt[0],&pt[2]);
 				polyclip(&pt[3],&pt[1],&pt[2]);
-				MMXRestoreFPU();
 			}
 		}
 	}

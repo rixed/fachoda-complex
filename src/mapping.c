@@ -81,7 +81,6 @@ void polymap(vect2dm *p1, vect2dm *p2, vect2dm *p3) {
 	if (p3->v.x<pmin->v.x) pmin=p3;
 	if (pmin->v.x>SX) return;
 	yi=p1->v.y;
-//	MMXSaveFPU();
 	if (p1->v.y!=p2->v.y) {
 		xi=p1->v.x<<vf;
 		xm=p1->mx<<vf;
@@ -185,7 +184,6 @@ void polymap(vect2dm *p1, vect2dm *p2, vect2dm *p3) {
 			trapeze(1);
 		}
 	}
-//	MMXRestoreFPU();
 }
 
 void polyphong(vect2dlum *p1, vect2dlum *p2, vect2dlum *p3, pixel coul) {
@@ -323,5 +321,4 @@ debtrace:
 			vid+=SX;
 		}
 	}
-	MMXRestoreFPU();
 }

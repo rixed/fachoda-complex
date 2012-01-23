@@ -81,7 +81,6 @@ void renduroute() {
 void rendumapbg() {
 	int x,y;
 	vect2dc p1,p2,p3,p4;
-	MMXSaveFPU();
 	for (y=0; y<WMAP-1; y++) {
 		for (x=0; x<WMAP-1; x++) {
 			bpoint(&p1,x,y);
@@ -94,7 +93,6 @@ void rendumapbg() {
 	}
 	bpoint(&p1,0,0);
 	bpoint(&p2,WMAP,WMAP);
-	MMXRestoreFPU();
 	for (y=0; y<SY; y++) {
 		if (p1.v.x>0) MMXMemSetInt((int*)videobuffer+y*SX,0,p1.v.x);
 		if (p2.v.x<SX) MMXMemSetInt((int*)videobuffer+y*SX+p2.v.x-1,0,SX-p2.v.x+1);

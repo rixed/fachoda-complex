@@ -460,13 +460,9 @@ extern int invaders(void);
 // extern int vague[4][4][4];	// vague, camp, colonne
 extern int myc, myv, myt;
 // code.as
-extern void MMXFlatInit(void);
-extern void MMXSaveFPU(void);
 extern void MMXAddSat(int*,int);
-extern void MMXAddSatC(int*,int);
+extern void MMXAddSatC(int *,int);
 extern void MMXSubSat(int*,int);
-extern void MMXRestoreFPU(void);
-extern void MMXFlat(int *dest, int nbr, int c);
 extern void MMXFlatTransp(int *dest, int nbr, int c);
 extern void MMXMemSetInt(int *deb, int coul, int n);
 extern void MMXAddSatInt(int *deb, int coul, int n);

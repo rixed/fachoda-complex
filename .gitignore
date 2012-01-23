@@ -7,3 +7,4 @@ core.*
 *.swp
 .depend
 *.dep
+gmon.out

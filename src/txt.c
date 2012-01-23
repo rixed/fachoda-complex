@@ -119,41 +119,38 @@ void loadbigfont(char *fn) {
 }
 
 static int addsat_byte(int b1, int b2, int shft) {
-	int mask = 0xff<<shft;
-	int a = (b1 & mask) + (b2 & mask);
+	int const mask = 0xff<<shft;
+	int const a = (b1 & mask) + (b2 & mask);
 	return a > mask ? mask : a;
 }
 static int subsat_byte(int b1, int b2, int shft) {
-	int mask = 0xff<<shft;
-	int a = (b1 & mask) - (b2 & mask);
+	int const mask = 0xff<<shft;
+	int const a = (b1 & mask) - (b2 & mask);
 	return a > mask /* wrap */ || a < (1<<shft) ? 0 : a;
 }
-// TODO: actually we are only interrested in the lower 3 bytes
 void MMXAddSatC(int *dst, int coul) {
 	int v = *dst;
 	*dst = (
 		addsat_byte(v, coul, 0) |
 		addsat_byte(v, coul, 8) |
-		addsat_byte(v, coul, 16) |
-		addsat_byte(v, coul, 24)
+		addsat_byte(v, coul, 16)
 	);
 }
-void MMXSubSatC(int *dst, int coul) {
+static void MMXSubSatC(int *dst, int coul) {
 	int v = *dst;
 	*dst = (
 		subsat_byte(v, coul, 0) |
 		subsat_byte(v, coul, 8) |
-		subsat_byte(v, coul, 16) |
-		subsat_byte(v, coul, 24)
+		subsat_byte(v, coul, 16)
 	);
 }
 void MMXAddSat(int *dst, int byte) {
 	int b = byte & 0xff;
-	MMXAddSatC(dst, b | (b<<8) | (b<<16) | (b<<24));
+	MMXAddSatC(dst, b | (b<<8) | (b<<16));
 }
 void MMXSubSat(int *dst, int byte) {
 	int b = byte & 0xff;
-	MMXSubSatC(dst, b | (b<<8) | (b<<16) | (b<<24));
+	MMXSubSatC(dst, b | (b<<8) | (b<<16));
 }
 void MMXAddSatInt(int *dst, int byte, int n)
 {

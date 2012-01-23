@@ -248,14 +248,12 @@ int lx,ly,lz,lumdec=6;
 void rectangleL(int x,int y, int rx,int ry) {
 	int xx,yy;
 	if (lz<=0) return;
-	MMXSaveFPU();
 	for (yy=y; yy<(y+ry); yy++) {
 		for (xx=x; xx<x+rx; xx++) {
 			int j = ((100+((lx*(tbz[xx+yy*SXTB+1]-tbz[xx+yy*SXTB])+ly*(tbz[xx+yy*SXTB+SXTB]-tbz[xx+yy*SXTB]))>>lumdec))*lz)>>lumdec;
 			MMXAddSat((int*)mapping+MARGE+((MARGE+yy)<<8)+xx,j);
 		}
 	}
-	MMXRestoreFPU();
 }
 void disqueL(int x, int y, int r) {
 	int balance=-r, xoff=0, yoff=r, newyoff=1;
