@@ -11,7 +11,7 @@ SRCS = \
 OBJS = ${subst .c,.o,$(SRCS)}
 
 fachoda: $(OBJS)
-	$(CC) -o $@ $(CFLAGS) $(LDFLAGS) $^
+	$(CC) -o $@ $(CFLAGS) $^ $(LDFLAGS)
 
 .PHONY: clean distclean cscope clear
 
