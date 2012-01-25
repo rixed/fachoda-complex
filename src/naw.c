@@ -1011,7 +1011,7 @@ parse_error:
 						strcat(vn,&(playbotname[DogBot])[0]);
 						strcat(vn,")");
 					}
-					pstr(vn,SY-10, colcamp[(int)bot[DogBot].camp]);
+					pstr(vn,SY-12, colcamp[(int)bot[DogBot].camp]);
 				}
 				if (bot[bmanu].gold-2000>maxgold) {
 					maxgold=bot[bmanu].gold-2000;
