@@ -8,6 +8,7 @@
 #include <sys/time.h>
 #include "keycodesdef.h"
 #include "proto.h"
+#include "sound.h"
 
 extern void deltatime(void);
 extern void plotfumee(int,int,int);
@@ -235,7 +236,7 @@ int jauge(int vi, int max) {
 		xproceed();
 		if (kread(0) || kread(1)) {
 			if (kzc==0) {
-				playsound(VOICEMOTOR,BIPINTRO, 1+(drand48()-.5)*.05,1,(xmouse*128)/SX);
+				playsound(VOICEMOTOR, BIPINTRO, 1+(drand48()-.5)*.05, &voices_in_my_head, true);
 				agit=50*256;
 				return va;
 			}
@@ -313,7 +314,8 @@ int present() {
 		if (etap==0 && (kreset(0) || kreset(1))) {
 			int b=kzc;
 			if (b!=-1) {
-				playsound(VOICEMOTOR,BIPINTRO, 1+(drand48()-.5)*.05,1,(xmouse*128)/SX);
+				vector mousepos = { .x = (float)xmouse/SX, .y = (float)ymouse/SY, .z = 0. };
+				playsound(VOICEMOTOR, BIPINTRO, 1+(drand48()-.5)*.05, &mousepos, true);
 				agit=20*256;
 				if (Round[curround].kase[b].nxtround>=0) {
 					oldcurround=curround;

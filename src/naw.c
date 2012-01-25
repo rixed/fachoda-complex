@@ -6,6 +6,7 @@
 #include <signal.h>
 #include <values.h>
 #include "map.h"
+#include "sound.h"
 
 void MMXMemSetInt(int *deb, int coul, int n) {
 	while (n--) *deb++ = coul;
@@ -265,7 +266,7 @@ int resurrect(void) {	// jesus revient, jesus reviuent parmis les tiens...
 		memcpy(&bot[bmanu],&bot[j],sizeof(bot_s));
 		memcpy(&bot[j],&bottmp,sizeof(bot_s));
 		bot[bmanu].gold=55;
-		playsound(VOICEEXTER,ALLELUIA,1,1,0);
+		playsound(VOICEEXTER, ALLELUIA, 1., &voices_in_my_head, true);
 		soundthrust=-1;
 		autopilot=1;
 		accel=0;
@@ -342,6 +343,8 @@ int main(int narg, char **arg) {
 	/*
 	    Command line parser
 	                         */
+	bool with_sound = true;
+
 	for (i=1; i<narg; i++) {
 		int c=0;
 		while (arg[i][c]=='-' || arg[i][c]==' ') c++;
@@ -367,7 +370,7 @@ int main(int narg, char **arg) {
 				}
 		} else if (!strcmp(&arg[i][c],"easy")) Easy=1;
 		else if (!strcmp(&arg[i][c],"viewall")) ViewAll=1;
-		else if (!strcmp(&arg[i][c],"nosound")) sound=0;
+		else if (!strcmp(&arg[i][c],"nosound")) with_sound=false;
 		else if (!strcmp(&arg[i][c],"nomouse")) MouseCtl=0;
 		else if (!strcmp(&arg[i][c],"killemall")) SpaceInvaders=1;
 		else if (!strcmp(&arg[i][c],"plane")) {
@@ -375,7 +378,6 @@ int main(int narg, char **arg) {
 		} else if (!strcmp(&arg[i][c],"french")) lang=0;
 		else if (!strcmp(&arg[i][c],"keys")) RedefineKeys=1;
 		else if (!strcmp(&arg[i][c],"gruge")) Gruge=1;
-		else if (!strcmp(&arg[i][c],"nogus")) GUS=0;
 		else if (!strcmp(&arg[i][c],"xcolor")) XCONVERT=1;
 		else {
 parse_error:
@@ -415,7 +417,8 @@ parse_error:
 	initmapping();
 	initsol();
 	for (i=0; i<NBREPMAX; i++) repere[i].x=MAXFLOAT;
-	if (opensound()==-1) printf("Ce sera le monde du silence...\n");
+	if (opensound(with_sound)==-1) printf("Ce sera le monde du silence...\n");
+
 	/*
 	    VIDEO
 	           */
@@ -436,38 +439,38 @@ parse_error:
 		fclose(file);
 	}
 	// PRESENTATION
-	loadsample(PRESENT,"snd/pingouin.raw",0);
+	loadsample(PRESENT,"snd/pingouin.raw", false, 1.);
 	animpresent();
 	if (RedefineKeys) {
 		redefinekeys();
 		goto fin;
 	}
-	loadsample(BIPINTRO,"snd/bipintro.raw",0);
+	loadsample(BIPINTRO,"snd/bipintro.raw", false, 1.);
 	if (present()==-1) goto fin;
 	//MMXMemSetInt((int*)videobuffer,BACKCOLOR,SX*SY);
 	affpresent(0,0);
 	pstr("LOADING and CREATING THE WORLD",_DY+(SY>>3)+10,0xE5D510);
 	/* SOUND */
-	loadsample(SHOT,"snd/shot.raw",0);
-	loadsample(GEAR_DN,"snd/gear_dn.raw",0);
-	loadsample(GEAR_UP,"snd/gear_up.raw",0);
-	loadsample(SCREETCH,"snd/screetch.raw",0);
-	loadsample(MOTOR,"snd/motor.raw",1);
-	loadsample(HIT,"snd/hit.raw",0);
-	loadsample(MESSAGE,"snd/message.raw",0);
-	loadsample(EXPLOZ,"snd/exploz.raw",0);
-	loadsample(EXPLOZ2,"snd/explo1.raw",0);
-	loadsample(TOLE,"snd/tole.raw",0);
-	loadsample(BIPBIP,"snd/bipbip.raw",0);
-	loadsample(BIPBIP2,"snd/bipbip2.raw",0);
-	loadsample(BIPBIP3,"snd/bipcarte.raw",0);
-	loadsample(FEU,"snd/feu.raw",1);
-	loadsample(TARATATA,"snd/taratata.raw",0);
-	loadsample(ALLELUIA,"snd/alleluia.raw",0);
-	loadsample(ALERT,"snd/alert.raw",0);
-	loadsample(PAIN,"snd/pain.raw",0);
-	loadsample(DEATH,"snd/death.raw",0);
-	loadsample(BRAVO,"snd/bravo.raw",0);
+	loadsample(SHOT,"snd/shot.raw", false, 1.);
+	loadsample(GEAR_DN,"snd/gear_dn.raw", false, 1.);
+	loadsample(GEAR_UP,"snd/gear_up.raw", false, 1.);
+	loadsample(SCREETCH,"snd/screetch.raw", false, 1.);
+	loadsample(MOTOR,"snd/motor.raw", true, .4);
+	loadsample(HIT,"snd/hit.raw", false, 1.);
+	loadsample(MESSAGE,"snd/message.raw", false, 1.);
+	loadsample(EXPLOZ,"snd/exploz.raw", false, 1.);
+	loadsample(EXPLOZ2,"snd/explo1.raw", false, 1.);
+	loadsample(TOLE,"snd/tole.raw", false, 1.);
+	loadsample(BIPBIP,"snd/bipbip.raw", false, 1.);
+	loadsample(BIPBIP2,"snd/bipbip2.raw", false, 1.);
+	loadsample(BIPBIP3,"snd/bipcarte.raw", false, 1.);
+	loadsample(FEU,"snd/feu.raw", true, 1.);
+	loadsample(TARATATA,"snd/taratata.raw", false, 1.);
+	loadsample(ALLELUIA,"snd/alleluia.raw", false, 1.);
+	loadsample(ALERT,"snd/alert.raw", false, 1.);
+	loadsample(PAIN,"snd/pain.raw", false, 1.);
+	loadsample(DEATH,"snd/death.raw", false, 1.);
+	loadsample(BRAVO,"snd/bravo.raw", false, 1.);
 	/*
 	    contact le serveur
 		                   */
@@ -529,7 +532,7 @@ parse_error:
 			obj[bot[i].vion+j+viondesc[bot[i].navion].nbmoyeux+1].aff=0;
 	}
 	// VISION
-	playsound(VOICEEXTER,TARATATA,1,1,0);
+	playsound(VOICEEXTER, TARATATA, 1., &voices_in_my_head, true);
 	DT=AccelFactor=0;	// parcequ'au premier passage, on n'a pas encore lut le DT du réseau avant de calculer AccelFactor
 	do {
 		vector v,u;
@@ -542,6 +545,9 @@ parse_error:
 		else if (AccelFactor>n+.3) AccelFactor=n+.3;
 		if (AccelFactor>3) AccelFactor=3;
 		else if (AccelFactor<.1) AccelFactor=.1;
+		// Locate listener (ie. camera)
+		vector velocity = { 0., 0., 0. };	// FIXME
+		update_listener(&obj[0].pos, &velocity, &obj[0].rot);
 		// PJ
 		manuel(bmanu);
 		// PNJ
@@ -566,7 +572,9 @@ parse_error:
 				}
 			}
 			// message d'alerte ?
-			if (bot[bmanu].camp!=-1 && bot[bmanu].vionvit.z<-5 && (n=bot[bmanu].vionvit.z*100+bot[bmanu].zs)<0) playsound(VOICEALERT,ALERT,1-n*.0001,1,0);
+			if (bot[bmanu].camp!=-1 && bot[bmanu].vionvit.z<-5 && (n=bot[bmanu].vionvit.z*100+bot[bmanu].zs)<0) {
+				playsound(VOICEALERT, ALERT, 1-n*.0001, &voices_in_my_head, true);
+			}
 			// avance les shots
 			for (i=debtir; i<nbobj; i++) {
 				int oc, fg=0;
@@ -625,11 +633,7 @@ parse_error:
 						if (obj[oc].type!=TIR && obj[oc].type!=CAMERA && obj[oc].type!=DECO && (oc<bot[bombe[i].b].vion || oc>=bot[bombe[i].b].vion+nobjet[bot[bombe[i].b].navion].nbpieces) && collision(j,oc)) { explose(oc,j); fg=1; break; }
 					if (fg || obj[j].pos.z<z_ground(obj[j].pos.x,obj[j].pos.y, true)) {
 						if (!fg) {
-							float np;
-							copyv(&p,&obj[j].pos);
-							subv(&p,&obj[0].pos);
-							np=renorme(&p);
-							playsound(VOICEEXTER,EXPLOZ2,1+(drand48()-.5)*.08,MIN(2.,1./(1+np*np*1e-6)),128*scalaire(&p,&obj[0].rot.x));
+							playsound(VOICEEXTER, EXPLOZ2, 1+(drand48()-.5)*.08, &obj[j].pos, false);
 						}
 						obj[j].objref=bot[bombe[i].b].babase;
 						copyv(&obj[j].pos,&vec_zero);
@@ -758,11 +762,11 @@ parse_error:
 					campactu=camp;
 					strcpy(msgactu,scenar[campactu][4-initradio][lang]);
 					initradio--;
-					playsound(VOICEGEAR,MESSAGE,1,1,0);
+					playsound(VOICEGEAR, MESSAGE, 1., &voices_in_my_head, true);
 					msgactutime=40;
 				} else {
 					newprime();
-					if (campactu==bot[visubot].camp) playsound(VOICEGEAR,MESSAGE,1,1,0);
+					if (campactu==bot[visubot].camp) playsound(VOICEGEAR, MESSAGE, 1., &voices_in_my_head, true);
 					dtradio=10+drand48()*100;
 					if (campactu==0) {
 						dtradio+=10000;
@@ -1038,7 +1042,7 @@ parse_error:
 							caisse=bot[bmanu].gold;
 							dtcaisse=30;
 							caissetot=1;
-							playsound(VOICEGEAR,MESSAGE,1.4,1,0);
+							playsound(VOICEGEAR, MESSAGE, 1.4, &voices_in_my_head, true);
 						} else {
 							caissetot=0;
 							caisse=0;

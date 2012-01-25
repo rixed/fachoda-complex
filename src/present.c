@@ -8,6 +8,8 @@
 #include <sys/time.h>
 #include "proto.h"
 #include "keycodesdef.h"
+#include "sound.h"
+
 pixel32 *presentimg;
 
 int IMGX, IMGY;
@@ -120,7 +122,7 @@ void animpresent() {
 	jloadpresent();
 	MMXMemSetInt((int*)videobuffer,*(int*)(presentimg+IMGX+1),SX*SY);
 //	gettimeofday(&GTime,NULL);
-	playsound(VOICEEXTER,PRESENT,1,1,0);
+	playsound(VOICEEXTER, PRESENT, 1., &voices_in_my_head, true);
 	while (d) {
 		affpresentanim(d);
 		d--;

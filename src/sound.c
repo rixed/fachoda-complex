@@ -1,221 +1,246 @@
-#include <dirent.h>
 #include <stdlib.h>
 #include <stdio.h>
-#include <math.h>
 #include <string.h>
 #include <unistd.h>
-#include <sys/ioctl.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-#include "proto.h"
+#include <errno.h>
+#include <assert.h>
+#include <AL/al.h>
+#include <AL/alc.h>
+#include "sound.h"
 
-char sound=1;
-char GUS=1;
-FILE *dsp;
-uchar *(sample[50]);	/// 30 samp max
-int samplesize[50];
-#define NBVOICES 10
-int sampforvoice[NBVOICES];	// 10 voiex maxi
-int esound_sampid[50];
-char esound_samploop[50];
-int nbsamp=0;
+static bool with_sound;
+static ALCdevice *dev;
+static ALCcontext *ctx;
 
-#if 0
-SEQ_DEFINEBUF (2048);
-#endif
-int seqfd, gus_dev;
+static ALuint buffers[NB_SAMPLES];
+static bool buffer_looping[NB_SAMPLES];	// tells whether the sample is supposed to loop
+static float buffer_gain[NB_SAMPLES];
+static ALuint sources[NB_VOICES];
+static vector const *source_pos[NB_VOICES];
 
-int esound_sock;
-int esound_init() {
-	return -1;
-#	if 0
-	int i;
-	if ((esound_sock=esd_open_sound(NULL))<0) { perror("sock"); return -1; }
-	for (i=0; i<NBVOICES; i++) sampforvoice[i]=-1;
+#define MAX_DIST 4000.
+
+vector voices_in_my_head = { 0., 1., 0. };	// upstairs...
+
+static char const *al_strerror(ALenum err)
+{
+	switch (err) {
+		case AL_NO_ERROR:          return "No Error";
+		case AL_INVALID_NAME:      return "Invalid Name";
+		case AL_INVALID_ENUM:	   return "Invalid Enum";
+		case AL_INVALID_VALUE:	   return "Invalid Value";
+		case AL_INVALID_OPERATION: return "Invalid Operation";
+		case AL_OUT_OF_MEMORY:     return "Out Of Memory";
+	}
+	return "Unknown Error";
+}
+
+int opensound(bool with_sound_)
+{
+	ALenum err;
+
+	with_sound = with_sound_;
+	if (! with_sound) return 0;
+
+	dev = alcOpenDevice(NULL);
+	if (! dev) {
+		fprintf(stderr, "Cannot aclOpenDevice()\n");
+		goto exit0;
+	}
+
+	static ALCint attrs[] = {
+		ALC_MONO_SOURCES, ARRAY_LEN(sources),
+		ALC_STEREO_SOURCES, 0,
+		0, 0
+	};
+	ctx = alcCreateContext(dev, attrs);
+	if (! ctx) {
+		fprintf(stderr, "Cannot alcCreateContext()\n");
+		goto exit1;
+	}
+
+	alcMakeContextCurrent(ctx);
+
+	alGetError();
+	alGenBuffers(ARRAY_LEN(buffers), buffers);
+	alGenSources(ARRAY_LEN(sources), sources);
+	if ((err = alGetError()) != AL_NO_ERROR) {
+		fprintf(stderr, "Cannot genBuffers(): %s\n", al_strerror(err));
+		goto exit2;
+	}
+	for (unsigned s = 0; s < ARRAY_LEN(sources); s++) {
+		alSourcef(sources[s], AL_MAX_DISTANCE, MAX_DIST);
+		alSourcef(sources[s], AL_REFERENCE_DISTANCE, 100.);
+	}
+	alSpeedOfSound(34330.);	// our unit of distance is approx the cm
+
+	printf("Sound OK\n");
 	return 0;
-#	endif
-}
 
-void seqbuf_dump () {
-#	if 0
-	if (_seqbufptr)
-	if (write (seqfd, _seqbuf, _seqbufptr) == -1) { perror ("write /dev/sequencer"); exit (-1); }
-	_seqbufptr = 0;
-#	endif
-}
-int openseq() {
+exit2:
+	alcMakeContextCurrent(NULL);
+	alcDestroyContext(ctx);
+exit1:
+	alcCloseDevice(dev);
+exit0:
+	with_sound = false;
 	return -1;
-#	if 0
-	int n, i;
-	struct synth_info info;
-	if ((seqfd = open("/dev/sequencer", O_WRONLY, 0))==-1){ perror("/dev/sequencer"); return -1; }
-	if (ioctl(seqfd, SNDCTL_SEQ_NRSYNTHS, &n) == -1) { perror("/dev/sequencer"); return -1; }
-	for (i = 0; i < n; i++) {
-		info.device = i;
-		if (ioctl (seqfd, SNDCTL_SYNTH_INFO, &info)==-1) { perror("/dev/sequencer"); return -1; }
-		if (info.synth_type==SYNTH_TYPE_SAMPLE && info.synth_subtype==SAMPLE_TYPE_GUS) gus_dev=i;
+}
+
+static uchar *load_file(char const *fn, size_t *size)
+{
+	FILE *in = fopen(fn, "r");
+	if (! in) {
+		fprintf(stderr, "Cannot fopen(%s): %s\n", fn, strerror(errno));
+		goto exit0;
 	}
-	if (gus_dev == -1) { fprintf(stderr,"Error: Gravis Ultrasound not detected\n"); return -1; }
+
+	if (0 != fseek(in, 0, SEEK_END)) {
+		fprintf(stderr, "Cannot fseek(%s): %s\n", fn, strerror(errno));
+		goto exit1;
+	}
+
+	long sz = ftell(in);
+	if (sz < 0) {
+		fprintf(stderr, "Cannot ftell(%s): %s\n", fn, strerror(errno));
+		goto exit1;
+	}
+
+	rewind(in);
+
+	if (size) *size = sz;
+
+	uchar *buf = malloc(sz);
+	if (! buf) {
+		fprintf(stderr, "Cannot malloc(%ld)\n", sz);
+		goto exit1;
+	}
+
+	size_t read = fread(buf, 1, sz, in);
+	if (read < (size_t)sz) {
+		fprintf(stderr, "Cannot read %ld bytes from %s: %s\n", sz, fn, strerror(errno));
+		goto exit2;
+	}
+
+	(void)fclose(in);
+	return buf;
+
+exit2:
+	free(buf);
+exit1:
+	(void)fclose(in);
+exit0:
+	return NULL;
+}
+
+int loadsample(sample_e samp, char const *fn, bool loop, float gain)
+{
+	if (! with_sound) return 0;
+
+	ALenum err;
+
+	size_t sz;
+	uchar *fbuf = load_file(fn, &sz);
+	if (! fbuf) goto exit0;
+
+	assert(samp < ARRAY_LEN(buffers));
+	alGetError();
+	alBufferData(buffers[samp], AL_FORMAT_MONO8, fbuf, sz, 8000);
+
+	if ((err = alGetError()) != AL_NO_ERROR) {
+		fprintf(stderr, "Cannot alBufferData(%s): %s\n", fn, al_strerror(err));
+		goto exit1;
+	}
+
+	buffer_looping[samp] = loop;
+	buffer_gain[samp] = gain;
+
+	free(fbuf);
 	return 0;
-#	endif
-}
-void gusreset() {
-#	if 0
-	if (!sound) return;
-	ioctl (seqfd, SNDCTL_SEQ_SYNC, 0);
-	ioctl (seqfd, SNDCTL_SEQ_RESETSAMPLES, &gus_dev);
-#	endif
-}
-int opensound() {
+exit1:
+	free(fbuf);
+exit0:
+	with_sound = false;
 	return -1;
-#	if 0
-	if (!sound) return 0;
-	if (GUS && openseq()!=-1) {
-		printf("GUS or alike detected\n");
-		GUS_NUMVOICES (gus_dev,14);
-		gusreset();
-	} else {
-		if (esound_init()<0) {
-			sound=0;
-			return -1;
-		}
-		printf("Sound OK using EsounD\n");
-	}
-	return 0;
-#	endif
-}
-int loadsample(sample_e samp, char *fn, char loop) {
-	(void)samp; (void)fn; (void)loop;
-	return -1;
-#	if 0
-	struct patch_info *pat;
-	long sr;
-	FILE *in;
-	nbsamp++;
-	if (!sound) return 0;
-	in=fopen(fn,"r");
-	fseek(in,0,SEEK_END);
-	sr=ftell(in);
-	fseek(in,0,SEEK_SET);
-	if (GUS) {
-		pat=malloc(sr+sizeof(struct patch_info));
-		pat->key=GUS_PATCH;
-		pat->device_no=gus_dev;
-		pat->instr_no=samp;
-		pat->mode=WAVE_UNSIGNED;
-		if (loop) pat->mode|=WAVE_LOOPING;
-		pat->len=sr;
-		pat->loop_start=0;
-		pat->loop_end=(sr-1);
-		pat->base_freq=8000;
-		pat->base_note=440000;
-		pat->high_note=200000000;
-		pat->low_note=0;
-		pat->panning=0;
-		pat->detuning=0;
-		pat->volume=120;
-		fread(pat->data,1,sr,in);
-		SEQ_WRPATCH(pat, sr+sizeof(struct patch_info));
-		free(pat);
-	} else {	// EsounD
-		int length, total=0, sample_id=0, confirm_id, reget_sample_id;
-		struct stat source_stats;
-		char buf[ESD_BUF_SIZE];
-		stat(fn,&source_stats);
-		sample_id=esd_sample_cache(esound_sock,ESD_BITS8|ESD_MONO|ESD_STREAM|ESD_PLAY,8000,source_stats.st_size,fn);
-		printf("sample id is <%d> whose name is %s\n",sample_id,fn);
-		while ((length=fread(buf,1,ESD_BUF_SIZE,in))>0) {
-			if ((length=write(esound_sock,buf,length))<=0) {
-				fclose(in);
-				return -1;
-			}
-			else total+=length;
-		}
-
-		confirm_id = esd_confirm_sample_cache(esound_sock);
-		if (sample_id!=confirm_id) {
-			printf("error while caching sample <%d>: confirm returned %d\n",sample_id,confirm_id);
-		}
-
-		reget_sample_id=esd_sample_getid(esound_sock,fn);
-		printf("reget of sample %s id is <%d>\n",fn,reget_sample_id);
-		if ((reget_sample_id != sample_id) || reget_sample_id < 0) {
-			printf( "sample id's do not make sense!\n");
-		}
-
-		printf("sample uploaded, %d bytes\n",total);
-		esound_sampid[samp]=reget_sample_id;
-		esound_samploop[samp]=loop;
-	}
-	fclose(in);
-	return 0;
-#	endif
 }
 
-void sndplay(int v, int s, int n, int vol, int pan) {
-	(void)v; (void)s; (void)n; (void)pan;
-	if (!sound || !vol) return;
-	if (vol>127) vol=127;
-#	if 0
-	if (GUS) {
-		SEQ_SET_PATCH(gus_dev, v, s);
-		SEQ_PANNING(gus_dev, v, pan);
-		SEQ_PITCHBEND (gus_dev, v, 0);
-		SEQ_START_NOTE(gus_dev, v, n, vol);
-		SEQ_DUMPBUF();
-	} else {
-		printf("playing sound %d, esound id = <%d>\n",s,esound_sampid[s]);
-		if (sampforvoice[v]!=-1) if (esd_sample_stop(esound_sock,esound_sampid[sampforvoice[v]])<0) perror("sample stop in sndplay");
-		sampforvoice[v]=s;
-		if (esound_samploop[s]) {
-			if (esd_sample_loop(esound_sock,esound_sampid[s])<0) perror("esound loop");
-		} else {
-			if (esd_sample_play(esound_sock,esound_sampid[s])<0) perror("esound play");
-		}
+static vector last_pos;
+void update_listener(vector const *pos, vector const *velocity, matrix const *rot)
+{
+	if (! with_sound) return;
+
+	ALenum err;
+
+	last_pos = *pos;
+
+	alListener3f(AL_POSITION, pos->x, pos->y, pos->z);
+	if ((err = alGetError()) != AL_NO_ERROR) fprintf(stderr, "Cannot set listener's position to %f,%f,%f: %s\n", pos->x, pos->y, pos->z, al_strerror(err));
+
+	alListener3f(AL_VELOCITY, velocity->x, velocity->y, velocity->z);
+	if ((err = alGetError()) != AL_NO_ERROR) fprintf(stderr, "Cannot set listener's velocity to %f,%f,%f: %s\n", velocity->x, velocity->y, velocity->z, al_strerror(err));
+
+	ALfloat at_up[6] = {
+		rot->z.x, rot->z.y, rot->z.z,	// "at" vector
+		rot->y.x, rot->y.y, rot->y.z,	// "up" vector
+	};
+	alListenerfv(AL_ORIENTATION, at_up);
+	if ((err = alGetError()) != AL_NO_ERROR) fprintf(stderr, "Cannot set listener's orientation to %f,%f,%f / %f,%f,%f: %s\n", at_up[0], at_up[1], at_up[2], at_up[3], at_up[4], at_up[5], al_strerror(err));
+
+	for (unsigned s = 0; s < ARRAY_LEN(sources); s++) {
+		if (! source_pos[s]) continue;
+		alSource3f(sources[s], AL_POSITION, source_pos[s]->x, source_pos[s]->y, source_pos[s]->z);
+		if ((err = alGetError()) != AL_NO_ERROR) fprintf(stderr, "Cannot set source position at %f,%f,%f: %s\n", source_pos[s]->x, source_pos[s]->y, source_pos[s]->z, al_strerror(err));
 	}
-#	endif
 }
-void pitchbend (int v, int pit) {	// regler d'abord le BENDER_RANGE !
-	(void)v; (void)pit;
-	if (!sound || !GUS) return;
-#	if 0
-	SEQ_PITCHBEND(gus_dev, v, pit);
-	SEQ_DUMPBUF();
-#	endif
+
+void playsound(enum voice voice, sample_e samp, float pitch, vector const *pos, bool relative)
+{
+	if (! with_sound) return;
+
+	ALenum err;
+	
+	vector d = *pos;
+	if (! relative) subv(&d, &last_pos);
+	if (norme2(&d) > MAX_DIST*MAX_DIST) return;
+
+	assert(voice < ARRAY_LEN(sources));
+	assert(samp < ARRAY_LEN(buffers));
+
+	alGetError();
+	alSourceStop(sources[voice]);
+	if ((err = alGetError()) != AL_NO_ERROR) fprintf(stderr, "Cannot stop source %d: %s\n", voice, al_strerror(err));
+	alSourcei(sources[voice], AL_BUFFER, buffers[samp]);
+	if ((err = alGetError()) != AL_NO_ERROR) fprintf(stderr, "Cannot set source buffer for sample %d: %s\n", samp, al_strerror(err));
+	alSourcei(sources[voice], AL_LOOPING, buffer_looping[samp]);
+	if ((err = alGetError()) != AL_NO_ERROR) fprintf(stderr, "Cannot set source looping for voice %d: %s\n", voice, al_strerror(err));
+	alSourcef(sources[voice], AL_GAIN, buffer_gain[samp]);
+	if ((err = alGetError()) != AL_NO_ERROR) fprintf(stderr, "Cannot set source gain for voice %d: %s\n", voice, al_strerror(err));
+	alSourcef(sources[voice], AL_PITCH, pitch);
+	if ((err = alGetError()) != AL_NO_ERROR) fprintf(stderr, "Cannot set source pitch %f: %s\n", pitch, al_strerror(err));
+	alSource3f(sources[voice], AL_POSITION, pos->x, pos->y, pos->z);
+	if ((err = alGetError()) != AL_NO_ERROR) fprintf(stderr, "Cannot set source position at %f,%f,%f: %s\n", pos->x, pos->y, pos->z, al_strerror(err));
+	alSourcei(sources[voice], AL_SOURCE_RELATIVE, relative ? AL_TRUE : AL_FALSE);
+	if ((err = alGetError()) != AL_NO_ERROR) fprintf(stderr, "Cannot set source base to %s: %s\n", relative?"relative":"absolute", al_strerror(err));
+	alSourcePlay(sources[voice]);
+	if ((err = alGetError()) != AL_NO_ERROR) fprintf(stderr, "Cannot play source %d: %s\n", voice, al_strerror(err));
+	source_pos[voice] = NULL;
 }
-void playsound(int v, sample_e samp, float freq, float vol, int pan) {	// pan entre -128 et 127
-	if (!sound) return;
-	sndplay(v,samp,70*freq,127*vol,pan);
-#	if 0
-	if (GUS) SEQ_DUMPBUF();
-#	endif
+
+void attachsound(enum voice voice, sample_e samp, float pitch, vector const *pos, bool relative)
+{
+	if (! with_sound) return;
+
+	playsound(voice, samp, pitch, pos, relative);
+	source_pos[voice] = pos;
 }
-void stopsound(int v, sample_e samp, float vol) {
-	(void)v; (void)samp; (void)vol;
-	if (!sound) return;
-#	if 0
-	if (GUS) {
-		SEQ_STOP_NOTE(gus_dev,v,samp,127*vol);
-	} else {
-		if (esd_sample_stop(esound_sock,esound_sampid[samp])<0) perror("sample kill");
-	}
-#	endif
-}
-void exitsound() {
-	if (!sound) return;
-//	SEQ_STOP_NOTE(gus_dev, 0, 0, 127);
-#	if 0
-	if (GUS) {
-		SEQ_DUMPBUF();
-		close(seqfd);
-	} else {
-		int i;
-		for (i=0; i<nbsamp; i++) {
-			esd_sample_stop(esound_sock,esound_sampid[i]);
-			esd_sample_free(esound_sock,esound_sampid[i]);
-		}
-		close(esound_sock);
-	}
-#	endif
+
+void exitsound(void)
+{
+	if (! with_sound) return;
+
+	alDeleteSources(ARRAY_LEN(sources), sources);
+	alDeleteBuffers(ARRAY_LEN(buffers), buffers);
+	alcMakeContextCurrent(NULL);
+	alcDestroyContext(ctx);
+	alcCloseDevice(dev);
 }

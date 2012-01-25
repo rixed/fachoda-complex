@@ -1,5 +1,5 @@
 CFLAGS   := $(CFLAGS) -std=c99 -W -Wall -D_GNU_SOURCE ${shell sdl-config --cflags}
-LDFLAGS  := $(LDFLAGS) -lm -ljpeg ${shell sdl-config --libs}
+LDFLAGS  := $(LDFLAGS) -lm -ljpeg -lopenal ${shell sdl-config --libs}
 
 SRCS = \
 	renderer.c map.c modele.c radio.c robot.c \

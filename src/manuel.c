@@ -5,6 +5,7 @@
 #include "proto.h"
 #include "map.h"
 #include "keycodesdef.h"
+#include "sound.h"
 
 int DogBot=0;
 vector DogBotDir;
@@ -101,7 +102,7 @@ void manuel(int b) {
 			} while (!ViewAll && bot[visubot].camp!=camp);	// pas bmanu.camp car peut etre tue
 //			printf("visubot=%d\n",visubot);
 			soundthrust=-1;
-			if (bot[visubot].camp==-1) playsound(VOICEMOTOR,FEU,1,1,0);
+			if (bot[visubot].camp==-1) attachsound(VOICEMOTOR, FEU, 1., &voices_in_my_head, true);
 		} else NextDogBot();
 	}
 	if (kreset(gkeys[kc_prevbot].kc)) {
@@ -111,12 +112,14 @@ void manuel(int b) {
 			} while (!ViewAll && bot[visubot].camp!=camp);
 //			printf("visubot=%d\n",visubot);
 			soundthrust=-1;
-			if (bot[visubot].camp==-1) playsound(VOICEMOTOR,FEU,1,1,0);
+			if (bot[visubot].camp==-1) attachsound(VOICEMOTOR, FEU, 1., &voices_in_my_head, true);
 		} else PrevDogBot();
 	}
 	if (kreset(gkeys[kc_mybot].kc)) {
-		if (visu!=7) visubot=b;
-		else {
+		if (visu!=7) {
+			visubot=b;
+			soundthrust=-1;
+		} else {
 			float d;
 			int DBi, DBm;
 			NextDogBot();
@@ -179,13 +182,13 @@ void manuel(int b) {
 	if (kreset(gkeys[kc_gear].kc)) bot[b].but.gear^=1;
 	if (kreset(gkeys[kc_flaps].kc)) {
 		bot[b].but.flap^=1;
-		playsound(VOICEGEAR,BIPBIP,1,1,0);
+		playsound(VOICEGEAR, BIPBIP, 1., &obj[bot[b].vion].pos, false);
 	}
 	bot[b].but.frein=kread(gkeys[kc_brakes].kc);
 	if (kreset(gkeys[kc_buziness].kc)) bot[b].but.commerce=1;
 	if (kreset(gkeys[kc_autopilot].kc)) {
 		autopilot^=1;
-		playsound(VOICEGEAR,BIPBIP,1,1,0);
+		playsound(VOICEGEAR, BIPBIP, 1., &obj[bot[b].vion].pos, false);
 	}
 	// Control du jeu
 	if (MonoMode && kreset(gkeys[kc_pause].kc)) {
@@ -200,7 +203,7 @@ void manuel(int b) {
 	}
 	if (kreset(gkeys[kc_mapmode].kc)) {
 		mapmode^=1;
-		playsound(VOICEGEAR,BIPBIP3,1,1,0);
+		playsound(VOICEGEAR, BIPBIP3, 1., &voices_in_my_head, true);
 	}
 	if (kreset(gkeys[kc_suicide].kc) && bot[bmanu].camp!=-1) explose(bot[visubot].vion,0);
 	if (kreset(gkeys[kc_markpos].kc)) bot[b].but.repere=1;

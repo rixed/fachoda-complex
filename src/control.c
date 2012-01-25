@@ -1,6 +1,8 @@
 #include <stdlib.h>
+#include <stdio.h>
 #include <math.h>
 #include "map.h"
+#include "sound.h"
 
 int IsFlying;
 
@@ -107,7 +109,8 @@ void control(int b) {
 	// contact des roues
 	zs=obj[bot[b].vion].pos.z-bot[b].zs;
 	for (rt=0, j=0, i=0; i<3; i++) {	// ordre droite, gauche, arrière
-		float zr=obj[bot[b].vion+viondesc[bot[b].navion].roue[i]].pos.z-zs+bot[b].vionvit.z*AccelFactor;
+		float zr=obj[bot[b].vion+viondesc[bot[b].navion].roue[i]].pos.z - zs + bot[b].vionvit.z*AccelFactor;
+		vector const *soundpos = &obj[bot[b].vion+viondesc[bot[b].navion].roue[i]].pos;
 		if (zr<0) {
 			int fum;
 			j+=1<<i;
@@ -128,8 +131,8 @@ void control(int b) {
 			//	printf("b=%d zr=%f af=%f\n",b,zr,AccelFactor);
 				float t=drand48()-.5;
 				if (b==visubot) {
-					if (!bot[b].but.gearup) playsound(VOICEGEAR,SCREETCH,1+t*.08,-.3*(zr+2*AccelFactor),0);
-					else playsound(VOICEGEAR,TOLE,1+t*.08,-.3*(zr+2*AccelFactor),0);
+					if (!bot[b].but.gearup) playsound(VOICEGEAR, SCREETCH, 1+t*.08, soundpos, false);
+					else playsound(VOICEGEAR, TOLE, 1+t*.08, soundpos, false);
 				};
 			}
 			if (zr<-1*AccelFactor) {// || (bot[b].but.gearup && vx>3)) {
@@ -146,7 +149,7 @@ void control(int b) {
 					subv3(&obj[bot[b].babase].pos,&obj[bot[b].vion].pos,&v);
 					if (norme2(&v)<ECHELLE*ECHELLE*1.5) {
 						bot[b].gold+=300;
-						playsound(VOICEEXTER,BRAVO,1,1,0);
+						playsound(VOICEEXTER, BRAVO, 1, &voices_in_my_head, true);
 					}
 				}
 			}
@@ -235,7 +238,7 @@ void control(int b) {
 					if (i!=bot[b].vion) {
 						bot[b].vion=i;
 						armstate(b);
-						playsound(VOICEEXTER,TARATATA,1+(bot[b].navion-1)*.1,1,0);
+						playsound(VOICEEXTER, TARATATA, 1+(bot[b].navion-1)*.1, &voices_in_my_head, true);
 					}
 				}
 			}
@@ -257,19 +260,19 @@ void control(int b) {
 	bot[b].anghel+=bot[b].thrust*AccelFactor;
 	if (b==visubot && bot[b].thrust!=soundthrust) {
 		soundthrust=bot[b].thrust;
-		playsound(VOICEMOTOR,MOTOR,pow(soundthrust,.02),1,0);
+		attachsound(VOICEMOTOR, MOTOR, pow(soundthrust,.02), &obj[bot[b].vion].pos, false);	// FIXME: the actual pos of the engine
 	}
 	// charnières des essieux
 	if (bot[b].but.gear) {
 		if (bot[b].but.gearup) {
 			bot[b].but.gearup=0;
-			if (b==visubot) playsound(VOICEGEAR,GEAR_DN,1,1,0);
+			if (b==visubot) playsound(VOICEGEAR, GEAR_DN, 1, &obj[bot[b].vion].pos, false);	// FIXME: the pos of the gear
 			for (j=0; j<(viondesc[bot[b].navion].retract3roues?3:2); j++) obj[bot[b].vion+viondesc[bot[b].navion].roue[j]].aff=1;
 		}
 		bot[b].anggear-=.1*AccelFactor;
 		if (bot[b].anggear<0) bot[b].anggear=0;
 	} else if (!bot[b].but.gearup) {
-		if (b==visubot && bot[b].anggear<.1) playsound(VOICEGEAR,GEAR_UP,1,1,0);
+		if (b==visubot && bot[b].anggear<.1) playsound(VOICEGEAR, GEAR_UP, 1., &obj[bot[b].vion].pos, false);	// FIXME: the pos of the gear
 		bot[b].anggear+=.1*AccelFactor;
 		if (bot[b].anggear>1.5) {
 			bot[b].anggear=1.5; bot[b].but.gearup=1;
@@ -311,11 +314,12 @@ void control(int b) {
 	// tirs ?
 	if (bot[b].but.canon && nbtir<NBMAXTIR && bot[b].bullets>0) {
 		if (++bot[b].alterc>=4) bot[b].alterc=0;
-		if (bot[b].alterc<viondesc[bot[b].navion].nbcanon) {
-			copyv(&v,&obj[bot[b].vion].rot.x);
-			mulv(&v,44);
-			addv(&v,&obj[bot[b].vion+viondesc[bot[b].navion].firstcanon+bot[b].alterc].pos);
-			if (b==visubot) playsound(VOICESHOT,SHOT,1+(drand48()-.5)*.08,1,bot[b].alterc&1?-128:127);
+		if (bot[b].alterc<viondesc[bot[b].navion].nbcanon) {	// so that the shot frequency is given by the number of canons
+			copyv(&v, &obj[bot[b].vion].rot.x);
+			mulv(&v, 44);
+			vector const *canon = &obj[ bot[b].vion + viondesc[bot[b].navion].firstcanon + bot[b].alterc ].pos;
+			addv(&v, canon);
+			if (b==visubot) playsound(VOICESHOT, SHOT, 1+(drand48()-.5)*.08, &v, false);
 			else drand48();
 			gunner[nbobj-debtir]=b;
 			vieshot[nbobj-debtir]=80;
@@ -327,7 +331,7 @@ void control(int b) {
 	if (bot[b].but.bomb) {
 		for (i=bot[b].vion; i<bot[b].vion+nobjet[bot[b].navion].nbpieces && (obj[i].type!=BOMB || obj[i].objref!=bot[b].vion); i++);
 		if (i<bot[b].vion+nobjet[bot[b].navion].nbpieces) {
-			if (b==visubot) playsound(VOICEGEAR,BIPBIP2,1.1,.8,0);
+			if (b==visubot) playsound(VOICEGEAR, BIPBIP2, 1.1, &obj[i].pos, false);
 			obj[i].objref=-1;
 			for (j=0; j<bombidx && bombe[j].o!=-1; j++);
 			if (j>=bombidx) bombidx=j+1;

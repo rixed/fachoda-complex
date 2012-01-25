@@ -56,7 +56,8 @@
 //#define NBNOMVILLAGE 5
 
 typedef enum { CAMERA, TIR, AVION, CIBGRAT, BOMB, PHARE, VEHIC, DECO, GRAV, NUAGE, FUMEE, TABBORD, ZEPPELIN } type_e;
-typedef enum { PRESENT, BIPINTRO, SHOT, GEAR_DN, GEAR_UP, SCREETCH, MOTOR, HIT, MESSAGE, EXPLOZ, EXPLOZ2, TOLE, BIPBIP, BIPBIP2, BIPBIP3, FEU, TARATATA, ALLELUIA, ALERT, DEATH, PAIN, BRAVO } sample_e;
+typedef enum { PRESENT, BIPINTRO, SHOT, GEAR_DN, GEAR_UP, SCREETCH, MOTOR, HIT, MESSAGE, EXPLOZ, EXPLOZ2, TOLE, BIPBIP, BIPBIP2, BIPBIP3, FEU, TARATATA, ALLELUIA, ALERT, DEATH, PAIN, BRAVO, NB_SAMPLES } sample_e;
+enum voice { VOICEGEAR, VOICESHOT, VOICEMOTOR, VOICEEXTER, VOICEALERT, NB_VOICES };
 
 typedef unsigned char uchar;
 
@@ -263,7 +264,6 @@ typedef struct {
 	float vit;
 	int dist;
 } voiture_s;
-enum {VOICEGEAR, VOICESHOT, VOICEMOTOR, VOICEEXTER, VOICEALERT };
 
 // naw.c
 extern char hostname[250];
@@ -405,7 +405,6 @@ extern uchar *tbz;
 extern int *tbwidth;
 // control
 extern int IsFlying;
-extern char GUS;
 extern float soundthrust;
 extern void control(int b);
 extern void controlvehic(int v);
@@ -428,13 +427,6 @@ extern float DogBotDist;
 extern void animsoleil(void);
 extern void initsol(void);
 extern void affsoleil(vector *L);
-// sound
-extern char sound;
-extern int opensound(void);
-extern int loadsample(sample_e samp, char * fn, char loop);
-extern void exitsound(void);
-extern void playsound(int voice, sample_e samp, float freq, float vol, int pan);
-extern void stopsound(int voice, sample_e samp, float vol);
 // ravages.c
 extern int collision(int p, int o);
 extern int kelkan(int o);
@@ -510,17 +502,17 @@ static inline void proji(vect2d *e, veci *p) {
 	e->x=_DX+p->x*focale/p->z;
 	e->y=_DY+p->y*focale/p->z;
 }
-static inline void addv(vector *r, vector *a) { r->x+=a->x; r->y+=a->y; r->z+=a->z; }
-static inline void addvi(veci *r, veci *a) { r->x+=a->x; r->y+=a->y; r->z+=a->z; }
-static inline void subv(vector *r, vector *a) { r->x-=a->x; r->y-=a->y; r->z-=a->z; }
-static inline void subvi(veci *r, veci *a) { r->x-=a->x; r->y-=a->y; r->z-=a->z; }
+static inline void addv(vector *r, vector const *a) { r->x+=a->x; r->y+=a->y; r->z+=a->z; }
+static inline void addvi(veci *r, veci const *a) { r->x+=a->x; r->y+=a->y; r->z+=a->z; }
+static inline void subv(vector *r, vector const *a) { r->x-=a->x; r->y-=a->y; r->z-=a->z; }
+static inline void subvi(veci *r, veci const *a) { r->x-=a->x; r->y-=a->y; r->z-=a->z; }
 static inline void negvi(veci *r) { r->x = -r->x; r->y = -r->y; r->z = -r->z; }
 static inline void mulv(vector *r, float a) { r->x*=a; r->y*=a; r->z*=a; }
-static inline void copyv(vector *r, vector *a) { r->x=a->x; r->y=a->y; r->z=a->z; }
-static inline void copym(matrix *r, matrix *a) { memcpy(r,a,sizeof(matrix)); }
-static inline void mulm(matrix *r, matrix *a) {
+static inline void copyv(vector *r, vector const *a) { r->x=a->x; r->y=a->y; r->z=a->z; }
+static inline void copym(matrix *r, matrix const *a) { memcpy(r,a,sizeof(matrix)); }
+static inline void mulm(matrix *r, matrix const *a) {
 	matrix b;
-	copym(&b,r);
+	copym(&b, r);
 	r->x.x = b.x.x*a->x.x+b.y.x*a->x.y+b.z.x*a->x.z;
 	r->y.x = b.x.x*a->y.x+b.y.x*a->y.y+b.z.x*a->y.z;
 	r->z.x = b.x.x*a->z.x+b.y.x*a->z.y+b.z.x*a->z.z;
@@ -531,7 +523,7 @@ static inline void mulm(matrix *r, matrix *a) {
 	r->y.z = b.x.z*a->y.x+b.y.z*a->y.y+b.z.z*a->y.z;
 	r->z.z = b.x.z*a->z.x+b.y.z*a->z.y+b.z.z*a->z.z;
 }
-static inline void mulm3(matrix *r, matrix *c, matrix *a) {
+static inline void mulm3(matrix *r, matrix const *c, matrix const *a) {
 	matrix b;
 	b.x.x = c->x.x*a->x.x+c->y.x*a->x.y+c->z.x*a->x.z;
 	b.y.x = c->x.x*a->y.x+c->y.x*a->y.y+c->z.x*a->y.z;
@@ -542,9 +534,9 @@ static inline void mulm3(matrix *r, matrix *c, matrix *a) {
 	b.x.z = c->x.z*a->x.x+c->y.z*a->x.y+c->z.z*a->x.z;
 	b.y.z = c->x.z*a->y.x+c->y.z*a->y.y+c->z.z*a->y.z;
 	b.z.z = c->x.z*a->z.x+c->y.z*a->z.y+c->z.z*a->z.z;
-	copym(r,&b);
+	copym(r, &b);
 }
-static inline void mulmt3(matrix *r, matrix *c, matrix *a) {	// c est transposée
+static inline void mulmt3(matrix *r, matrix const *c, matrix const *a) {	// c est transposée
 	matrix b;
 	b.x.x = c->x.x*a->x.x + c->x.y*a->x.y + c->x.z*a->x.z;
 	b.y.x = c->x.x*a->y.x + c->x.y*a->y.y + c->x.z*a->y.z;
@@ -555,18 +547,18 @@ static inline void mulmt3(matrix *r, matrix *c, matrix *a) {	// c est transposée
 	b.x.z = c->z.x*a->x.x + c->z.y*a->x.y + c->z.z*a->x.z;
 	b.y.z = c->z.x*a->y.x + c->z.y*a->y.y + c->z.z*a->y.z;
 	b.z.z = c->z.x*a->z.x + c->z.y*a->z.y + c->z.z*a->z.z;
-	copym(r,&b);
+	copym(r, &b);
 }
 
 float norme(vector *u);
-static inline float norme2(vector *u){ return(u->x*u->x+u->y*u->y+u->z*u->z); }
-static inline float scalaire(vector *u, vector *v){ return(u->x*v->x+u->y*v->y+u->z*v->z); }
+static inline float norme2(vector const *u){ return(u->x*u->x+u->y*u->y+u->z*u->z); }
+static inline float scalaire(vector const *u, vector const *v){ return(u->x*v->x+u->y*v->y+u->z*v->z); }
 static inline float renorme(vector *a) {
 	float d = norme(a);
 	if (d!=0) {a->x/=d; a->y/=d; a->z/=d; }
 	return(d);
 }
-static inline void prodvect(vector *a, vector *b, vector *c) {
+static inline void prodvect(vector const *a, vector const *b, vector *c) {
 	c->x = a->y*b->z-a->z*b->y;
 	c->y = a->z*b->x-a->x*b->z;
 	c->z = a->x*b->y-a->y*b->x;

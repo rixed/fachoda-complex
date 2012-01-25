@@ -3,6 +3,7 @@
 #include <math.h>
 #include "proto.h"
 #include "map.h"
+#include "sound.h"
 
 int collision(int p, int o){	// l'obj p est-il rentré dans l'obj o ?
 	vector u;
@@ -20,13 +21,9 @@ int kelkan(int o) {
 void explose(int oc, int i) {
 	int o1,o2=0,j,v=0,jk;
 	int cmoi=NBBOT;
-	vector p, vit;
-	float np;
+	vector vit;
 	for (j=0; j<NBBOT; j++) if ((bot[j].vion<=i && bot[j].vion+nobjet[bot[j].navion].nbpieces>i) || (i>=debtir && gunner[i-debtir]==j)) { cmoi=j; break; }
-	copyv(&p,&obj[oc].pos);
-	subv(&p,&obj[0].pos);
-	np=renorme(&p);
-	playsound(VOICEEXTER,EXPLOZ,1+(drand48()-.5)*.1,1./(1+np*np*1e-6),128*scalaire(&p,&obj[0].rot.x));
+	playsound(VOICEEXTER, EXPLOZ, 1+(drand48()-.5)*.1, &obj[oc].pos, false);
 	copyv(&vit,&vec_zero);
 	switch (obj[oc].type) {
 	case CIBGRAT:
@@ -44,9 +41,9 @@ void explose(int oc, int i) {
 			if (v<NBBOT && bot[v].camp!=bot[cmoi].camp) bot[cmoi].gold+=1000;
 		}
 		if (v==visubot) {
-			playsound(VOICEMOTOR,FEU,1,1,0);
-			playsound(VOICEGEAR,DEATH,1+(drand48()-.5)*.15,1,0);
-		} else drand48();
+			attachsound(VOICEMOTOR, FEU, 1., &obj[o1].pos, false);
+		}
+		playsound(VOICEGEAR, DEATH, 1+(drand48()-.5)*.15, &obj[o1].pos, false);
 		break;
 	case VEHIC:
 		o1=oc;
@@ -158,14 +155,17 @@ void hitgun(int oc, int i) {
 			for (j=0; j<NBBOT; j++) if (bot[j].vion==o1) {
 				tarif=-(bot[j].fiulloss/4+bot[j].motorloss*8+bot[j].aeroloss*8+bot[j].bloodloss*2);
 				if (j==bmanu) accel=0;
-				if (j==visubot) playsound(VOICEGEAR,HIT,1+(drand48()-.5)*.1,drand48(),(drand48()-.5)*127); else {drand48(); drand48(); drand48();}
+				vector r;
+				randomv(&r);	// FIXME: mul by size of obj?
+				addv(&r, &obj[o1].pos);
+				playsound(VOICEGEAR, HIT, 1+(drand48()-.5)*.1, &r, false);
 			//	printf("bot %d hit\n",j);
 				if (drand48()<.1) bot[j].fiulloss+=drand48()*100;
 				if (drand48()<.04) if ((bot[j].motorloss+=drand48()*10)<0) bot[j].motorloss=127;
 				if (drand48()<.05) if ((bot[j].aeroloss+=drand48()*10)<0) bot[j].aeroloss=127;
 				if (drand48()<.04) {
 					bot[j].bloodloss+=drand48()*100;
-					if (j==visubot) playsound(VOICEGEAR,PAIN,1+(drand48()-.2)*.1,1,0); else drand48();
+					playsound(VOICEGEAR, PAIN, 1+(drand48()-.2)*.1, &obj[o1].pos, false);
 				}
 				if (drand48()<bot[j].nbomb/1000. || drand48()<.05) {
 					bot[j].burning+=drand48()*1000;
