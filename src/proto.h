@@ -286,7 +286,18 @@ extern debris_s debris[];
 extern bombe_s *bombe;
 extern int bombidx;
 extern int babaseo[2][3][4];
-extern int visu,visubomb,mapmode, accel, autopilot, bmanu, lapause, imgcount, visuobj;
+extern enum view_type {
+	VIEW_IN_PLANE,
+	VIEW_ROTATING_PLANE,
+	VIEW_PLANE_FROM_ABOVE,
+	VIEW_ROTATING_BOMB,
+	VIEW_ANYTHING_CHEAT,
+	VIEW_BEHIND_PLANE,
+	VIEW_STANDING,
+	VIEW_DOGFIGHT,
+	NB_VIEWS,
+} view;
+extern int visubomb,mapmode, accel, autopilot, bmanu, lapause, imgcount, visuobj;
 extern double loinvisu, visuteta, visuphi;
 extern uchar avancevisu,tournevisu,quitte,arme,AfficheHS;
 extern matrix mat_id;

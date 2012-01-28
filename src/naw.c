@@ -278,7 +278,8 @@ int resurrect(void) {	// jesus revient, jesus reviuent parmis les tiens...
 	return 0;
 }
 
-int visu=0, visubomb=0, mapmode=0, accel=0, autopilot=0, lapause=0, lepeintre=0, bmanu, imgcount=0;
+enum view_type view = VIEW_IN_PLANE;
+int visubomb=0, mapmode=0, accel=0, autopilot=0, lapause=0, lepeintre=0, bmanu, imgcount=0;
 double loinvisu=110, visuteta=0,visuphi=0;
 uchar avancevisu=0, tournevisu=0, quitte=0, arme=0, AfficheHS=0;
 int main(int narg, char **arg) {
@@ -790,15 +791,15 @@ parse_error:
 			// Draw the frame
 			if (!accel || 0 == (imgcount&63)) {
 				// où est la caméra ?
-				if (visu==3) {
+				if (view == VIEW_ROTATING_BOMB) {
 					if (!visubomb || obj[visubomb].objref!=-1) {
 						for (i=bot[visubot].vion; i<bot[visubot].vion+nobjet[bot[visubot].navion].nbpieces && (obj[i].objref!=-1 || obj[i].type!=BOMB); i++);
-						if (i<bot[visubot].vion+nobjet[bot[visubot].navion].nbpieces) visubomb=i; else { visubomb=0; visu=4; }
+						if (i<bot[visubot].vion+nobjet[bot[visubot].navion].nbpieces) visubomb=i; else { visubomb=0; view = VIEW_IN_PLANE; }
 					}
 				}
-				if (visu==4 /*&& !Gruge*/) visu=5;
-				if (visu==7) {
-					if (visubot!=bmanu) visu=0;
+				if (view == VIEW_ANYTHING_CHEAT && !Gruge) view = VIEW_ROTATING_PLANE;
+				if (view == VIEW_DOGFIGHT) {
+					if (visubot != bmanu) view = VIEW_IN_PLANE;
 					else {
 						if (DogBot==bmanu || bot[DogBot].camp==-1) NextDogBot();
 						if (DogBot!=bmanu && bot[DogBot].camp!=-1) {
@@ -806,11 +807,11 @@ parse_error:
 							subv(&DogBotDir,&obj[bot[bmanu].vion].pos);
 							DogBotDist=renorme(&DogBotDir);
 							if (DogBotDist>DOGDISTMAX) NextDogBot();
-							if (DogBotDist>DOGDISTMAX) visu=0;
-						} else visu=0;
+							if (DogBotDist>DOGDISTMAX) view = VIEW_IN_PLANE;
+						} else view = VIEW_IN_PLANE;
 					}
 				}
-				if (visu==0 || visu==7) {	// afficher ou effacer la tete et la tab de bord
+				if (view == VIEW_IN_PLANE || view == VIEW_DOGFIGHT) {	// afficher ou effacer la tete et la tab de bord
 					for (i=0; i<viondesc[bot[visubot].navion].nbpiecestete; i++)
 						obj[bot[visubot].vion+nobjet[bot[visubot].navion].nbpieces-2-i].aff=0;
 					obj[bot[visubot].vion+viondesc[bot[visubot].navion].tabbord].aff=1;
@@ -819,14 +820,16 @@ parse_error:
 						obj[bot[visubot].vion+nobjet[bot[visubot].navion].nbpieces-2-i].aff=1;
 					obj[bot[visubot].vion+viondesc[bot[visubot].navion].tabbord].aff=0;
 				}
-				switch (visu) {
-				case 7:
-				case 0:
+				switch (view) {
+				case NB_VIEWS:
+					assert(!"Invalid view");
+				case VIEW_DOGFIGHT:
+				case VIEW_IN_PLANE:
 					{ matrix ct;
 					copyv(&posc[0],&posc[1]);
 					copyv(&posc[1],&bot[visubot].vionvit);
 					copyv(&obj[0].pos,&obj[bot[visubot].vion+nobjet[bot[visubot].navion].nbpieces-1].pos);
-					if (visu!=7 || avancevisu || tournevisu) {
+					if (view != VIEW_DOGFIGHT || avancevisu || tournevisu) {
 						copyv(&ct.x,&obj[bot[visubot].vion].rot.y);
 						neg(&ct.x);
 						copyv(&ct.y,&obj[bot[visubot].vion].rot.z);
@@ -877,7 +880,7 @@ parse_error:
 					prodvect(&obj[0].rot.x,&obj[0].rot.y,&obj[0].rot.z);
 					}
 					break;
-				case 1:
+				case VIEW_ROTATING_PLANE:
 					obj[0].rot.y.x=0; obj[0].rot.y.y=0; obj[0].rot.y.z=-1;
 					obj[0].rot.x.x=cos(angvisu1); obj[0].rot.x.y=sin(angvisu1); obj[0].rot.x.z=0;
 					obj[0].rot.z.x=-sin(angvisu1); obj[0].rot.z.y=cos(angvisu1); obj[0].rot.z.z=0;
@@ -887,13 +890,13 @@ parse_error:
 					angvisu1+=0.04;
 					if (obj[0].pos.z<(n=30+z_ground(obj[0].pos.x,obj[0].pos.y, true))) obj[0].pos.z=n;
 					break;
-				case 2:
+				case VIEW_PLANE_FROM_ABOVE:
 					copym(&obj[0].rot,&mat_id);
 					neg(&obj[0].rot.z); neg(&obj[0].rot.y);
 					copyv(&obj[0].pos,&obj[bot[visubot].vion].pos);
 					obj[0].pos.z+=loinvisu;
 					break;
-				case 3:
+				case VIEW_ROTATING_BOMB:
 					obj[0].rot.y.x=0; obj[0].rot.y.y=0; obj[0].rot.y.z=-1;
 					obj[0].rot.x.x=cos(angvisu1); obj[0].rot.x.y=sin(angvisu1); obj[0].rot.x.z=0;
 					obj[0].rot.z.x=-sin(angvisu1); obj[0].rot.z.y=cos(angvisu1); obj[0].rot.z.z=0;
@@ -902,7 +905,7 @@ parse_error:
 					addv(&obj[0].pos,&obj[visubomb].pos);
 					angvisu1+=0.03;
 					break;
-				case 4:
+				case VIEW_ANYTHING_CHEAT:
 					obj[0].rot.y.x=0; obj[0].rot.y.y=0; obj[0].rot.y.z=-1;
 					obj[0].rot.x.x=cos(angvisu1); obj[0].rot.x.y=sin(angvisu1); obj[0].rot.x.z=0;
 					obj[0].rot.z.x=-sin(angvisu1); obj[0].rot.z.y=cos(angvisu1); obj[0].rot.z.z=0;
@@ -911,7 +914,7 @@ parse_error:
 					addv(&obj[0].pos,&obj[visuobj].pos);
 					angvisu1+=0.03;
 					break;
-				case 5:
+				case VIEW_BEHIND_PLANE:
 					copyv(&obj[0].pos,&obj[bot[visubot].vion].pos);
 					copyv(&obj[0].rot.x,&obj[bot[visubot].vion].rot.y);
 					neg(&obj[0].rot.x);
@@ -926,7 +929,7 @@ parse_error:
 					addv(&obj[0].pos,&p);
 					if (obj[0].pos.z<(n=30+z_ground(obj[0].pos.x,obj[0].pos.y, true))) obj[0].pos.z=n;
 					break;
-				case 6:
+				case VIEW_STANDING:
 					subv3(&obj[bot[visubot].vion].pos,&obj[0].pos,&obj[0].rot.z);
 					renorme(&obj[0].rot.z);
 					obj[0].rot.y.x=obj[0].rot.y.y=0;
@@ -975,7 +978,7 @@ parse_error:
 						}
 					}
 				}
-				if (visu==7 && bot[bmanu].camp!=-1) cercle(0,0,10,colcamp[(int)bot[bmanu].camp]);
+				if (view == VIEW_DOGFIGHT && bot[bmanu].camp!=-1) cercle(0,0,10,colcamp[(int)bot[bmanu].camp]);
 				plotmouse(_DX*bot[visubot].xctl,_DY*bot[visubot].yctl);
 /*				if (bot[visubot].voltige) pnum(bot[visubot].voltige,SX-50,20,0xFFFFFF,1);
 				else pnum(bot[visubot].manoeuvre,SX-50,20,0xFFFF00,1);
@@ -998,7 +1001,7 @@ parse_error:
 				if (accel) pstr("ACCELERATED MODE",_DY/3,0xFFFFFF);
 				if (quitte==1) pstr("Quit ? Yes/No",_DY/2-8,0xFFFFFF);
 				if (msgactutime && bot[visubot].camp==campactu) pstr(msgactu,10,0xFFFF00);
-				if (visu==7 && bot[DogBot].camp!=-1) {
+				if (view == VIEW_DOGFIGHT && bot[DogBot].camp!=-1) {
 					char vn[100];
 					strcpy(vn,viondesc[bot[DogBot].navion].name);
 					if (DogBot<NbHosts) {

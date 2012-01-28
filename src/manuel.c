@@ -79,12 +79,22 @@ void manuel(int b) {
 	if (kread(gkeys[kc_motormore].kc)) bot[b].thrust+=.05;
 	if (kread(gkeys[kc_motorless].kc)) bot[b].thrust-=.05;
 	// Vues
-	if (kreset(gkeys[kc_externview].kc)) {	mapmode=0; if (++visu>5) visu=1; }
-	if (kreset(gkeys[kc_internview].kc)) { mapmode=0; if (visu==0) visu=7; else visu=0; }
+	if (kreset(gkeys[kc_externview].kc)) {
+		mapmode = 0;
+		if (++ view >= NB_VIEWS) view = VIEW_ROTATING_PLANE;
+	}
+	if (kreset(gkeys[kc_internview].kc)) {
+		mapmode = 0;
+		if (view == VIEW_IN_PLANE) {
+			view = VIEW_DOGFIGHT;
+		} else {
+			view = VIEW_IN_PLANE;
+		}
+	}
 	if (kreset(gkeys[kc_travelview].kc)) {
 		float zs;
 		mapmode=0;
-		visu=6;
+		view = VIEW_STANDING;
 		copyv(&obj[0].pos,&obj[bot[visubot].vion].rot.x);
 		mulv(&obj[0].pos,300+drand48()*600+loinvisu);
 		copyv(&u,&obj[bot[visubot].vion].rot.y);
@@ -97,27 +107,35 @@ void manuel(int b) {
 		if (obj[0].pos.z<(zs=z_ground(obj[0].pos.x,obj[0].pos.y, false)+100)) obj[0].pos.z=zs;
 	}
 	if (kreset(gkeys[kc_nextbot].kc)) {
-		if (visu!=7) {
+		if (view == VIEW_ANYTHING_CHEAT) {
+			if (++visuobj>=nbobj) visuobj = 0;
+		} else if (view == VIEW_DOGFIGHT) {
+			NextDogBot();
+		} else {
 			do {
 				if (++visubot>=NBBOT) visubot=0;
 			} while (!ViewAll && bot[visubot].camp!=camp);	// pas bmanu.camp car peut etre tue
 //			printf("visubot=%d\n",visubot);
 			soundthrust=-1;
 			if (bot[visubot].camp==-1) attachsound(VOICEMOTOR, FEU, 1., &voices_in_my_head, true);
-		} else NextDogBot();
+		}
 	}
 	if (kreset(gkeys[kc_prevbot].kc)) {
-		if (visu!=7) {
+		if (view == VIEW_ANYTHING_CHEAT) {
+			if (--visuobj<0) visuobj = nbobj-1;
+		} else if (view == VIEW_DOGFIGHT) {
+			PrevDogBot();
+		} else {
 			do {
 				if (--visubot<0) visubot=NBBOT-1;
 			} while (!ViewAll && bot[visubot].camp!=camp);
 //			printf("visubot=%d\n",visubot);
 			soundthrust=-1;
 			if (bot[visubot].camp==-1) attachsound(VOICEMOTOR, FEU, 1., &voices_in_my_head, true);
-		} else PrevDogBot();
+		}
 	}
 	if (kreset(gkeys[kc_mybot].kc)) {
-		if (visu!=7) {
+		if (view != VIEW_DOGFIGHT) {
 			visubot=b;
 			soundthrust=-1;
 		} else {
@@ -163,7 +181,7 @@ void manuel(int b) {
 			else if ((xcarte-=1+(3*SX)/zoom)<-WMAP/2) xcarte=-WMAP/2;
 		}
 	}
-	if (visu!=7) {
+	if (view != VIEW_DOGFIGHT) {
 		if (kreset(gkeys[kc_towardview].kc)) { visuteta=visuphi=0; }
 		if (kreset(gkeys[kc_backview].kc)) { visuteta=0; visuphi=M_PI; }
 		if (kreset(gkeys[kc_leftview].kc)) { visuteta=0; visuphi=M_PI*.5; }
@@ -209,7 +227,10 @@ void manuel(int b) {
 	if (kreset(gkeys[kc_suicide].kc) && bot[bmanu].camp!=-1) explose(bot[visubot].vion,0);
 	if (kreset(gkeys[kc_markpos].kc)) bot[b].but.repere=1;
 	// Cheats
-	if (Gruge && kread(gkeys[kc_alti].kc)) obj[bot[visubot].vion].pos.z+=100;
+	if (Gruge && kread(gkeys[kc_alti].kc)) {
+		obj[bot[visubot].vion].pos.z += 500;
+		bot[visubot].vionvit.z = 0;
+	}
 	if (Gruge && kreset(gkeys[kc_gunned].kc)) /*bot[visubot].gunned=bmanu;*/ hitgun(zep[0].o,zep[0].o);
 	if (!autopilot && !mapmode) {
 		if (MouseCtl) {
