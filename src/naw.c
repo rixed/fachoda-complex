@@ -718,7 +718,7 @@ parse_error:
 				if (fumeesourceintens[i]>0) {
 					fumeesourceintens[i]--;
 					if (!(fumeesourceintens[i]&1)) {
-						for (; rayonfumee[fumeedispo] && fumeedispo>=0; fumeedispo--);
+						for (; fumeedispo>=0 && rayonfumee[fumeedispo]; fumeedispo--);
 						if (fumeedispo>=0) {
 							rayonfumee[fumeedispo]=1;
 							copyv(&obj[firstfumee+fumeedispo].pos,&obj[fumeesource[i]].pos);
