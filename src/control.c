@@ -30,7 +30,7 @@ void controlepos(int i) {
 	}
 }
 void control_plane(int b, float dt_sec) {
-	int i,j;
+	int i, j;
 	int o1 = bot[b].vion;
 	int o2 = o1+nobjet[bot[b].navion].nbpieces;
 	vector u, v; matrix m;
@@ -102,35 +102,10 @@ void control_plane(int b, float dt_sec) {
 		// should be linear up to around 50 and proportional to v*v afterward (so that we cant stop abruptly)
 		v.x *= fabs(v.x) * k;
 		v.y *= fabs(v.y) * .003;
-		v.z *= fabs(v.z) * .01;
+		v.z *= fabs(v.z) * .018;
 		mulmv(&obj[bot[b].vion].rot, &v, &u);
 		subv(&a, &u);
 //		if (b==visubot) printf("drag   -> %"PRIVECTOR"\n", PVECTOR(a));
-	}
-#	endif
-	// effet du flux d'air sur les ailes
-#	ifndef NTORSION
-	{	// des effets de moment angulaire
-		// 1 lacet pour les ailes
-		double vy = scalaire(&bot[b].vionvit, &obj[bot[b].vion].rot.y);
-		double vz = scalaire(&bot[b].vionvit, &obj[bot[b].vion].rot.z);
-		// Commands are the most effective when vx=100. (then kx=1)
-		float kx;
-		if (vx < 15) kx=0;
-		else if (vx < 100) kx = MIN(.001*(vx-15)*(vx-15), 1-.0001*(vx-100)*(vx-100));
-		else kx = MAX(1-.0001*(vx-100)*(vx-100), 1-.002*vx);
-		if (kx < 0) kx = 0;
-
-		if (Easy || b>=NbHosts) kx*=1.2;
-
-		// les ailes aiment bien etre de front (girouette)
-		double const prof = .001*vz + bot[b].yctl * kx;
-		double const gouv = .001*vy;
-		double const deriv =
-			(bot[b].xctl * kx)/(1. + .05*bot[b].nbomb) +
-			.00001 * obj[bot[b].vion].rot.y.z;
-
-		tournevion(bot[b].vion, deriv*dt_sec, prof*dt_sec, gouv*dt_sec);
 	}
 #	endif
 #	ifndef NLIFT
@@ -140,7 +115,7 @@ void control_plane(int b, float dt_sec) {
 		u = obj[bot[b].vion].rot.z;
 		float lift = viondesc[bot[b].navion].lift;
 		if (bot[b].but.flap) lift *= 1.2;
-		mulv(&u, (G * 1.) * lift * kx * (1-bot[b].aeroloss/128.));
+		mulv(&u, (G * 0.7) * lift * kx * (1-bot[b].aeroloss/128.));
 		addv(&a, &u);
 //		if (b==visubot) printf("lift   -> %"PRIVECTOR"\n", PVECTOR(a));
 	}
@@ -148,14 +123,15 @@ void control_plane(int b, float dt_sec) {
 
 	// Contact wheels / ground
 	double zs = obj[bot[b].vion].pos.z - bot[b].zs;	// ground altitude
-	// loop over right, left and read (or front) wheels
-	for (rt=0, j=0, i=0; i<3; i++) {
+	// loop over right, left and rear (or front) wheels
+	unsigned touchdown_mask = 0;
+	for (rt=0, i=0; i<3; i++) {
 		// zr : altitude of this wheel, relative to the ground, at t + dt
 		vector const *wheel_pos = &obj[bot[b].vion+viondesc[bot[b].navion].roue[i]].pos;
 		float zr = (wheel_pos->z - zs) + bot[b].vionvit.z * dt_sec;
 		if (zr < 0) {
 			int fum;
-			j += 1<<i;
+			touchdown_mask |= 1<<i;
 #			ifndef NGROUND_DRAG
 			// slow down plane due to contact with ground
 			if (bot[b].but.gearup) { // all directions the same
@@ -220,7 +196,38 @@ void control_plane(int b, float dt_sec) {
 		}
 	}
 
-	if (j) {	// mask of wheels in contact with ground
+#	ifndef NTORSION
+	{	// des effets de moment angulaire
+		// 1 lacet pour les ailes
+		double vy = scalaire(&bot[b].vionvit, &obj[bot[b].vion].rot.y);
+		double vz = scalaire(&bot[b].vionvit, &obj[bot[b].vion].rot.z);
+		// Commands are the most effective when vx=200. (then kx=1)
+		float kx;
+		double const kx1 = .0001*(vx-40)*(vx-40);
+		double const kx2 = 1. - .00003*(vx-200)*(vx-200);
+		double const kx3 = 1. -.001*vx;
+		if (vx < 40) kx=0;
+		else if (vx < 200) kx = MIN(kx1, kx2);
+		else kx = MAX(kx2, kx3);
+		if (kx < 0) kx = 0;
+
+		if (Easy || b>=NbHosts) kx*=1.2;
+
+		// les ailes aiment bien etre de front (girouette)
+		double const prof = .001*vz + bot[b].yctl * kx;
+		double const gouv = .001*vy +
+			// rear wheel in contact with the ground
+			(touchdown_mask & 4 ? -vx*.1*bot[b].xctl : 0.);
+
+		double const deriv =
+			(bot[b].xctl * kx)/(1. + .05*bot[b].nbomb) /*+
+			.00001 * obj[bot[b].vion].rot.y.z*/;
+
+		tournevion(bot[b].vion, deriv*dt_sec, prof*dt_sec, gouv*dt_sec);
+	}
+#	endif
+
+	if (touchdown_mask) {
 		a.z -= rt / (dt_sec * dt_sec);
 //		if (b == visubot) printf("ground -> %"PRIVECTOR"\n", PVECTOR(a));
 /*		obj[bot[b].vion].pos.z -= rt;	// at t+dt, be out of the ground
@@ -228,23 +235,23 @@ void control_plane(int b, float dt_sec) {
 		a.x = 0.;
 		if (b == visubot) printf("ground -> %"PRIVECTOR"\n", PVECTOR(a));*/
 
-		float const fix_orient = rt * 0.1 * dt_sec;
-		if (j&3  && !(j&4)) {	// either right or left wheel but not front/rear -> noise down/up
+		float const fix_orient = rt * 2.5 * dt_sec;
+		if (touchdown_mask&3  && !(touchdown_mask&4)) {	// either right or left wheel but not front/rear -> noise down/up
 			if (viondesc[bot[b].navion].avant) basculeY(bot[b].vion, -fix_orient);
 			else basculeY(bot[b].vion, fix_orient);
-		} else if (!(j&3) && j&4) {	// front/read but neither left nor right -> noise up/down
+		} else if (!(touchdown_mask&3) && touchdown_mask&4) {	// front/read but neither left nor right -> noise up/down
 			if (viondesc[bot[b].navion].avant) basculeY(bot[b].vion, fix_orient);
 			else basculeY(bot[b].vion, -fix_orient);
 		}
-		if (j&1 && !(j&2)) {	// right but not left
+		if (touchdown_mask&1 && !(touchdown_mask&2)) {	// right but not left
 			basculeX(bot[b].vion, -fix_orient);
-		} else if (j&2 && !(j&1)) {	// left but not right
+		} else if (touchdown_mask&2 && !(touchdown_mask&1)) {	// left but not right
 			basculeX(bot[b].vion, fix_orient);
 		}
-		//if (j&3) basculeZ(bot[b].vion, -bot[b].xctl* dt_sec);	// petite gruge pour diriger en roulant
+		//if (touchdown_mask&3) basculeZ(bot[b].vion, -bot[b].xctl* dt_sec);	// petite gruge pour diriger en roulant
 
 		// Reload
-		if (j && vx < .5 * ONE_METER) {
+		if (touchdown_mask && vx < .5 * ONE_METER) {
 			copyv(&v, &obj[bot[b].babase].pos);
 			subv(&v, &obj[bot[b].vion].pos);
 			if (norme2(&v) < ECHELLE*ECHELLE*.1) {
@@ -322,7 +329,7 @@ void control_plane(int b, float dt_sec) {
 				}
 			}
 		}
-	} else /* !j */ if (b==bmanu && bot[b].zs > 500) IsFlying = 1;
+	} else /* !touchdown */ if (b==bmanu && bot[b].zs > 500) IsFlying = 1;
 
 	// Done computing acceleration, now move plane
 	mulv(&a, dt_sec);
