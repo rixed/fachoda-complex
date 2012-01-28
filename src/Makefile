@@ -27,7 +27,7 @@ cscope:
 clear:
 	find . -type f -\( -name '*.c' -o -name '*.h' -\) | xargs sed -i -e 's/[ \t]\+$$//'
 
-.depend: $(SRCS)
+.depend:
 	rm -f .depend ;
 	for f in $(SRCS); do \
 		$(CC) -MM -MF $$f.dep $$f ; \
