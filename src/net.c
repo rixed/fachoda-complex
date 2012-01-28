@@ -25,7 +25,6 @@ int numbytes;
 int sockfd; FILE *sockfdF;
 long int DT=0, TotalDT=0;
 struct timeval GTime;
-int NbHosts,MonoMode;
 
 // signal
 char Rec=0; FILE *Recf;

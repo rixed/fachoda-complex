@@ -110,6 +110,7 @@ void xproceed() {
 		else if (event.type==SDL_KEYUP) bitzero(event.key.keysym.scancode);
 	}
 }
+
 char getscancode() {
 	SDL_Event event;
 	while (SDL_WaitEvent(&event)>=0) {

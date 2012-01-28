@@ -9,6 +9,7 @@
 #include "keycodesdef.h"
 #include "proto.h"
 #include "sound.h"
+#include "gtime.h"
 
 extern void deltatime(void);
 extern void plotfumee(int,int,int);
@@ -188,27 +189,26 @@ void button(int x, int y, char *label,char highlight) {
 	TextClipX1=TextClipX2=0;
 }
 
-int xb[10],yb[10], kzc;
-int agit=0;
-void page(int r, float rayon, float phase) {
+static int xb[10],yb[10], kzc;
+static int agit=0;
+static void draw_page(int r, float rayon, float phase) {
 	int b;
-	int SS=MAX(_DX,_DY);
-//	MMXMemSetInt((int*)videobuffer,BACKCOLOR,SX*SY);
+	int SS = MAX(_DX,_DY);
 	affpresent(drand48()*(agit>>8),drand48()*(agit>>8));
 	if (agit>256) agit=(agit*9)/10;
-	for (b=0; b<Round[r].nbkases; b++) {
-		float ang=phase+b*M_PI*2./Round[r].nbkases;
-		xb[b]=_DX+SS*rayon*cos(ang);
-		yb[b]=_DY+SS*rayon*sin(ang);
+	for (b=0; b<Round[r].nbkases; b++) {	// compute buttons position
+		float ang = phase + b*M_PI*2./Round[r].nbkases;
+		xb[b] = _DX+SS*rayon*cos(ang);
+		yb[b] = _DY+SS*rayon*sin(ang);
 	}
-	for (b=0; b<Round[r].nbkases; b++) {
-		int dx=xmouse-xb[b];
-		int dy=ymouse-yb[b];
-	//	disqueintro(xb[b]-dx*.2,yb[b]-dy*.2,RAYONBOUTTON*(.6+sqrt(dx*dx+dy*dy)*.5/SS),0x486878);
-		plotfumee(xb[b]-dx*.2,yb[b]-dy*.2,RAYONBOUTTON*(.6+sqrt(dx*dx+dy*dy)*.5/SS));
+	for (b=0; b<Round[r].nbkases; b++) {	// draw buttons shaddow
+		int dx = xmouse-xb[b];
+		int dy = ymouse-yb[b];
+		plotfumee(xb[b]-dx*.2, yb[b]-dy*.2, RAYONBOUTTON*(.6+sqrt(dx*dx+dy*dy)*.5/SS));
 	}
-	for (b=0; b<Round[r].nbkases; b++)
-		button(xb[b],yb[b],Round[r].kase[b].label,kzc==b);
+	for (b=0; b<Round[r].nbkases; b++) {	// draw buttons
+		button(xb[b], yb[b], Round[r].kase[b].label, kzc==b);
+	}
 }
 int kazeclick(int x, int y, int r) {
 	int b;
@@ -222,12 +222,11 @@ int jauge(int vi, int max) {
 	int jx, y;
 	float phaz=0;
 	do {
-		jx=(va*(SX-20))/max;
-		kzc=kazeclick(xmouse,ymouse,14);
-		page(14,.45+.2*sin(phaz*.61),.5*M_PI+0.2*sin(phaz));
-		deltatime();
-		AccelFactor=(float)DT/NORMALDT;
-		phaz+=AccelFactor*.21;
+		float const dt_sec = gtime_next_sec();
+		jx = (va*(SX-20))/max;
+		kzc = kazeclick(xmouse,ymouse,14);
+		draw_page(14, .45 + .2*sin(phaz*.61), .5*M_PI + .2*sin(phaz));
+		phaz += 2.1*dt_sec;
 		for (y=SY/3-(SY>>3); y<SY/3+(SY>>3); y++)
 			MMXMemSetInt((int*)videobuffer+y*SX+10,0x3060A0,jx);
 		pbignum(va,_DX,SY/3-SizeBigCharY/2,2,1,0);
@@ -250,7 +249,7 @@ int jauge(int vi, int max) {
 	char prompt[]="Type in name :                                             ";
 	do {
 		kzc=kazeclick(xmouse,ymouse,14);
-		page(14,.45+.2*sin(phaz*.61),.5*M_PI+0.2*sin(phaz));
+		draw_page(14,.45+.2*sin(phaz*.61),.5*M_PI+0.2*sin(phaz));
 		phaz+=.11;
 		for (i=0; i+15<strlen(prompt) && i<strlen(m)+1; i++)
 		prompt[i+15]=i==curpos?108+16:m[i];
@@ -266,17 +265,17 @@ int jauge(int vi, int max) {
 
 	} while (1);
 }*/
-int present() {
+
+int present(void) {
 	int curround=0, oldcurround, nextround, etap=2;
 	float phaz=drand48()*2*M_PI, rayon=2, phazr=drand48()*2*M_PI;
-	inittime();
+	gtime_start();
 	do {
-		deltatime();
-		AccelFactor=(float)DT/NORMALDT;
+		float const dt_sec = gtime_next_sec();
 		if (etap==1) {
 			// explosion
-			rayon+=AccelFactor*.23;
-			if (rayon>1.5) {
+			rayon += 9.*dt_sec;
+			if (rayon > 1.5) {
 				if (nextround<0) {
 					switch (nextround) {
 					case -1: return -1;
@@ -296,34 +295,33 @@ int present() {
 			}
 		} else if (etap==2) {
 			// implosion
-			rayon-=AccelFactor*.23;
-			phaz+=AccelFactor*(.09+sin(phazr)*.61);
-			phazr+=AccelFactor*(sin(phaz*.1)*.63+sin(phazr*.3)*.11);
-			if (rayon<=.4) {
-				etap=0;
-				rayon=.4;
+			rayon -= dt_sec * 2.3;
+			phaz  += dt_sec * (.9 + sin(phazr)*6.1);
+			phazr += dt_sec * (sin(phaz)*6.3 + sin(phazr*3.)*1.1);
+			if (rayon <= .4) {
+				etap = 0;
+				rayon = .4;
 			}
 		}
-		kzc=kazeclick(xmouse,ymouse,curround);
-		page(curround,rayon+.18*sin(phazr),phaz);
-		plotcursor(xmouse,ymouse);
+		kzc = kazeclick(xmouse, ymouse, curround);
+		draw_page(curround, rayon + .018*sin(phazr), phaz);
+		plotcursor(xmouse, ymouse);
 		buffer2video();
 		xproceed();
-		phaz+=AccelFactor*(.009+sin(phazr)*.061);
-		phazr+=AccelFactor*(sin(phaz*.01)*.063+sin(phazr*.013)*.011);
+		phaz += dt_sec * (.09 + sin(phazr)*.61);
+		phazr += dt_sec * (sin(phaz*.1)*.63 + sin(phazr*.13)*.11);
+
 		if (etap==0 && (kreset(0) || kreset(1))) {
-			int b=kzc;
-			if (b!=-1) {
+			if (kzc!=-1) {
 				vector mousepos = { .x = (float)xmouse/SX, .y = (float)ymouse/SY, .z = 0. };
 				playsound(VOICEMOTOR, BIPINTRO, 1+(drand48()-.5)*.05, &mousepos, true);
 				agit=20*256;
-				if (Round[curround].kase[b].nxtround>=0) {
+				if (Round[curround].kase[kzc].nxtround>=0) {
 					oldcurround=curround;
-					nextround=Round[curround].kase[b].nxtround;
+					nextround=Round[curround].kase[kzc].nxtround;
 					etap=1;
-				}
-				else {
-					switch (Round[curround].kase[b].nxtround) {
+				} else {
+					switch (Round[curround].kase[kzc].nxtround) {
 					case -1: etap=1; nextround=-2; break;
 					case -2: etap=1; nextround=-6; break;
 					case -3: etap=1; nextround=-1; break;

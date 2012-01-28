@@ -239,7 +239,7 @@ void initmap(void) {
 	}
 }
 
-void animate_water(void)
+void animate_water(float dt_sec)
 {
 	static float Fphix=0, Fphiy=0;
 	for (int y=0; y<SUBMAP_LEN; y++) {
@@ -249,8 +249,8 @@ void animate_water(void)
 			submap_rel_light[9][x+(y<<SUBMAP_LEN_N)]=8*(cos(x*4*M_PI/SUBMAP_LEN+Fphix)+sy);
 		}
 	}
-	Fphiy+=.03*AccelFactor;
-	Fphix+=.11*AccelFactor;
+	Fphiy += .003 * dt_sec;
+	Fphix += .011 * dt_sec;
 }
 
 /*

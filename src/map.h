@@ -24,7 +24,7 @@ static inline int submap_get(int k)
 }
 
 /* Animate submap 9 with a wave pattern */
-void animate_water(void);
+void animate_water(float dt_sec);
 
 /* Return the altitude of the ground at this location, with or without submap */
 float z_ground(float, float, bool);

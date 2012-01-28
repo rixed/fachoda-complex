@@ -6,6 +6,7 @@
 #include "map.h"
 #include "keycodesdef.h"
 #include "sound.h"
+#include "gtime.h"
 
 int DogBot=0;
 vector DogBotDir;
@@ -192,7 +193,7 @@ void manuel(int b) {
 	}
 	// Control du jeu
 	if (MonoMode && kreset(gkeys[kc_pause].kc)) {
-		inittime();
+		gtime_toggle();
 		lapause^=1;
 	}
 	AfficheHS=kread(gkeys[kc_highscores].kc);
@@ -221,7 +222,7 @@ void manuel(int b) {
 			i+=kread(gkeys[kc_down].kc)<<2;
 			i+=kread(gkeys[kc_up].kc)<<3;
 			if (i) {
-				CtlSensActu+=CtlSensitiv*AccelFactor;
+				CtlSensActu += CtlSensitiv;
 				if (i&1) bot[b].xctl-=CtlSensActu;
 				if (i&2) bot[b].xctl+=CtlSensActu;
 				if (i&4) bot[b].yctl-=CtlSensActu;

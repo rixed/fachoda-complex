@@ -16,10 +16,11 @@
 
 #define NBKEYS 45 //56
 
-#define NORMALDT 100000
 #define NBMAXCLIENTS 100	// faire correspondre avec gate.c
 #define DOGDISTMAX 9000
 #define NBREPMAX 40
+#define ONE_METER 100.	// dist unit seams to be approx the cm
+#define G (3. * ONE_METER)	// actual gravity is of course 10, but we like it smaller so that planes can fly slower
 #define G_FACTOR .5
 #define NTANKMARK 12	// 11 bits pour les No de tanks
 #define vf 8	// 12
@@ -228,7 +229,7 @@ typedef struct {
 	uchar avant:1;
 	uchar retract3roues:1;
 	uchar oldtb:1;
-	float motorpower,portf,port,derivk,profk,trainee;
+	float motorpower, lift, drag;
 	int bulletsmax, fiulmax;
 	int roue[3];	// D,G,A
 } viondesc_s;
@@ -266,6 +267,7 @@ typedef struct {
 } voiture_s;
 
 // naw.c
+extern int const NbHosts, MonoMode;
 extern char hostname[250];
 extern vector ExplozePos; extern int Exploze;
 extern int DebMoulins, FinMoulins;
@@ -278,7 +280,6 @@ extern char (*playbotname)[30];
 extern int resurrect(void);
 extern int NBBOT,NBTANKBOTS, camp, AllowResurrect, Easy, Gruge, ViewAll, SpaceInvaders, monvion, lang, Dark, Fleuve, MouseCtl, Accident, Smooth;
 extern float CtlSensitiv, CtlSensActu, CtlAmortis, CtlYequ;
-extern float AccelFactor;
 extern char myname[30];
 extern int fumeesource[], fumeesourceintens[];
 extern debris_s debris[];
@@ -406,10 +407,10 @@ extern int *tbwidth;
 // control
 extern int IsFlying;
 extern float soundthrust;
-extern void control(int b);
-extern void controlvehic(int v);
+extern void control_plane(int b, float dt_sec);
+extern void control_vehic(int v, float dt_sec);
 extern void controlepos(int i);
-extern void controlzep(int z);
+extern void control_zep(int z, float dt_sec);
 // mapping.c
 extern void polymap(vect2dm *p1, vect2dm *p2, vect2dm *p3);
 extern void initmapping(void);
@@ -432,16 +433,6 @@ extern int collision(int p, int o);
 extern int kelkan(int o);
 extern void hitgun(int,int);
 extern void explose(int oc, int i);
-// net.c
-extern void inittime(void);
-extern void deltatime(void);
-extern int NbHosts,MonoMode;
-extern int NetInit(char *);
-extern int NetRead(void);
-extern void NetSend(void);
-extern int NetCamp(void);
-extern int NetClose(void);
-extern long int DT, TotalDT;
 // present.c
 extern void affpresent(int,int);
 extern char *scenar[4][4][2];

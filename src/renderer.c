@@ -616,7 +616,7 @@ void renderer(int ak, enum render_part fast){
 														polyflat(
 																&pts2d[mod[obj[o].model].fac[mo][p].p[0]].v,
 																&pts2d[mod[obj[o].model].fac[mo][p].p[1]].v,
-																&pts2d[mod[obj[o].model].fac[mo][p].p[2]].v, 
+																&pts2d[mod[obj[o].model].fac[mo][p].p[2]].v,
 																coul);
 												}
 											}

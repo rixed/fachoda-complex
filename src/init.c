@@ -491,7 +491,7 @@ void initworld() {
 	printf("bmanu=%d\n",bmanu);
 	bot[bmanu].camp=camp;
 	bot[bmanu].navion=monvion-1;
-	if (NetCamp()==-1) {printf("Net Error\n"); exit(-1); }
+	//if (NetCamp()==-1) {printf("Net Error\n"); exit(-1); }
 	IsFlying=SpaceInvaders;
 	printf("Playing with %d planes & %d tanks\nPlayers :\n",NBBOT,NBTANKBOTS);
 	for (i=0; i<NbHosts; i++) printf("%s, camp %d, in a %s\n",playbotname[i],bot[i].camp+1, viondesc[bot[i].navion].name);

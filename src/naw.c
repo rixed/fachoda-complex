@@ -1,12 +1,16 @@
 #include <stdlib.h>
 #include <stdio.h>
+#include <inttypes.h>
 #include <string.h>
 #include <math.h>
 #include <unistd.h>
-#include <signal.h>
 #include <values.h>
+#include <assert.h>
 #include "map.h"
 #include "sound.h"
+#include "gtime.h"
+int const NbHosts = 1;
+int const MonoMode = 1;
 
 void MMXMemSetInt(int *deb, int coul, int n) {
 	while (n--) *deb++ = coul;
@@ -15,8 +19,6 @@ void MMXMemSetInt(int *deb, int coul, int n) {
 void MMXCopy(int *dst, int *src, int n) {	// by the time I suppose glibc became quite good at this :-)
 	memcpy(dst, src, n*4);
 }
-
-extern void catchalarm(int sig);
 
 matrix mat_id={{1,0,0},{0,1,0},{0,0,1}};
 vector vac_diag={1,1,1}, vec_zero={0,0,0}, vec_g={0,0,-1};
@@ -49,7 +51,6 @@ debris_s debris[NBGRAVMAX];
 char WINDOW=1;
 char PHONG=1;
 float TROPLOIN=120.,TROPLOIN2;
-float AccelFactor=1;
 int _DX,_DY,SX=400,SY=250,SYTB,SXTB,SIZECERCLE,POLYMAX=25,TBY;
 int nbtir;
 // ajoute un objet dans le world
@@ -475,17 +476,6 @@ parse_error:
 	/*
 	    contact le serveur
 		                   */
-	if (signal(SIGALRM,catchalarm)==SIG_ERR) { printf("signal error"); exit(-1); }
-	if (NetInit(hostname)==-1) {
-		printf("Monomode\n");
-		NbHosts=1;
-		MonoMode=1;
-	} else MonoMode=0;
-	if (!MonoMode) {
-		Easy=0;
-		AllowResurrect=0;
-		printf("Multiplayer game ; disabling easy mode & resurrection\n");
-	}
 	NBBOT+=NbHosts;
 	playbotname=malloc(30*NbHosts);
 	strcpy(&(playbotname[bmanu])[0],myname);
@@ -524,7 +514,6 @@ parse_error:
 	copyv(&posc[0],&vec_zero);
 	copyv(&posc[1],&vec_zero);
 	copyv(&OldCamDep,&vec_zero);
-	if (MonoMode) inittime();
 	// effacer les tableaux de bord, les poscams et les charnières
 	for (i=0; i<NBBOT; i++) {
 		obj[bot[i].vion+viondesc[bot[i].navion].tabbord].aff=0;
@@ -534,18 +523,21 @@ parse_error:
 	}
 	// VISION
 	playsound(VOICEEXTER, TARATATA, 1., &voices_in_my_head, true);
-	DT=AccelFactor=0;	// parcequ'au premier passage, on n'a pas encore lut le DT du réseau avant de calculer AccelFactor
+
+	/*
+	 * Here comes the Big Bad Loop
+	 */
+
+	gtime_start();
 	do {
+		if (accel) gtime_accel(1000); // add 1 msec
+		float const dt_sec = gtime_next_sec();
+		//printf("dt = %f\n", dt_sec);
+
 		vector v,u;
 		Exploze=0;
 		imgcount++;
-		if (accel) DT=NORMALDT;
-		n=AccelFactor;
-		AccelFactor=(float)DT/NORMALDT;
-		if (AccelFactor<n-.3) AccelFactor=n-.3;
-		else if (AccelFactor>n+.3) AccelFactor=n+.3;
-		if (AccelFactor>3) AccelFactor=3;
-		else if (AccelFactor<.1) AccelFactor=.1;
+
 		// Locate listener (ie. camera)
 		vector velocity = { 0., 0., 0. };	// FIXME
 		update_listener(&obj[0].pos, &velocity, &obj[0].rot);
@@ -555,7 +547,6 @@ parse_error:
 		if (!lapause) {
 			// calcul les pos du sol
 			for (i=0; i<NBBOT; i++) bot[i].zs=obj[bot[i].vion].pos.z-z_ground(obj[bot[i].vion].pos.x,obj[bot[i].vion].pos.y, true);
-			NetSend();
 			// mettre entre les deux accès réseau tout ce qui ne dépend
 			// pas des commandes des playbots !
 			for (i=NbHosts; i<NBBOT; i++) robot(i);
@@ -573,7 +564,11 @@ parse_error:
 				}
 			}
 			// message d'alerte ?
-			if (bot[bmanu].camp!=-1 && bot[bmanu].vionvit.z<-5 && (n=bot[bmanu].vionvit.z*100+bot[bmanu].zs)<0) {
+			if (
+				bot[bmanu].camp != -1 &&	// not dead
+				bot[bmanu].vionvit.z < -5.*ONE_METER &&	// and more than 1 m/s toward ground
+				(n=bot[bmanu].vionvit.z * 100 + bot[bmanu].zs) < 0	// will hit ground in less than 100s
+			) {
 				playsound(VOICEALERT, ALERT, 1-n*.0001, &voices_in_my_head, true);
 			}
 			// avance les shots
@@ -589,11 +584,12 @@ parse_error:
 				//	printf("Shot %d blow guts out of %d\n",i,oc);
 					hitgun(oc,i);
 				}
+#				define SHOT_SPEED (100. * ONE_METER) // in meters/secs
 				copyv(&v, &obj[i].rot.x);
-				mulv(&v,100*AccelFactor);
+				mulv(&v, SHOT_SPEED * dt_sec);
 				addv(&obj[i].pos,&v);
 				copyv(&v,&vec_g);
-				mulv(&v,.005*AccelFactor);
+				mulv(&v, .05*dt_sec);	// FIXME: obj should have a proper velocity
 				addv(&obj[i].rot.x,&v);
 				renorme(&obj[i].rot.x);
 				randomv(&obj[i].rot.y);
@@ -621,13 +617,12 @@ parse_error:
 				j=bombe[i].o;
 				if (j!=-1) {
 					int oc, fg=0;
-					copyv(&v,&vec_g);
-				//	mulv(&v,G_FACTOR*AccelFactor);
-					addv(&bombe[i].vit,&v);
-					mulv(&bombe[i].vit,.999);//pow(.999,AccelFactor));
-					copyv(&v,&bombe[i].vit);
-					mulv(&v,AccelFactor);
-					addv(&obj[j].pos,&v);//bombe[i].vit);
+					copyv(&v, &vec_g);
+					addv(&bombe[i].vit, &v);
+					mulv(&bombe[i].vit, .999);
+					copyv(&v, &bombe[i].vit);
+					mulv(&v, dt_sec);
+					addv(&obj[j].pos, &v);
 					controlepos(j);
 					// collision ?
 					for (oc=map[obj[j].ak].first_obj; oc!=-1; oc=obj[oc].next)
@@ -649,8 +644,8 @@ parse_error:
 				if (debris[i].o!=-1) {
 					double zs;
 					float c1,c2,s1,s2;
-					copyv(&v,&debris[i].vit);
-					mulv(&v,AccelFactor);
+					copyv(&v, &debris[i].vit);
+					mulv(&v, dt_sec);
 					addv(&obj[debris[i].o].pos,&v);
 					c1=cos(debris[i].a1);
 					c2=cos(debris[i].a2);
@@ -665,11 +660,11 @@ parse_error:
 					obj[debris[i].o].rot.z.x=-c1*s2;
 					obj[debris[i].o].rot.z.y=-s1*s2;
 					obj[debris[i].o].rot.z.z=c2;
-					debris[i].a1+=debris[i].ai1*AccelFactor;
-					debris[i].a2+=debris[i].ai2*AccelFactor;
+					debris[i].a1 += debris[i].ai1 * dt_sec;
+					debris[i].a2 += debris[i].ai2 * dt_sec;
 					controlepos(debris[i].o);
-					mulv(&debris[i].vit,pow(.999,AccelFactor));
-					debris[i].vit.z-=G_FACTOR;
+					mulv(&debris[i].vit, pow(.9, dt_sec));
+					debris[i].vit.z -= G * dt_sec;
 					zs=z_ground(obj[debris[i].o].pos.x,obj[debris[i].o].pos.y, true);
 					if (obj[debris[i].o].pos.z<zs) {
 						obj[debris[i].o].pos.z=zs;
@@ -689,15 +684,16 @@ parse_error:
 				if (rayonfumee[i]) {
 					uchar rlim;
 					randomv(&v);
-					mulv(&v,rayonfumee[i]);
-					v.z+=rayonfumee[i]>>1;
-					switch(typefumee[i]) {
-					case 0: rlim=90; break;
-					default: rlim=6; break;
+					mulv(&v, rayonfumee[i]);
+					v.z += rayonfumee[i]>>1;
+					switch (typefumee[i]) {
+						case 0: rlim=90; break;
+						default: rlim=6; break;
 					}
 					if (++rayonfumee[i]>rlim) rayonfumee[i]=0;
 					else {
-						mulv(&v,AccelFactor);
+#						define SMOKE_GROWING_SPEED (1. * ONE_METER)	// per seconds
+						mulv(&v, SMOKE_GROWING_SPEED * dt_sec);
 						addv(&obj[firstfumee+i].pos,&v);
 						controlepos(firstfumee+i);
 					}
@@ -750,9 +746,9 @@ parse_error:
 					} else voiture[i].vit=0;
 				}
 				voiture[i].dist=dist;
-				copyv(&v,&obj[voiture[i].o].rot.x);
-				mulv(&v,AccelFactor*voiture[i].vit);
-				addv(&obj[voiture[i].o].pos,&v);
+				copyv(&v, &obj[voiture[i].o].rot.x);
+				mulv(&v, dt_sec * voiture[i].vit);
+				addv(&obj[voiture[i].o].pos, &v);
 				controlepos(voiture[i].o);
 				for (j=voiture[i].o+1; j<voiture[i+1].o; j++) calcposrigide(j);
 			}
@@ -774,16 +770,13 @@ parse_error:
 					}
 				}
 			}
-			if (NetRead()==-1) {
-				printf("NET ERROR. Exiting...\n");
-				goto fin;
-			}
-			for (i=0; i<NBBOT; i++) control(i);
-			for (i=0; i<NBTANKBOTS; i++) controlvehic(i);
-			for (i=0; i<NBZEPS; i++) controlzep(i);
+			for (i=0; i<NBBOT; i++) control_plane(i, dt_sec);
+			for (i=0; i<NBTANKBOTS; i++) control_vehic(i, dt_sec);
+			for (i=0; i<NBZEPS; i++) control_zep(i, dt_sec);
 
 			// fait tourner les moulins
-			AngleMoulin+=drand48()*.2*AccelFactor;
+#			define MILL_ANGULAR_SPEED (2. * M_PI / 5.)	// one rotation every 5 secs
+			AngleMoulin += (1. - 0.2*(drand48()-0.5)) * dt_sec;
 			m.x.x=1; m.x.y=0; m.x.z=0;
 			m.y.x=0; m.y.y=cos(AngleMoulin); m.y.z=sin(AngleMoulin);
 			m.z.x=0; m.z.y=-sin(AngleMoulin); m.z.z=cos(AngleMoulin);
@@ -793,8 +786,9 @@ parse_error:
 					for (j=i+1; j<i+5; j++) calcposrigide(j);
 				}
 			}
-			if (!accel || imgcount>64) {
-				if (accel) imgcount-=64;
+
+			// Draw the frame
+			if (!accel || 0 == (imgcount&63)) {
 				// où est la caméra ?
 				if (visu==3) {
 					if (!visubomb || obj[visubomb].objref!=-1) {
@@ -970,7 +964,7 @@ parse_error:
 					else tbback=tbback2;
 					drawtbback();
 					drawtbcadrans(visubot);
-					animate_water();
+					animate_water(dt_sec);
 					draw_ground_and_objects();
 					if (!Dark) {
 						double i;
@@ -1014,6 +1008,7 @@ parse_error:
 					}
 					pstr(vn,SY-12, colcamp[(int)bot[DogBot].camp]);
 				}
+				// Display current balance
 				if (bot[bmanu].gold-2000>maxgold) {
 					maxgold=bot[bmanu].gold-2000;
 					if (maxrank<20) highscore[maxrank].score=maxgold;
@@ -1063,7 +1058,7 @@ parse_error:
 				}
 				plotcursor(xmouse,ymouse);
 				buffer2video();
-			}
+			} else fprintf(stderr, "skip frame\n");
 		}
 	} while (quitte<2);
 	// FIN
@@ -1072,7 +1067,6 @@ fin:
 //	XAutoRepeatOn(disp);	// Ceci concerne tous les programmes, donc
 //	aussi d'autres clients tournant sur la meme machine... ce qui
 //	théoriquement n'arrive que chez moi pour les tests.
-	signal(SIGALRM,SIG_DFL);
 	exitsound();
 	system("xset r on");	// pis aller
 	// sauver les highscore

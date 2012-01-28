@@ -5,8 +5,9 @@ SRCS = \
 	renderer.c map.c modele.c radio.c robot.c \
 	tableaubord.c txt.c control.c mapping.c \
 	manuel.c soleil.c carte.c sound.c ravages.c \
-	present.c net.c keycodes.c route.c drawroute.c \
-	init.c intro.c naw.c video_sdl.c world.c
+	present.c keycodes.c route.c drawroute.c \
+	init.c intro.c naw.c video_sdl.c world.c \
+	gtime.c
 
 OBJS = ${subst .c,.o,$(SRCS)}
 
