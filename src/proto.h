@@ -593,15 +593,21 @@ static inline void mulmtv(matrix *n, vector *v, vector *r) {
 	r->z = n->z.x*t.x+n->z.y*t.y+n->z.z*t.z;
 }
 static inline void neg(vector *v) { v->x=-v->x; v->y=-v->y; v->z=-v->z; }
-static inline void subv3(vector *a, vector *b, vector *r) {	// il faut r!=a,b
+static inline void subv3(vector *a, vector *b, vector *restrict r) {	// il faut r!=a,b
 	r->x = a->x-b->x;
 	r->y = a->y-b->y;
 	r->z = a->z-b->z;
 }
-static inline void addv3(vector *a, vector *b, vector *r) {	// il faut r!=a,b
+static inline void addv3(vector *a, vector *b, vector *restrict r) {	// il faut r!=a,b
 	r->x = a->x+b->x;
 	r->y = a->y+b->y;
 	r->z = a->z+b->z;
+}
+static inline void cap_dist(vector *a, float dist) {
+#	define CAP(x) if ((x) > dist) x = dist; else if ((x) < -dist) x = -dist;
+	CAP(a->x);
+	CAP(a->y);
+	CAP(a->z);
 }
 void randomv(vector *v);
 static inline void randomm(matrix *m) {

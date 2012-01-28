@@ -74,8 +74,8 @@ gtime gtime_next(void)
 	while (1) {
 		now = gtime_now();
 		dt = now - prev_gtime + 1;
-#		define MIN_DT 25000ULL	// below which we sleep
-#		define MAX_DT 500000ULL	// above which we return only MAX_DT (and skip this time)
+#		define MIN_DT (uint_least64_t)25000ULL	// below which we sleep
+#		define MAX_DT (uint_least64_t)500000ULL	// above which we return only MAX_DT (and skip this time)
 		if (dt > MAX_DT) {
 			printf("gtime_next(): leak %"PRIuLEAST64"usecs\n", dt - MAX_DT);
 			leaked += dt - MAX_DT;

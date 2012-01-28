@@ -286,7 +286,6 @@ int main(int narg, char **arg) {
 	int i,j, dtradio=0, RedefineKeys=0; vector p; matrix m;
 	int caisse=0, dtcaisse=0, oldgold=0, caissetot=0, maxgold=0, initradio=0;
 	char *userid;
-	vector posc[2], OldCamDep;
 	float angvisu1=0,n;
 	int maxrank=20;
 	FILE *file;
@@ -512,9 +511,6 @@ parse_error:
 	copym(&obj[0].rot,&obj[bot[bmanu].vion].rot);
 	visubot=bmanu;
 	bombidx=0;
-	copyv(&posc[0],&vec_zero);
-	copyv(&posc[1],&vec_zero);
-	copyv(&OldCamDep,&vec_zero);
 	// effacer les tableaux de bord, les poscams et les charnières
 	for (i=0; i<NBBOT; i++) {
 		obj[bot[i].vion+viondesc[bot[i].navion].tabbord].aff=0;
@@ -825,60 +821,65 @@ parse_error:
 					assert(!"Invalid view");
 				case VIEW_DOGFIGHT:
 				case VIEW_IN_PLANE:
-					{ matrix ct;
-					copyv(&posc[0],&posc[1]);
-					copyv(&posc[1],&bot[visubot].vionvit);
-					copyv(&obj[0].pos,&obj[bot[visubot].vion+nobjet[bot[visubot].navion].nbpieces-1].pos);
-					if (view != VIEW_DOGFIGHT || avancevisu || tournevisu) {
-						copyv(&ct.x,&obj[bot[visubot].vion].rot.y);
+					// Compute static position of the head, relative to cockpit
+					obj[0].pos = obj[bot[visubot].vion+nobjet[bot[visubot].navion].nbpieces-1].pos;
+					matrix ct;
+					// Even in dogfight view we want to be able to focus on pannel or look toward predefined directions
+					if (view == VIEW_IN_PLANE || avancevisu || tournevisu) {
+						ct.x = obj[bot[visubot].vion].rot.y;
 						neg(&ct.x);
-						copyv(&ct.y,&obj[bot[visubot].vion].rot.z);
+						ct.y = obj[bot[visubot].vion].rot.z;
 						neg(&ct.y);
-						copyv(&ct.z,&obj[bot[visubot].vion].rot.x);
+						ct.z = obj[bot[visubot].vion].rot.x;
 					} else {
-						copyv(&ct.z,&DogBotDir);
-						copyv(&ct.y,&obj[bot[visubot].vion].rot.z);
+						ct.z = DogBotDir;
+						ct.y = obj[bot[visubot].vion].rot.z;
 						neg(&ct.y);
 						orthov(&ct.y,&ct.z);
 						renorme(&ct.y);
 						prodvect(&ct.y,&ct.z,&ct.x);
 					}
-					if (!avancevisu) {	// Tu me fait tourner... la tete...
-						matrix m;
-						double ctt,st,cf,sf;
-						ctt=cos(visuteta);
-						st=sin(visuteta);
-						cf=cos(visuphi);
-						sf=sin(visuphi);
-						m.x.x=cf;		m.y.x=sf*st;		m.z.x=-sf*ctt;
-						m.x.y=0;			m.y.y=ctt;			m.z.y=st;
-						m.x.z=sf;		m.y.z=-st*cf;		m.z.z=cf*ctt;
-						mulm(&ct,&m);
-						copyv(&v,&vec_zero);
+					if (avancevisu) {
+						// Go for the instrument pannel
+						v = ct.z;
+						mulv(&v, 2.1);
+						addv(&obj[0].pos, &v);
+						v = ct.y;
+						mulv(&v, 5.2);
+						addv(&obj[0].pos, &v);
 					} else {
-						copyv(&v,&ct.z);
-						mulv(&v,2.1);
-						addv(&obj[0].pos,&v);
-						copyv(&v,&ct.y);
-						mulv(&v,5.2);
+						// Look in any direction (visuteta/phi)
+						matrix m;
+						double ctt = cos(visuteta);
+						double st = sin(visuteta);
+						double cf = cos(visuphi);
+						double sf = sin(visuphi);
+						m.x.x = cf; m.y.x = sf*st;  m.z.x = -sf*ctt;
+						m.x.y = 0;  m.y.y = ctt;    m.z.y = st;
+						m.x.z = sf;	m.y.z = -st*cf; m.z.z = cf*ctt;
+						mulm(&ct, &m);
 					}
-					copyv(&u,&posc[0]);
-					subv(&u,&posc[1]);
-					mulv(&u,3);
-					addv(&v,&u);
-					subv(&v,&OldCamDep);
-					mulv(&v,.4);
-					addv(&v,&OldCamDep);
-					copyv(&OldCamDep,&v);
-					if (accel) mulv(&v,.002);
-					if (norme2(&v)<400) addv(&obj[0].pos,&v);
-					addv(&obj[0].rot.x,&ct.x);
-					addv(&obj[0].rot.y,&ct.y);
+
+					addv(&obj[0].rot.x, &ct.x);
+					addv(&obj[0].rot.y, &ct.y);
 					renorme(&obj[0].rot.x);
-					orthov(&obj[0].rot.y,&obj[0].rot.x);
+					orthov(&obj[0].rot.y, &obj[0].rot.x);
 					renorme(&obj[0].rot.y);
-					prodvect(&obj[0].rot.x,&obj[0].rot.y,&obj[0].rot.z);
+					prodvect(&obj[0].rot.x, &obj[0].rot.y, &obj[0].rot.z);
+
+					/* Now alter this static position to take into account acceleration.
+					 * Unfortunately, we do not know objs acceleration (not velocity in the
+					 * general case, so we have to figure it out. */
+					if (! accel) {
+						static vector prev_vit;
+						vector acc;
+						subv3(&bot[visubot].vionvit, &prev_vit, &acc);
+						mulv(&acc, .03/dt_sec);
+						cap_dist(&acc, 4.);
+						subv(&obj[0].pos, &acc);
+						prev_vit = bot[visubot].vionvit;
 					}
+
 					break;
 				case VIEW_ROTATING_PLANE:
 					obj[0].rot.y.x=0; obj[0].rot.y.y=0; obj[0].rot.y.z=-1;

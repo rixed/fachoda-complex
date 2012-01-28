@@ -196,7 +196,7 @@ void manuel(int b) {
 		if (kread(gkeys[kc_upview].kc)) { tournevisu=1; visuteta=-M_PI/2; visuphi=0; }
 		if (!tournevisu) visuteta=visuphi=0;
 	}
-	avancevisu=kread(gkeys[kc_movetowardview].kc);
+	avancevisu = kread(gkeys[kc_movetowardview].kc);
 	// Boutons de commandes
 	if (kreset(gkeys[kc_gear].kc)) bot[b].but.gear^=1;
 	if (kreset(gkeys[kc_flaps].kc)) {
