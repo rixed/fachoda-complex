@@ -37,6 +37,15 @@ void PrevDogBot() {
 	} while (DogBot!=DBi && (DogBotDist>DOGDISTMAX || bot[DogBot].camp==-1 || DogBot==bmanu));
 }
 
+enum view_type next_external_view(enum view_type v)
+{
+	if (v < VIEW_ROTATING_PLANE) {
+		return VIEW_ROTATING_PLANE;
+	}
+	if (v == NB_VIEWS-1) return VIEW_ROTATING_PLANE;
+	return v+1;
+}
+
 void manuel(int b) {
 	int i;
 	vector u;
@@ -81,7 +90,7 @@ void manuel(int b) {
 	// Vues
 	if (kreset(gkeys[kc_externview].kc)) {
 		mapmode = 0;
-		if (++ view >= NB_VIEWS) view = VIEW_ROTATING_PLANE;
+		view = next_external_view(view);
 	}
 	if (kreset(gkeys[kc_internview].kc)) {
 		mapmode = 0;

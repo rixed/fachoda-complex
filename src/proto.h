@@ -287,16 +287,20 @@ extern bombe_s *bombe;
 extern int bombidx;
 extern int babaseo[2][3][4];
 extern enum view_type {
+	// internal views
 	VIEW_IN_PLANE,
-	VIEW_ROTATING_PLANE,
-	VIEW_PLANE_FROM_ABOVE,
-	VIEW_ROTATING_BOMB,
-	VIEW_ANYTHING_CHEAT,
-	VIEW_BEHIND_PLANE,
-	VIEW_STANDING,
 	VIEW_DOGFIGHT,
+	// external views
+	VIEW_STANDING,
+	// cycling external views
+	VIEW_ROTATING_PLANE,
+	VIEW_BEHIND_PLANE,
+	VIEW_PLANE_FROM_ABOVE,
+	VIEW_ANYTHING_CHEAT,
+	VIEW_ROTATING_BOMB,
 	NB_VIEWS,
 } view;
+enum view_type next_external_view(enum view_type);
 extern int visubomb,mapmode, accel, autopilot, bmanu, lapause, imgcount, visuobj;
 extern double loinvisu, visuteta, visuphi;
 extern uchar avancevisu,tournevisu,quitte,arme,AfficheHS;

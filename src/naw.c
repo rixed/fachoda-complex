@@ -790,10 +790,15 @@ parse_error:
 				if (view == VIEW_ROTATING_BOMB) {
 					if (!visubomb || obj[visubomb].objref!=-1) {
 						for (i=bot[visubot].vion; i<bot[visubot].vion+nobjet[bot[visubot].navion].nbpieces && (obj[i].objref!=-1 || obj[i].type!=BOMB); i++);
-						if (i<bot[visubot].vion+nobjet[bot[visubot].navion].nbpieces) visubomb=i; else { visubomb=0; view = VIEW_IN_PLANE; }
+						if (i<bot[visubot].vion+nobjet[bot[visubot].navion].nbpieces) {
+							visubomb = i;
+						} else {
+							visubomb = 0;
+							view = VIEW_IN_PLANE;
+						}
 					}
 				}
-				if (view == VIEW_ANYTHING_CHEAT && !Gruge) view = VIEW_ROTATING_PLANE;
+				if (view == VIEW_ANYTHING_CHEAT && !Gruge) view = next_external_view(view);
 				if (view == VIEW_DOGFIGHT) {
 					if (visubot != bmanu) view = VIEW_IN_PLANE;
 					else {
@@ -916,19 +921,21 @@ parse_error:
 					angvisu1+=0.03;
 					break;
 				case VIEW_BEHIND_PLANE:
-					copyv(&obj[0].pos,&obj[bot[visubot].vion].pos);
-					copyv(&obj[0].rot.x,&obj[bot[visubot].vion].rot.y);
+					obj[0].pos = obj[bot[visubot].vion].pos;
+					obj[0].rot.x = obj[bot[visubot].vion].rot.y;
 					neg(&obj[0].rot.x);
-					copyv(&obj[0].rot.y,&obj[bot[visubot].vion].rot.z);
+					obj[0].rot.y = obj[bot[visubot].vion].rot.z;
 					neg(&obj[0].rot.y);
-					copyv(&obj[0].rot.z,&obj[bot[visubot].vion].rot.x);
-					copyv(&p,&obj[0].rot.z);
-					mulv(&p,-(loinvisu-80));
-					addv(&obj[0].pos,&p);
-					copyv(&p,&bot[visubot].vionvit);
-					mulv(&p,-3);
-					addv(&obj[0].pos,&p);
-					if (obj[0].pos.z<(n=30+z_ground(obj[0].pos.x,obj[0].pos.y, true))) obj[0].pos.z=n;
+					obj[0].rot.z = obj[bot[visubot].vion].rot.x;
+					p = obj[0].rot.z;
+					mulv(&p, -(loinvisu-80));
+					addv(&obj[0].pos, &p);
+					p = bot[visubot].vionvit;
+					mulv(&p, -1.);
+					addv(&obj[0].pos, &p);
+					if (obj[0].pos.z < (n = 30 + z_ground(obj[0].pos.x, obj[0].pos.y, true))) {
+						obj[0].pos.z = n;
+					}
 					break;
 				case VIEW_STANDING:
 					subv3(&obj[bot[visubot].vion].pos,&obj[0].pos,&obj[0].rot.z);
