@@ -4,6 +4,7 @@
 #include <unistd.h>
 #include <errno.h>
 #include <assert.h>
+#include <stdint.h>
 #include <AL/al.h>
 #include <AL/alc.h>
 #include "sound.h"
@@ -87,7 +88,7 @@ exit0:
 	return -1;
 }
 
-static uchar *load_file(char const *fn, size_t *size)
+static void *load_file(char const *fn, size_t *size)
 {
 	FILE *in = fopen(fn, "r");
 	if (! in) {
@@ -131,6 +132,95 @@ exit1:
 	(void)fclose(in);
 exit0:
 	return NULL;
+}
+
+static ALenum al_format(unsigned nb_channels, unsigned bits_per_sample)
+{
+	switch ((nb_channels << 8) | bits_per_sample) {
+		case 0x108: return AL_FORMAT_MONO8;
+		case 0x110: return AL_FORMAT_MONO16;
+		case 0x208: return AL_FORMAT_STEREO8;
+		case 0x210: return AL_FORMAT_STEREO16;
+	}
+	assert(!"Unsuported wave format");
+}
+
+int load_wave(sample_e samp, char const *fn, bool loop, float gain)
+{
+	if (! with_sound) return 0;
+
+	ALenum err;
+
+	struct wave {
+		// File header
+		char riff[4];
+		uint32_t riff_size;
+		char wave[4];
+		// Format section
+		char fmt[4];
+		uint32_t fmt_size;
+		uint16_t audio_format;
+		uint16_t nb_channels;
+		uint32_t sample_rate;
+		uint32_t byte_rate;
+		uint16_t block_align;
+		uint16_t bits_per_sample;
+		// Data section
+		char data[4];
+		uint32_t data_size;
+		uchar samples[];
+	} __attribute__((__packed__));
+
+	size_t sz;
+	struct wave *wave = load_file(fn, &sz);
+	if (! wave) goto exit0;
+
+	// Sanity checks
+	// FIXME: reorder bytes if we are a bigendian
+	if (
+		sz < sizeof(struct wave) ||
+		wave->riff_size != sz - 8 ||
+		wave->riff_size != 4 + (8 + wave->fmt_size) + (8 + wave->data_size) ||
+		0 != strncmp(wave->riff, "RIFF", 4) ||
+		0 != strncmp(wave->fmt,  "fmt ", 4) ||
+		0 != strncmp(wave->data, "data", 4) ||
+		0 != strncmp(wave->wave, "WAVE", 4)
+	) {
+		fprintf(stderr, "Not a WAVE file: %s\n", fn);
+		goto exit1;
+	}
+
+	if (
+		wave->fmt_size != 16 ||
+		wave->audio_format != 1 ||
+		wave->nb_channels < 1 ||
+		wave->nb_channels > 2 ||
+		(wave->bits_per_sample != 8 &&
+		 wave->bits_per_sample != 16)
+	) {
+		fprintf(stderr, "WAVE type not supported: %s\n", fn);
+		goto exit1;
+	}
+
+	assert(samp < ARRAY_LEN(buffers));
+	alGetError();
+	alBufferData(buffers[samp], al_format(wave->nb_channels, wave->bits_per_sample), wave->samples, wave->data_size, wave->sample_rate);
+
+	if ((err = alGetError()) != AL_NO_ERROR) {
+		fprintf(stderr, "Cannot alBufferData(%s): %s\n", fn, al_strerror(err));
+		goto exit1;
+	}
+
+	buffer_looping[samp] = loop;
+	buffer_gain[samp] = gain;
+
+	free(wave);
+	return 0;
+exit1:
+	free(wave);
+exit0:
+	with_sound = false;
+	return -1;
 }
 
 int loadsample(sample_e samp, char const *fn, bool loop, float gain)
@@ -198,7 +288,7 @@ void playsound(enum voice voice, sample_e samp, float pitch, vector const *pos, 
 	if (! with_sound) return;
 
 	ALenum err;
-	
+
 	vector d = *pos;
 	if (! relative) subv(&d, &last_pos);
 	if (norme2(&d) > MAX_DIST*MAX_DIST) return;

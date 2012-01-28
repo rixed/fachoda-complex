@@ -451,11 +451,12 @@ parse_error:
 	affpresent(0,0);
 	pstr("LOADING and CREATING THE WORLD",_DY+(SY>>3)+10,0xE5D510);
 	/* SOUND */
-	loadsample(SHOT,"snd/shot.raw", false, 1.);
+	load_wave(SHOT,"snd2/shot1.wav", false, 1.);
 	loadsample(GEAR_DN,"snd/gear_dn.raw", false, 1.);
 	loadsample(GEAR_UP,"snd/gear_up.raw", false, 1.);
 	loadsample(SCREETCH,"snd/screetch.raw", false, 1.);
-	loadsample(MOTOR,"snd/motor.raw", true, .4);
+	load_wave(TAXI, "snd2/taxi.wav", true, .4);
+	load_wave(MOTOR, "snd2/spit2.wav", true, .7);
 	loadsample(HIT,"snd/hit.raw", false, 1.);
 	loadsample(MESSAGE,"snd/message.raw", false, 1.);
 	loadsample(EXPLOZ,"snd/exploz.raw", false, 1.);

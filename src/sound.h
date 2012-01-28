@@ -9,6 +9,9 @@ void exitsound(void);
 
 int loadsample(sample_e samp, char const *filename, bool loop, float gain);
 
+// Load a wave file. Supported format include mono/stereo 8 or 16 bits/sample
+int load_wave(sample_e samp, char const *fn, bool loop, float gain);
+
 // Set listener position (will also update all attached sound sources)
 void update_listener(vector const *pos, vector const *velocity, matrix const *rot);
 
