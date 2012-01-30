@@ -691,7 +691,7 @@ parse_error:
 					}
 					if (++rayonfumee[i]>rlim) rayonfumee[i]=0;
 					else {
-#						define SMOKE_GROWING_SPEED (1. * ONE_METER)	// per seconds
+#						define SMOKE_GROWING_SPEED (.3 * ONE_METER)	// per seconds
 						mulv(&v, SMOKE_GROWING_SPEED * dt_sec);
 						addv(&obj[firstfumee+i].pos,&v);
 						controlepos(firstfumee+i);
