@@ -129,20 +129,20 @@ void explose(int oc, int i) {
 		}
 	}
 }
-void hitgun(int oc, int i) {
+
+bool hitgun(int oc, int i) {
 	int o1,j,tarif;
-	int cmoi=gunner[i-debtir];
+	int const shooter = gunner[i-debtir];
 	switch (obj[oc].type) {
 	case CIBGRAT:
 		o1=oc;
 		while (mod[obj[o1].model].pere!=obj[o1].model) o1+=mod[obj[o1].model].pere-obj[o1].model;
 		break;
 	case ZEPPELIN:
-		if (cmoi==-1) return;
+		if (shooter==-1) return;
 	case AVION:
 	case VEHIC:
-		o1=oc;
-		while (obj[o1].objref!=-1) o1=obj[o1].objref;	// MARCHEA PLUS ?
+		for (o1 = oc; obj[o1].objref != -1; o1 = obj[o1].objref) ;	// Find reference object
 		break;
 	default:
 		o1=0;
@@ -151,11 +151,15 @@ void hitgun(int oc, int i) {
 	if (o1) {
 		switch (obj[o1].type) {
 		case CIBGRAT:
-			if (cmoi<NBBOT && kelkan(o1)!=bot[cmoi].camp) if (drand48()<.05) bot[cmoi].gold+=60;
+			if (shooter<NBBOT && kelkan(o1)!=bot[shooter].camp) if (drand48()<.05) bot[shooter].gold+=60;
 			if (o1!=oc && drand48()<.01) explose(o1,i);
 			break;
 		case AVION:
 			for (j=0; j<NBBOT; j++) if (bot[j].vion==o1) {
+				if (j == gunner[i-debtir]) {
+					// Do not allow bots to shoot themselves
+					return false;
+				}
 				tarif=-(bot[j].fiulloss/4+bot[j].motorloss*8+bot[j].aeroloss*8+bot[j].bloodloss*2);
 				if (j==bmanu) accel=0;
 				vector r;
@@ -179,9 +183,9 @@ void hitgun(int oc, int i) {
 				}
 				bot[j].gunned=gunner[i-debtir];
 				tarif+=bot[j].fiulloss/4+bot[j].motorloss*8+bot[j].aeroloss*8+bot[j].bloodloss*2;
-				if (cmoi<NBBOT) {
-				  if (bot[j].camp!=bot[cmoi].camp) bot[cmoi].gold+=tarif;
-				  else bot[cmoi].gold-=tarif;
+				if (shooter<NBBOT) {
+				  if (bot[j].camp!=bot[shooter].camp) bot[shooter].gold+=tarif;
+				  else bot[shooter].gold-=tarif;
 				}
 			}
 			break;
@@ -205,4 +209,5 @@ void hitgun(int oc, int i) {
 			}
 		}
 	}
+	return true;
 }

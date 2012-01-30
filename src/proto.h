@@ -447,7 +447,8 @@ extern void affsoleil(vector *L);
 // ravages.c
 extern int collision(int p, int o);
 extern int kelkan(int o);
-extern void hitgun(int,int);
+// shot_idx: idx in objs list (substract debtir for index in gunner/vieshot)
+extern bool hitgun(int obj_idx, int shot_idx);
 extern void explose(int oc, int i);
 // present.c
 extern void affpresent(int,int);

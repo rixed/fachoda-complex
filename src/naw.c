@@ -570,16 +570,14 @@ parse_error:
 			}
 			// avance les shots
 			for (i=debtir; i<nbobj; i++) {
-				int oc, fg=0;
+				int oc;
 				if (!vieshot[i-debtir]) continue;
 				vieshot[i-debtir]--;
 				// collision ?
-				for (oc=map[obj[i].ak].first_obj; oc!=-1; oc=obj[oc].next)
-					if (obj[oc].type!=BOMB && collision(i,oc)) { fg=1; break; }
-				if (fg) {
-					vieshot[i-debtir]=0;
-				//	printf("Shot %d blow guts out of %d\n",i,oc);
-					hitgun(oc,i);
+				for (oc=map[obj[i].ak].first_obj; oc!=-1; oc=obj[oc].next) {
+					if (obj[oc].type != BOMB && collision(i, oc)) {
+						if (hitgun(oc, i)) vieshot[i-debtir]=0;
+					}
 				}
 #				define SHOT_SPEED (30. * ONE_METER) // in meters/secs
 				v = obj[i].rot.x;
