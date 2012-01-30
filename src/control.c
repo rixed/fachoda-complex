@@ -3,6 +3,7 @@
 #include <math.h>
 #include "map.h"
 #include "sound.h"
+#include "gtime.h"
 
 float soundthrust;
 int IsFlying;
@@ -412,7 +413,9 @@ void control_plane(int b, float dt_sec) {
 		if (obj[bot[b].vion+i].objref!=-1) calcposrigide(bot[b].vion+i);
 	}
 	// tirs ?
-	if (bot[b].but.canon && nbtir<NBMAXTIR && bot[b].bullets>0) {
+#	define SHOT_PERIOD (200 * ONE_MILLISECOND)
+	gtime const min_shot_period = SHOT_PERIOD / viondesc[bot[b].navion].nbcanon;
+	if (bot[b].but.canon && nbtir<NBMAXTIR && bot[b].bullets>0 && gtime_age(bot[b].last_shot) > min_shot_period) {
 		if (++bot[b].alterc>=4) bot[b].alterc=0;
 		if (bot[b].alterc<viondesc[bot[b].navion].nbcanon) {	// so that the shot frequency is given by the number of canons
 			copyv(&v, &obj[bot[b].vion].rot.x);
@@ -426,6 +429,7 @@ void control_plane(int b, float dt_sec) {
 			addobjet(0, &v, &obj[bot[b].vion].rot, -1, 0);
 			nbtir++;
 			bot[b].bullets--;
+			bot[b].last_shot = gtime_now();
 		}
 	}
 	if (bot[b].but.bomb) {

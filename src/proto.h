@@ -3,6 +3,7 @@
 
 #include <string.h>
 #include <stdbool.h>
+#include "gtime.h"
 
 #define MIN(a,b) ((a)<=(b)?(a):(b))
 #define MAX(a,b) ((b)<=(a)?(a):(b))
@@ -177,7 +178,6 @@ typedef struct {
 	short int navion,babase;	// Numéro de type d'avion, de base
 	int vion;	// numéro de l'objet principal de l'avion
 	char camp;	// 1 ou 2 ou -1 si détruit
-//	char *nom;
 	int nbomb;
 	bouton_s but;
 	vector vionvit;
@@ -185,6 +185,7 @@ typedef struct {
 	float anghel, anggear;
 	float vitlin;
 	int bullets;
+	gtime last_shot;
 	float zs;
 	float xctl,yctl,thrust;
 	char manoeuvre;
