@@ -829,7 +829,7 @@ parse_error:
 				case VIEW_DOGFIGHT:
 				case VIEW_IN_PLANE:
 					// Compute static position of the head, relative to cockpit
-					obj[0].pos = obj[bot[visubot].vion+nobjet[bot[visubot].navion].nbpieces-1].pos;
+					obj[0].pos = vec_zero;
 					matrix ct;
 					// Even in dogfight view we want to be able to focus on pannel or look toward predefined directions
 					if (view == VIEW_IN_PLANE || avancevisu || tournevisu) {
@@ -886,6 +886,17 @@ parse_error:
 						subv(&obj[0].pos, &acc);
 						prev_vit = bot[visubot].vionvit;
 					}
+
+					/* Smooth this position with the previous one */
+					static vector prev_cam_pos = { .0, .0, .0 };
+					vector diff;
+					subv3(&obj[0].pos, &prev_cam_pos, &diff);
+					mulv(&diff, .1);
+					addv3(&prev_cam_pos, &diff, &obj[0].pos);
+					prev_cam_pos = obj[0].pos;
+
+					/* Finally, add to this position the actual position of the cockpit */
+					addv(&obj[0].pos, &obj[bot[visubot].vion+nobjet[bot[visubot].navion].nbpieces-1].pos);
 
 					break;
 				case VIEW_ROTATING_PLANE:
