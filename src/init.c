@@ -197,9 +197,10 @@ void initworld() {
 		int nbm=drand48()*20+5;
 		int ok,k;
 		vector pp;
-		int bos=MAXINT, a;
+		int a;
 		do {
-			for (j=0; j<5; j++) {
+			int bos = MAXINT;
+			for (j=0; j<5; j++) {	// choose the less mountainous location out of 5 tries
 				int b;
 				randomvferme(&pp);
 				if (map[akpos(&pp)].z < 160 && (b=bossep(&pp))<bos) {
