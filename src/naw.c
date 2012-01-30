@@ -553,11 +553,11 @@ parse_error:
 				for (j=0; j<NbHosts; j++) if (bot[j].camp!=-1) {
 					for (i=0; i<NBBOT; i++) if (i!=j && bot[i].camp!=-1 && collision(bot[j].vion,bot[i].vion)) break;
 					if (i<NBBOT) {
-						explose(bot[i].vion,bot[j].vion);
-						explose(bot[j].vion,bot[i].vion);
+						explose(bot[i].vion, bot[j].vion);
+						explose(bot[j].vion, bot[i].vion);
 					}
 					for (i=0; i<NBZEPS; i++) if (collision(bot[j].vion,zep[i].o)) break;
-					if (i<NBZEPS) explose(bot[j].vion,zep[i].o);
+					if (i<NBZEPS) explose(bot[j].vion, zep[i].o);
 				}
 			}
 			// message d'alerte ?
@@ -581,13 +581,13 @@ parse_error:
 				//	printf("Shot %d blow guts out of %d\n",i,oc);
 					hitgun(oc,i);
 				}
-#				define SHOT_SPEED (100. * ONE_METER) // in meters/secs
-				copyv(&v, &obj[i].rot.x);
+#				define SHOT_SPEED (30. * ONE_METER) // in meters/secs
+				v = obj[i].rot.x;
 				mulv(&v, SHOT_SPEED * dt_sec);
-				addv(&obj[i].pos,&v);
-				copyv(&v,&vec_g);
+				addv(&obj[i].pos, &v);
+				v = vec_g;
 				mulv(&v, .05*dt_sec);	// FIXME: obj should have a proper velocity
-				addv(&obj[i].rot.x,&v);
+				addv(&obj[i].rot.x, &v);
 				renorme(&obj[i].rot.x);
 				randomv(&obj[i].rot.y);
 				orthov(&obj[i].rot.y,&obj[i].rot.x);
@@ -614,16 +614,21 @@ parse_error:
 				j=bombe[i].o;
 				if (j!=-1) {
 					int oc, fg=0;
-					copyv(&v, &vec_g);
-					addv(&bombe[i].vit, &v);
-					mulv(&bombe[i].vit, .999);
-					copyv(&v, &bombe[i].vit);
+					// FIXME: given dt, &pos, &vit, &acc, drag factor, apply gravity?
+					vector acc = { 0, 0, -G * dt_sec };
+					addv(&bombe[i].vit, &acc);
+					mulv(&bombe[i].vit, pow(.9, dt_sec));
+					v = bombe[i].vit;
 					mulv(&v, dt_sec);
 					addv(&obj[j].pos, &v);
 					controlepos(j);
 					// collision ?
 					for (oc=map[obj[j].ak].first_obj; oc!=-1; oc=obj[oc].next)
-						if (obj[oc].type!=TIR && obj[oc].type!=CAMERA && obj[oc].type!=DECO && (oc<bot[bombe[i].b].vion || oc>=bot[bombe[i].b].vion+nobjet[bot[bombe[i].b].navion].nbpieces) && collision(j,oc)) { explose(oc,j); fg=1; break; }
+						if (obj[oc].type!=TIR && obj[oc].type!=CAMERA && obj[oc].type!=DECO && (oc<bot[bombe[i].b].vion || oc>=bot[bombe[i].b].vion+nobjet[bot[bombe[i].b].navion].nbpieces) && collision(j,oc)) {
+							explose(oc,j);
+							fg=1;
+							break;
+						}
 					if (fg || obj[j].pos.z<z_ground(obj[j].pos.x,obj[j].pos.y, true)) {
 						if (!fg) {
 							playsound(VOICEEXTER, EXPLOZ2, 1+(drand48()-.5)*.08, &obj[j].pos, false);
@@ -640,23 +645,22 @@ parse_error:
 			for (i=0; i<NBGRAVMAX; i++) {
 				if (debris[i].o!=-1) {
 					double zs;
-					float c1,c2,s1,s2;
-					copyv(&v, &debris[i].vit);
+					v = debris[i].vit;
 					mulv(&v, dt_sec);
-					addv(&obj[debris[i].o].pos,&v);
-					c1=cos(debris[i].a1);
-					c2=cos(debris[i].a2);
-					s1=sin(debris[i].a1);
-					s2=sin(debris[i].a2);
-					obj[debris[i].o].rot.x.x=c1*c2;
-					obj[debris[i].o].rot.x.y=s1*c2;
-					obj[debris[i].o].rot.x.z=s2;
-					obj[debris[i].o].rot.y.x=-s1;
-					obj[debris[i].o].rot.y.y=c1;
-					obj[debris[i].o].rot.y.z=0;
-					obj[debris[i].o].rot.z.x=-c1*s2;
-					obj[debris[i].o].rot.z.y=-s1*s2;
-					obj[debris[i].o].rot.z.z=c2;
+					addv(&obj[debris[i].o].pos, &v);
+					float c1 = cosf(debris[i].a1);
+					float c2 = cosf(debris[i].a2);
+					float s1 = sinf(debris[i].a1);
+					float s2 = sinf(debris[i].a2);
+					obj[debris[i].o].rot.x.x = c1*c2;
+					obj[debris[i].o].rot.x.y = s1*c2;
+					obj[debris[i].o].rot.x.z = s2;
+					obj[debris[i].o].rot.y.x = -s1;
+					obj[debris[i].o].rot.y.y = c1;
+					obj[debris[i].o].rot.y.z = 0;
+					obj[debris[i].o].rot.z.x = -c1*s2;
+					obj[debris[i].o].rot.z.y = -s1*s2;
+					obj[debris[i].o].rot.z.z = c2;
 					debris[i].a1 += debris[i].ai1 * dt_sec;
 					debris[i].a2 += debris[i].ai2 * dt_sec;
 					controlepos(debris[i].o);

@@ -96,17 +96,20 @@ void explose(int oc, int i) {
 			if (debris[i].o==-1) {
 				debris[i].o=j;
 				randomv(&debris[i].vit);
-				if (jk==o1) mulv(&debris[i].vit,90);
-				else {
-					debris[i].vit.x*=20;
-					debris[i].vit.y*=20;
-					debris[i].vit.z*=80;
+				if (jk==o1) {
+					// explosion in the air
+					mulv(&debris[i].vit, 27 * ONE_METER);
+				} else {
+					// Explosion at ground level
+					debris[i].vit.x *= 6 * ONE_METER;
+					debris[i].vit.y *= 6 * ONE_METER;
+					debris[i].vit.z *= 24 * ONE_METER;
 				}
-				addv(&debris[i].vit,&vit);
+				addv(&debris[i].vit, &vit);
 				debris[i].a1=drand48()*M_PI*2;
 				debris[i].a2=drand48()*M_PI*2;
-				debris[i].ai1=debris[i].a1*.1;
-				debris[i].ai2=debris[i].a2*.1;
+				debris[i].ai1 = debris[i].a1*2.;
+				debris[i].ai2 = debris[i].a2*2.;
 				if (debris[i].vit.z>0) debris[i].vit.z=-debris[i].vit.z;
 				j++;
 			}

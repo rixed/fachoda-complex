@@ -233,7 +233,7 @@ void manuel(int b) {
 		mapmode^=1;
 		playsound(VOICEGEAR, BIPBIP3, 1., &voices_in_my_head, true);
 	}
-	if (kreset(gkeys[kc_suicide].kc) && bot[bmanu].camp!=-1) explose(bot[visubot].vion,0);
+	if (kreset(gkeys[kc_suicide].kc) && bot[bmanu].camp!=-1) explose(bot[visubot].vion, 0);
 	if (kreset(gkeys[kc_markpos].kc)) bot[b].but.repere=1;
 	// Cheats
 	if (Gruge && kread(gkeys[kc_alti].kc)) {
