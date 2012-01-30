@@ -49,7 +49,7 @@
 </head>
 
 <body>
-  <a href="https://github.com/rixed/fachoda-complex"><img style="position: absolute; top: 0; right: 0; border: 0;" src="http://s3.amazonaws.com/github/ribbons/forkme_right_darkblue_121621.png" alt="Fork me on GitHub" /></a>
+	<a href="https://github.com/rixed/fachoda-complex"><img style="position: fixed; top: 0; right: 0; border: 0;" src="http://s3.amazonaws.com/github/ribbons/forkme_right_darkblue_121621.png" alt="Fork me on GitHub" /></a>
 
   <div id="container">
 
@@ -260,6 +260,36 @@ such as OCaml.</p>
 the previous screenshots (as a bonus, the map is back!):</p>
 <img src="ingame3.png"/>
 <img src="map3.png"/>
+
+<h2>Day 4</h2>
+
+<p>Phong shading was unexpectedly easy to fix ; basically the code was there
+but the static array of a precomputed function had the wrong format (what
+probably happened is that it was changed for the MMX version of the code since
+the byte values were repeated into quad-words).</p>
+
+<p>How is Phong shading implemented? Of course not the academic way since it
+involves a renormalization of the surface normal for each pixel. Instead, the
+game make use of an old trick: first you draw a picture of a spotlight and then
+you project this picture into your object from the light source position (not
+unlike environment shading). You would then obtain a rendering that can barely
+be distinguished from actual Phong.</p>
+
+<p>But wait: what's this picture of a spotlight? It's merely a concentric spot
+of descending light intensity. So, you can replace the whole picture with a
+function that yields the light intensity at a given distance. Then, when
+iterating through the scanline, you just have to interpolate the distance to
+the center of the spot. Of course this is not a linear interpolation but the
+maths is trivial and involves only additions if we left apart the function
+giving light intensity at a given distance (which requires an exponential) ;
+but this function, which validity dimain spans only 256 possible distances, can
+be precomputed, so that we need only 256 bytes of RAM instead of the full
+equivalent lightmap of 64Kbytes.</p>
+
+<p>Here is the now traditional screenshot of the result. Notice the non-linear
+repartition of light on this low-poly fuselage:</p>
+
+<img src="ingame4.png"/>
 
     <h2>Download</h2>
     <p>
