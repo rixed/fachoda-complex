@@ -89,6 +89,8 @@ gtime gtime_next(void)
 		}
 		if (dt >= MIN_DT) break;
 		usleep(MIN_DT - dt); // give excess CPU to the system
+		dt = MIN_DT;
+		if (lapause) break;
 	}
 	prev_gtime = now;
 	return dt;
