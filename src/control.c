@@ -523,22 +523,21 @@ void control_zep(int z, float dt_sec) {	// fait office de routine robot sur les 
 	float dir;
 	float cx,cy,cz,sx,sy,sz, zs, angcap=0, angprof=0;
 	static float phazx=0, phazy=0, phazz=0, balot=0;
-	balot += .1/NBZEPS;
+	balot += .04/NBZEPS;	// since this function will be called for each zep. how lame!
 	if (obj[zep[z].o].pos.z>50000) return;
 	zs=z_ground(obj[zep[z].o].pos.x,obj[zep[z].o].pos.y, true);
-	if (zep[z].vit>1) {
-		// dégonfle
-#		define ZEP_ROT_SPEED (2. * M_PI / 0.8)	// almost one rotation per sec
-		zep[z].angy += ZEP_ROT_SPEED * sin(phazy+=drand48()) * dt_sec;
-		zep[z].angx += ZEP_ROT_SPEED * sin(phazx+=drand48()) * dt_sec;
-		zep[z].angz += ZEP_ROT_SPEED * sin(phazz+=drand48()) * dt_sec;
-#		define ZEP_UP_SPEED (20. * ONE_METER)	// per seconds
-		obj[zep[z].o].pos.z += ZEP_UP_SPEED * dt_sec;
+#	define ZEP_SPEED (5. * ONE_METER)	// per seconds
+	if (zep[z].vit > ZEP_SPEED) {
+		// Deflate
+		zep[z].angy += 5. * sin(phazy+=drand48()) * dt_sec;
+		zep[z].angx += 5. * sin(phazx+=drand48()) * dt_sec;
+		zep[z].angz += 5. * sin(phazz+=drand48()) * dt_sec;
+		obj[zep[z].o].pos.z += zep[z].vit * dt_sec;
 	} else {
-		// commandes
-		copyv(&v,&zep[z].nav);
-		subv(&v,&obj[zep[z].o].pos);
-		if (norme2(&v)<2000) {
+		// Commands
+		v = zep[z].nav;
+		subv(&v, &obj[zep[z].o].pos);
+		if (norme2(&v) < 2000) {
 			zep[z].nav.x=(WMAP<<NECHELLE)*drand48()*(SpaceInvaders?.1:.7);
 			zep[z].nav.y=(WMAP<<NECHELLE)*drand48()*(SpaceInvaders?.1:.7);
 			zep[z].nav.z=3000+drand48()*30000+z_ground(v.x,v.y, false);
@@ -547,18 +546,18 @@ void control_zep(int z, float dt_sec) {	// fait office de routine robot sur les 
 			if (dir<-M_PI) dir+=2*M_PI;
 			else if (dir>M_PI) dir-=2*M_PI;
 			angcap=-dir*.9;
-			angprof=10*(v.z-obj[zep[z].o].pos.z)/(1.+MAX(fabs(v.y),fabs(v.x)));
+			angprof = 10*(v.z-obj[zep[z].o].pos.z)/(1.+MAX(fabs(v.y),fabs(v.x)));
 			if (obj[zep[z].o].pos.z-zs<3000) angprof=1;
 			if (angprof>1) angprof=1;
 			else if (angprof<-1) angprof=-1;
-			zep[z].vit=1;
+			zep[z].vit = ZEP_SPEED;
 		}
-		// déplacement
-		zep[z].angy -= angprof * zep[z].vit * dt_sec;
+		// Move
+		zep[z].angy -= angprof * .0001 * zep[z].vit * dt_sec;
 		if (zep[z].angy > .4) zep[z].angy = .4;
 		else if (zep[z].angy < -.4) zep[z].angy = -.4;
-		zep[z].angz -= angcap * .15 * zep[z].vit * dt_sec;
-		zep[z].angx = 2. * sin(balot) * dt_sec;
+		zep[z].angz -= angcap * .00004 * zep[z].vit * dt_sec;
+		zep[z].angx = 10. * sin(balot) * dt_sec;
 	}
 	cx=cos(zep[z].angx);
 	sx=sin(zep[z].angx);
@@ -575,12 +574,14 @@ void control_zep(int z, float dt_sec) {	// fait office de routine robot sur les 
 	obj[zep[z].o].rot.z.x=cz*cx*sy+sz*sx;
 	obj[zep[z].o].rot.z.y=sz*cx*sy-cz*sx;
 	obj[zep[z].o].rot.z.z=cx*cy;
-	copyv(&v,&obj[zep[z].o].rot.x);
+
+	v = obj[zep[z].o].rot.x;
 	mulv(&v, zep[z].vit * dt_sec);
-	addv(&obj[zep[z].o].pos,&v);
-	if (obj[zep[z].o].pos.z<zs) obj[zep[z].o].pos.z=zs;
+	addv(&obj[zep[z].o].pos, &v);
+	if (obj[zep[z].o].pos.z < zs) obj[zep[z].o].pos.z=zs;
 	controlepos(zep[z].o);
-	// Hélices
+
+	// Propellers
 	m.x.x=1; m.x.y=m.x.z=m.y.x=m.z.x=0;
 	m.z.z=m.y.y=cos(zep[z].anghel);
 	m.y.z=sin(zep[z].anghel);
@@ -589,7 +590,8 @@ void control_zep(int z, float dt_sec) {	// fait office de routine robot sur les 
 	m.y.z=-m.y.z; m.z.y=-m.z.y;
 	calcposarti(zep[z].o+2,&m);
 	zep[z].anghel += zep[z].vit * dt_sec;
-	// Charnières
+
+	// Animated controls
 	cz=cos(angcap);
 	sz=sin(angcap);
 	cy=cos(angprof);
@@ -602,7 +604,8 @@ void control_zep(int z, float dt_sec) {	// fait office de routine robot sur les 
 	m.y.x=0; m.y.y=1; m.y.z=0;
 	m.z.x=sy; m.z.y=0; m.z.z=cy;
 	calcposarti(zep[z].o+4,&m);
-	// cibles des canons
+
+	// Targets
 	for (i=0; i<6; i++) {
 		if (zep[z].cib[i]==-1) {
 			int nc=NBBOT*drand48();
@@ -611,7 +614,8 @@ void control_zep(int z, float dt_sec) {	// fait office de routine robot sur les 
 			if (norme2(&v)<ECHELLE*ECHELLE*0.5) zep[z].cib[i]=nc;
 		}
 	}
-	// Tirs
+
+	// Shots
 	for (i=5; i<5+6; i++) {
 		if (zep[z].cib[i-5]!=-1) {
 			subv3(&obj[bot[zep[z].cib[i-5]].vion].pos,&obj[zep[z].o+i].pos,&v);
@@ -619,7 +623,8 @@ void control_zep(int z, float dt_sec) {	// fait office de routine robot sur les 
 			else if ((i+imgcount)&1) tiradonf(z,&v,i-5);		//dans gunner, laisser -1 ?
 		}
 	}
-	// Le reste
+
+	// Everything else
 	for (i=5; i<nobjet[mod[obj[zep[z].o].model].nobjet].nbpieces; i++) calcposrigide(zep[z].o+i);
 }
 

@@ -197,7 +197,7 @@ void hitgun(int oc, int i) {
 						fumeesource[j]=zep[i].o;
 						fumeesourceintens[j]=3000;
 					}
-					zep[i].vit=8;
+					zep[i].vit *= 5.;
 				}
 			}
 		}
