@@ -7,6 +7,9 @@
 #include <inttypes.h>
 #include <sys/time.h>
 #include "gtime.h"
+#include "proto.h"
+
+//#define DT_DEBUG
 
 static bool running;
 static gtime last;
@@ -35,17 +38,26 @@ gtime gtime_now(void)
 	if (! running) return last;
 
 	last = getgtimeofday() - last_start_time + accelerated - leaked;
+#	ifdef DT_DEBUG
+	printf("gtime_now (running) -> %"PRIuLEAST64"\n", last);
+#	endif
 	return last;
 }
 
 gtime gtime_age(gtime date)
 {
 	gtime now = gtime_now();
+#	ifdef DT_DEBUG
+	printf("age(%"PRIuLEAST64") = %"PRIuLEAST64"\n", date, now-date);
+#	endif
 	return now - date;
 }
 
 void gtime_stop(void)
 {
+#	ifdef DT_DEBUG
+	printf("Stopping game time\n");
+#	endif
 	if (! running) return;
 	(void)gtime_now();	// update 'last'
 	running = false;
@@ -53,10 +65,14 @@ void gtime_stop(void)
 
 void gtime_start(void)
 {
+#	ifdef DT_DEBUG
+	printf("Starting game time\n");
+#	endif
 	running = true;
 	last_start_time = getgtimeofday();
 	prev_gtime = gtime_now();
 	accelerated = 0;
+	leaked = 0;
 }
 
 void gtime_toggle(void)
@@ -81,17 +97,29 @@ gtime gtime_next(void)
 		now = gtime_now();
 		dt = now - prev_gtime + 1;
 #		define MIN_DT (uint_least64_t)25000ULL	// below which we sleep
-#		define MAX_DT (uint_least64_t)500000ULL	// above which we return only MAX_DT (and skip this time)
+#		define MAX_DT (uint_least64_t)300000ULL	// above which we return only MAX_DT (and skip this time)
+#		ifdef DT_DEBUG
+		printf("gtime_next(): dt=%"PRIuLEAST64"\n", dt);
+#		endif
 		if (dt > MAX_DT) {
-			printf("gtime_next(): leak %"PRIuLEAST64"usecs\n", dt - MAX_DT);
-			leaked += dt - MAX_DT;
 			dt = MAX_DT;
+			gtime const leak = dt - MAX_DT;
+			leaked += leak;
+			last = now = now - leak;
+#			ifdef DT_DEBUG
+			printf("gtime_next(): leak %"PRIuLEAST64"usecs\n", leak);
+#			endif
 		}
 		if (dt >= MIN_DT) break;
+#		ifdef DT_DEBUG
+		printf("gtime_next(): usleep(%"PRIuLEAST64")\n", MIN_DT - dt);
+#		endif
 		usleep(MIN_DT - dt); // give excess CPU to the system
-		dt = MIN_DT;
 		if (lapause) break;
 	}
+#	ifdef DT_DEBUG
+	printf("gtime_next(): prev_gtime is now %"PRIuLEAST64"\n", now);
+#	endif
 	prev_gtime = now;
 	return dt;
 }

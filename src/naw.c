@@ -891,7 +891,7 @@ parse_error:
 					static vector prev_cam_pos = { .0, .0, .0 };
 					vector diff;
 					subv3(&obj[0].pos, &prev_cam_pos, &diff);
-					mulv(&diff, .1);
+					mulv(&diff, .2);
 					addv3(&prev_cam_pos, &diff, &obj[0].pos);
 					prev_cam_pos = obj[0].pos;
 
@@ -990,6 +990,9 @@ parse_error:
 					drawtbcadrans(visubot);
 					animate_water(dt_sec);
 					draw_ground_and_objects();
+#					ifdef VEC_DEBUG
+					draw_debug();
+#					endif
 					if (!Dark) {
 						double i;
 						uchar u;

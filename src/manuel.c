@@ -243,8 +243,8 @@ void manuel(int b) {
 	if (Gruge && kreset(gkeys[kc_gunned].kc)) /*bot[visubot].gunned=bmanu;*/ hitgun(zep[0].o,zep[0].o);
 	if (!autopilot && !mapmode) {
 		if (MouseCtl) {
-			bot[b].xctl=((xmouse-_DX)/(double)_DX);
-			bot[b].yctl=((ymouse-_DY)/(double)_DY);
+			bot[b].xctl = ((xmouse-_DX)/(double)_DX);
+			bot[b].yctl = ((ymouse-_DY)/(double)_DY);
 		} else {
 			int i=0;
 			i=kread(gkeys[kc_left].kc);
@@ -268,32 +268,38 @@ void manuel(int b) {
 				if (kread(gkeys[kc_up].kc) && CtlYequ<1) CtlYequ+=.02;
 			}
 		}
-	} else {
-		float zs=z_ground(obj[bot[b].vion].pos.x,obj[bot[b].vion].pos.y, true);
-		if (obj[bot[b].vion].pos.z-zs>500) {
-			double dc=cap(bot[b].u.x-obj[bot[b].vion].pos.x,bot[b].u.y-obj[bot[b].vion].pos.y)-bot[b].cap;
-			float a,n,vit=scalaire(&bot[b].vionvit,&obj[bot[b].vion].rot.x);
-			if (dc<-M_PI) dc+=2*M_PI;
-			else if (dc>M_PI) dc-=2*M_PI;
+	} else {	// autopilot or mapmode
+		float zs = z_ground(obj[bot[b].vion].pos.x,obj[bot[b].vion].pos.y, true);
+		if (obj[bot[b].vion].pos.z-zs > 1000) {
+			// Set target vertical inclination according to required navpoint
+			double dc = cap(bot[b].u.x - obj[bot[b].vion].pos.x, bot[b].u.y - obj[bot[b].vion].pos.y) - bot[b].cap;
+			if (dc < -M_PI) dc += 2*M_PI;
+			else if (dc > M_PI) dc -= 2*M_PI;
+			float a = 0;
 			if (autopilot) {
-				if (dc>.5) a=-.9;
-				else if (dc<-.5) a=.9;
-				else a=-.9*dc/.5;
-			} else a=0;
-			bot[b].xctl=(a-obj[bot[b].vion].rot.y.z);
+				if (dc > .5) a = -.9;
+				else if (dc < -.5) a = .9;
+				else a = -.9*dc/.5;
+			}
+			bot[b].xctl = a - obj[bot[b].vion].rot.y.z;
+
+			// Adjust thrust
+#			define AUTOPILOT_SPEED 350.
+			float const vit = scalaire(&bot[b].vionvit, &obj[bot[b].vion].rot.x);
 			if (autopilot) {
-				if (vit<40) bot[b].thrust+=.01;
-				else if (vit>40 && bot[b].thrust>.02) bot[b].thrust-=.01;
+				if (vit < AUTOPILOT_SPEED) bot[b].thrust += .01;
+				else if (vit > AUTOPILOT_SPEED && bot[b].thrust > .02) bot[b].thrust -= .01;
 			}
-			n=9000+zs-obj[bot[b].vion].pos.z;
-			if (zs<6000) {
-				if (zs>1000) n+=12000-2*zs; else n+=20000-5*zs;
-			}
-			n=5*atan(1e-3*n);
-			bot[b].yctl=(n-bot[b].vionvit.z)*.13;
-		} else {
-			bot[b].xctl=-obj[bot[b].vion].rot.y.z;
-			bot[b].yctl=0;
+
+			// Set yctl to reach a comfortable travel altitude
+			float diff_alt = 6000 + zs - obj[bot[b].vion].pos.z;
+			float n = .7 * atan(1e-3 * diff_alt);
+			bot[b].yctl = (n - bot[b].vionvit.z/AUTOPILOT_SPEED)*.3;
+		} else {	// low altitude
+			// forget about navpoint and level the wings
+			bot[b].xctl = -obj[bot[b].vion].rot.y.z;
+			// small incidence
+			bot[b].yctl = .15;
 		}
 	}
 /*	if (bot[b].xctl<-1) bot[b].xctl=-1;

@@ -346,12 +346,21 @@ extern void plotmouse(int x,int y);
 extern void plotcursor(int x,int y);
 extern void cercle(int x, int y, int radius, int c);
 extern bool polyflat(vect2d *p1, vect2d *p2, vect2d *p3, pixel color);
-extern void drawline(vect2dlum *p1, vect2dlum *p2, int col);
+extern void drawline(vect2d const *restrict p1, vect2d const *restrict p2, int col);
 extern void drawline2(vect2d *p1, vect2d *p2, int col);
 extern void calcposaind(int i);
 extern void calcposa(void);
 enum render_part { GROUND, CLOUDS, SKY, ALL };	// ALL = GROUND+SKY
 extern void renderer(int ak, enum render_part);
+#define VEC_DEBUG
+#ifdef VEC_DEBUG
+enum debug_vector {
+	DBG_VEC_SPEED, DBG_VEC_GRAVITY, DBG_VEC_THRUST, DBG_VEC_DRAG, DBG_VEC_LIFT,
+	NB_DBG_VECS
+};
+extern vector debug_vector[NB_DBG_VECS][2];	// start, stop
+extern void draw_debug(void);
+#endif
 // txt.c
 extern void pcharady(int m, int *v, int c, int off);
 extern int TextClipX1,TextClipX2,TextColfont;

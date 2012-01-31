@@ -8,3 +8,4 @@ core.*
 .depend
 *.dep
 gmon.out
+.*

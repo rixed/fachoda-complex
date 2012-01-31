@@ -21,10 +21,9 @@ int kelkan(int o) {
 void explose(int oc, int i) {
 	int o1,o2=0,j,v=0,jk;
 	int cmoi=NBBOT;
-	vector vit;
+	vector vit = vec_zero;
 	for (j=0; j<NBBOT; j++) if ((bot[j].vion<=i && bot[j].vion+nobjet[bot[j].navion].nbpieces>i) || (i>=debtir && gunner[i-debtir]==j)) { cmoi=j; break; }
 	playsound(VOICEEXTER, EXPLOZ, 1+(drand48()-.5)*.1, &obj[oc].pos, false);
-	copyv(&vit,&vec_zero);
 	switch (obj[oc].type) {
 	case CIBGRAT:
 		o1=oc;
@@ -36,11 +35,14 @@ void explose(int oc, int i) {
 		o1=oc;
 		while (obj[o1].objref!=-1) o1=obj[o1].objref;
 		o2=o1+nobjet[mod[obj[o1].model].nobjet].nbpieces;
-		for (v=0; v<NBBOT; v++) if (bot[v].vion==o1) { copyv(&vit,&bot[v].vionvit); break; }
-		if (cmoi<NBBOT) {
-			if (v<NBBOT && bot[v].camp!=bot[cmoi].camp) bot[cmoi].gold+=1000;
+		for (v=0; v<NBBOT; v++) if (bot[v].vion==o1) {
+			copyv(&vit, &bot[v].vionvit);
+			break;
 		}
-		if (v==visubot) {
+		if (cmoi < NBBOT) {
+			if (v < NBBOT && bot[v].camp != bot[cmoi].camp) bot[cmoi].gold += 1000;
+		}
+		if (v == visubot) {
 			attachsound(VOICEMOTOR, FEU, 1., &obj[o1].pos, false);
 		}
 		playsound(VOICEGEAR, DEATH, 1+(drand48()-.5)*.15, &obj[o1].pos, false);
@@ -93,17 +95,20 @@ void explose(int oc, int i) {
 			obj[j].type=DECO;
 		}
 		for (i=0, j=jk; i<NBGRAVMAX && j<o2; i++) {
-			if (debris[i].o==-1) {
-				debris[i].o=j;
-				randomv(&debris[i].vit);
-				if (jk==o1) {
-					// explosion in the air
-					mulv(&debris[i].vit, 27 * ONE_METER);
-				} else {
-					// Explosion at ground level
-					debris[i].vit.x *= 6 * ONE_METER;
-					debris[i].vit.y *= 6 * ONE_METER;
-					debris[i].vit.z *= 24 * ONE_METER;
+			if (debris[i].o == -1) {
+				debris[i].o = j;
+				if (i != o1) {
+					randomv(&debris[i].vit);
+					if (jk == o1) {
+						// The main part (also smoke source)
+						mulv(&debris[i].vit, 1. * ONE_METER);
+					} else {
+						// The other parts
+						// (larger dispersion in Z since it gives better result for ground targets)
+						debris[i].vit.x *= 11. * ONE_METER;
+						debris[i].vit.y *= 11. * ONE_METER;
+						debris[i].vit.z *= 25. * ONE_METER;
+					}
 				}
 				addv(&debris[i].vit, &vit);
 				debris[i].a1=drand48()*M_PI*2;
@@ -139,7 +144,7 @@ bool hitgun(int oc, int i) {
 		while (mod[obj[o1].model].pere!=obj[o1].model) o1+=mod[obj[o1].model].pere-obj[o1].model;
 		break;
 	case ZEPPELIN:
-		if (shooter==-1) return;
+		if (shooter==-1) return false;	// a zeppelin shooting another one: ignore
 	case AVION:
 	case VEHIC:
 		for (o1 = oc; obj[o1].objref != -1; o1 = obj[o1].objref) ;	// Find reference object

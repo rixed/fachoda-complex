@@ -277,21 +277,21 @@ void drawtbcadrans(int b) {
 	vect2d p1,p2;
 	double a, ai, aj, ak;
 	int i;
-	// SOUTE
+	// Cargo
 	pnuma(bot[b].bullets,MARGE+xsoute+1+20,MARGE+ysoute+1,0x403010,0);
 	pnuma(bot[b].nbomb,MARGE+xsoute+1+20,MARGE+ysoute+11, 0x403010,0);
 	pnuma(bot[b].bullets,MARGE+xsoute+20,MARGE+ysoute,b==bmanu && arme==0?0xFFFFFF:0xFFFF10,0);
 	pnuma(bot[b].nbomb,MARGE+xsoute+20,MARGE+ysoute+10,b==bmanu && arme==1?0xFFFFFF:0xFFFF10,0);
 	lumdec=7;
 	rectangleL(xsoute-1,ysoute-1,32,22);	// regrouper à la fin et faire un seul MMXSAVEFPU
-	// THRUST
+	// Thrust
 	p1.x=p2.x=xthrust;
 	p1.y=p2.y=ythrust;
 	a=(M_PI-.2)*bot[b].thrust+.1;
 	p2.x+=rthrust*cos(a);
 	p2.y+=-rthrust*sin(a);
 	drawline2(&p1,&p2,0x40E060);
-	// FIUL
+	// Fiul
 	p2.x=xthrust;
 	p2.y=ythrust;
 	a=(M_PI-.2)*bot[b].fiul/viondesc[bot[b].navion].fiulmax+.1;
@@ -300,17 +300,17 @@ void drawtbcadrans(int b) {
 	drawline2(&p1,&p2,0x707070);
 	lumdec=6;
 	disqueL(xthrust,ythrust,rthrust);
-	// BADIN
+	// Airspeed indicator
 	p1.x=p2.x=xspeed;
 	p1.y=p2.y=yspeed;
-	a=M_PI*.5-.15*bot[b].vitlin;
-	if (a>M_PI*.5) a=M_PI*.5;
-	else if (a<-1.5*M_PI+.01) a=-1.5*M_PI+.01;
-	p2.x+=rspeed*cos(a);
-	p2.y-=rspeed*sin(a);
-	drawline2(&p1,&p2,0xF02070);
-	disqueL(xspeed,yspeed,rspeed);
-	// ALTIMETRE
+	a = M_PI*.5 - .015*bot[b].vitlin;
+	if (a > M_PI*.5) a = M_PI*.5;
+	else if (a < -1.5*M_PI + .01) a = -1.5*M_PI + .01;
+	p2.x += rspeed*cos(a);
+	p2.y -= rspeed*sin(a);
+	drawline2(&p1, &p2, 0xF02070);
+	disqueL(xspeed, yspeed, rspeed);
+	// Altimeter
 	ai=obj[bot[b].vion].pos.z/10;
 	aj=ai/10;
 	ak=aj/10;
@@ -328,7 +328,7 @@ void drawtbcadrans(int b) {
 	p2.y=p1.y-ralti*.5*sin(M_PI*.5-ak*M_PI/5);
 	drawline2(&p1,&p2,0xE0E040);
 	disqueL(xalti,yalti,ralti);
-	// INDICATEUR D'ASSIETTE
+	// Attitude indicator
 	p2.y=-rassi*.8*obj[bot[b].vion].rot.y.z;
 	p2.x=sqrt(rassi*rassi*.64-p2.y*p2.y);
 	if (obj[bot[b].vion].rot.z.z<0) p2.x=-p2.x;
@@ -344,46 +344,46 @@ void drawtbcadrans(int b) {
 	p2.y=-(a-xassi)*.5+yassi;
 	drawline2(&p1,&p2,0xC0C0C0);
 	disqueL(xassi,yassi,rassi);
-	// VITESSE VERTICALE
+	// Vertical speed
 	p1.x=xvert;
 	p1.y=yvert;
-	a=.25*bot[b].vionvit.z;
+	a=.025*bot[b].vionvit.z;
 	if (a>3) a=3;
 	else if (a<-3) a=-3;
 	p2.x=p1.x-rvert*cos(a);
 	p2.y=p1.y-rvert*sin(a);
 	drawline2(&p1,&p2,0xF0C0C0);
 	disqueL(xvert,yvert,rvert);
-	// inclinaison par rapport à la vitesse
-	a=scalaire(&bot[b].vionvit,&obj[bot[b].vion].rot.z);
-#define amax 10
+	// Inclination relative to airspeed
+	a = scalaire(&bot[b].vionvit, &obj[bot[b].vion].rot.z);
+#	define amax 50
 	i=(hinclin>>1)*(1.+a/amax);
 	if (i<0) i=0;
 	for (; i<hinclin; i++)
 		MMXMemSetInt((int*)mapping+MARGE+xinclin+((MARGE+yinclin+i)<<8),0xB04242,dxinclin);
 	lumdec=7;
 	rectangleL(xinclin,yinclin,dxinclin,hinclin);
-	// GEAR
+	// Gear
 	if (bot[b].but.gear) {
 		disque(mapping+xgear+MARGE+((MARGE+ygear)<<8),rgear*.8,0xCC2020);
 	}
 	disqueL(xgear,ygear,rgear);
-	// FLAP
+	// Flap
 	if (bot[b].but.flap) {
 		disque(mapping+xflap+MARGE+((MARGE+yflap)<<8),rflap*.8,0xCC2020);
 	}
 	disqueL(xflap,yflap,rflap);
-	// FREIN
+	// Brakes
 	if (bot[b].but.frein) {
 		disque(mapping+xfrein+MARGE+((MARGE+yfrein)<<8),rfrein*.8,0xCC2020);
 	}
 	disqueL(xfrein,yfrein,rfrein);
-	// AUTOPILOT
+	// Autopilot
 	if (autopilot) {
 		disque(mapping+xauto+MARGE+((MARGE+yauto)<<8),rauto*.8,0x20CC20);
 	}
 	disqueL(xauto,yauto,rauto);
-	// BOUSSOLE
+	// Compas
 	p1.x=xbous; p1.y=ybous;
 	p2.x=rbous*.6*cos(bot[visubot].cap)+p1.x;
 	p2.y=-rbous*.6*sin(bot[visubot].cap)+p1.y;

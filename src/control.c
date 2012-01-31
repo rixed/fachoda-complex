@@ -5,6 +5,8 @@
 #include "sound.h"
 #include "gtime.h"
 
+//#define PRINT_DEBUG
+
 float soundthrust;
 int IsFlying;
 
@@ -37,8 +39,21 @@ void control_plane(int b, float dt_sec) {
 	vector u, v; matrix m;
 	double rt;
 
+	// FIXME: use: mulmtv(&obj[bot[b].vion].rot, &bot[b].vionvit, &v);
 	double vx = scalaire(&bot[b].vionvit, &obj[bot[b].vion].rot.x);
-//	if (b==visubot) printf("vionvit=%"PRIVECTOR"\n", PVECTOR(bot[b].vionvit));
+	double vy = scalaire(&bot[b].vionvit, &obj[bot[b].vion].rot.y);
+	double vz = scalaire(&bot[b].vionvit, &obj[bot[b].vion].rot.z);
+#	ifdef PRINT_DEBUG
+	if (b == visubot) printf("vionvit=%"PRIVECTOR"\n", PVECTOR(bot[b].vionvit));
+	if (b == visubot) printf("dt =%f\n", dt_sec);
+#	endif
+#	ifdef VEC_DEBUG
+	if (b == visubot) {
+		debug_vector[DBG_VEC_SPEED][0] = obj[bot[b].vion].pos;
+		debug_vector[DBG_VEC_SPEED][1] = bot[b].vionvit;
+		addv(debug_vector[DBG_VEC_SPEED]+1, debug_vector[DBG_VEC_SPEED]+0);
+	}
+#	endif
 
 	if (bot[b].camp==-1) return;
 	bot[b].cap = cap(obj[o1].rot.x.x,obj[o1].rot.x.y);
@@ -72,6 +87,12 @@ void control_plane(int b, float dt_sec) {
 //#	define NLIFT
 //#	define NGROUND_DRAG
 
+	// lift, thrust and drag fades with altitude
+#	define MAX_ALTITUDE (200 * ONE_METER)
+	float r = obj[bot[b].vion].pos.z/MAX_ALTITUDE;
+	if (r > 1.) r = 1.;
+	float const alt_factor = 1 - r*r*r*r;
+
 	// Acceleration
 	vector a = {
 		0., 0.,
@@ -81,49 +102,102 @@ void control_plane(int b, float dt_sec) {
 		0.
 #		endif
 	};
-//	if (b==visubot) printf("startA -> %"PRIVECTOR"\n", PVECTOR(a));
+#	ifdef PRINT_DEBUG
+	if (b == visubot) printf("startA -> %"PRIVECTOR"\n", PVECTOR(a));
+#	endif
+#	ifdef VEC_DEBUG
+	if (b == visubot) {
+		debug_vector[DBG_VEC_GRAVITY][0] = obj[bot[b].vion].pos;
+		debug_vector[DBG_VEC_GRAVITY][1] = a;
+		addv(debug_vector[DBG_VEC_GRAVITY]+1, debug_vector[DBG_VEC_GRAVITY]+0);
+	}
+#	endif
 
 #	ifndef NTHRUST
-#	define THRUST_ACC (0.9 * G)	// at full thrust, with motorpower=1, fail to compensate gravity
+#	define THRUST_ACC (1. * G)	// at full thrust, with motorpower=1, fail to compensate gravity
 	{	// Thrust
-		double k = THRUST_ACC * bot[b].thrust * (1-bot[b].motorloss/128.) * viondesc[bot[b].navion].motorpower;
+		double k = THRUST_ACC * bot[b].thrust * alt_factor * (1-bot[b].motorloss/128.) * viondesc[bot[b].navion].motorpower;
 		v = obj[bot[b].vion].rot.x;
 		mulv(&v, k);
 		addv(&a, &v);
-//		if (b==visubot) printf("thrust -> %"PRIVECTOR"\n", PVECTOR(a));
+#		ifdef PRINT_DEBUG
+		if (b == visubot) printf("thrust -> %"PRIVECTOR"\n", PVECTOR(a));
+#		endif
+#		ifdef VEC_DEBUG
+		if (b == visubot) {
+			debug_vector[DBG_VEC_THRUST][0] = obj[bot[b].vion].pos;
+			debug_vector[DBG_VEC_THRUST][1] = v;
+			addv(debug_vector[DBG_VEC_THRUST]+1, debug_vector[DBG_VEC_THRUST]+0);
+		}
+#		endif
 	}
 #	endif
 
 #	ifndef NDRAG
 	{	// Drag
-		mulmtv(&obj[bot[b].vion].rot, &bot[b].vionvit, &v);
-		double k = .0008 * viondesc[bot[b].navion].drag + .00003 * bot[b].nbomb;
-		if (!bot[b].but.gearup) k += .00005;
-		if (bot[b].but.flap) k += .00003;
-		// should be linear up to around 50 and proportional to v*v afterward (so that we cant stop abruptly)
-		v.x *= fabs(v.x) * k;
-		v.y *= fabs(v.y) * .003;
-		v.z *= fabs(v.z) * .018;
+		double k = viondesc[bot[b].navion].drag + .02 * bot[b].nbomb;
+		if (!bot[b].but.gearup) k += .07;
+		if (bot[b].but.flap) k += .03;
+		k *= alt_factor;
+		// linear up to around 150 and proportional to v*v afterward (so that we can't stop abruptly)
+#		define LINEAR_DRAG_MAXSPEED 150
+#		define LDM LINEAR_DRAG_MAXSPEED
+#		define LIN_FACTOR .6
+#		define SQ_FACTOR .003
+#		define DRAG(what, factor) \
+			fabs(what) < LDM ? \
+				(factor)*LIN_FACTOR*(what) : \
+				(what) > 0. ? \
+					(factor)*(LIN_FACTOR*(what) + SQ_FACTOR*((what)-LDM)*((what)-LDM)) : \
+					(factor)*(LIN_FACTOR*(what) - SQ_FACTOR*(-(what)-LDM)*(-(what)-LDM))
+		v.x = DRAG(vx, k);
+		v.y = DRAG(vy, k * 3.);
+		v.z = DRAG(vz, k * 7.);
 		mulmv(&obj[bot[b].vion].rot, &v, &u);
 		subv(&a, &u);
-//		if (b==visubot) printf("drag   -> %"PRIVECTOR"\n", PVECTOR(a));
+#		ifdef PRINT_DEBUG
+		if (b == visubot) printf("drag   -> %"PRIVECTOR"\n", PVECTOR(a));
+#		endif
+#		ifdef VEC_DEBUG
+		if (b == visubot) {
+			debug_vector[DBG_VEC_DRAG][0] = obj[bot[b].vion].pos;
+			mulv(&u, -1.);
+			debug_vector[DBG_VEC_DRAG][1] = u;
+			addv(debug_vector[DBG_VEC_DRAG]+1, debug_vector[DBG_VEC_DRAG]+0);
+		}
+#		endif
 	}
 #	endif
+
+	double zs = obj[bot[b].vion].pos.z - bot[b].zs;	// ground altitude
 #	ifndef NLIFT
 	{	// miracle des airs, les ailes portent...
-		float kx = vx < 15 ? 0. : MIN(.0001*(vx-15)*(vx-15), 1.2*exp(-.002*vx));
-		// kx max is aprox 0.8, when vx around 100
-		u = obj[bot[b].vion].rot.z;
+#		define MIN_SPEED_FOR_LIFT 90
+		float kx = vx < MIN_SPEED_FOR_LIFT ?
+			0. : MIN(.0001*(vx-MIN_SPEED_FOR_LIFT)*(vx-MIN_SPEED_FOR_LIFT), 1.2*exp(-.001*vx));
+		// kx max is aprox 1., when vx is around 200
+		// TODO: add lift with a-o-a?
 		float lift = viondesc[bot[b].navion].lift;
 		if (bot[b].but.flap) lift *= 1.2;
-		mulv(&u, (G * 0.7) * lift * kx * (1-bot[b].aeroloss/128.));
+		if (zs < 2. * ONE_METER) lift *= 1.1;	// more lift when close to the ground
+		lift *= alt_factor;	// less lift with altitude
+		u = obj[bot[b].vion].rot.z;
+		mulv(&u, (G * 1.) * lift * kx * (1-bot[b].aeroloss/128.));
 		addv(&a, &u);
-//		if (b==visubot) printf("lift   -> %"PRIVECTOR"\n", PVECTOR(a));
+#		ifdef PRINT_DEBUG
+		if (b == visubot) printf("lift   -> %"PRIVECTOR"\n", PVECTOR(a));
+#		endif
+#		ifdef VEC_DEBUG
+		if (b == visubot) {
+			debug_vector[DBG_VEC_LIFT][0] = obj[bot[b].vion].pos;
+			debug_vector[DBG_VEC_LIFT][1] = u;
+			addv(debug_vector[DBG_VEC_LIFT]+1, debug_vector[DBG_VEC_LIFT]+0);
+		}
+#		endif
 	}
 #	endif
 
 	// Contact wheels / ground
-	double zs = obj[bot[b].vion].pos.z - bot[b].zs;	// ground altitude
 	// loop over right, left and rear (or front) wheels
 	unsigned touchdown_mask = 0;
 	for (rt=0, i=0; i<3; i++) {
@@ -131,7 +205,6 @@ void control_plane(int b, float dt_sec) {
 		vector const *wheel_pos = &obj[bot[b].vion+viondesc[bot[b].navion].roue[i]].pos;
 		float zr = (wheel_pos->z - zs) + bot[b].vionvit.z * dt_sec;
 		if (zr < 0) {
-			int fum;
 			touchdown_mask |= 1<<i;
 #			ifndef NGROUND_DRAG
 			// slow down plane due to contact with ground
@@ -140,34 +213,24 @@ void control_plane(int b, float dt_sec) {
 				mulv(&v, .4);
 				subv(&a, &v);
 			} else {
-				mulmtv(&obj[bot[b].vion].rot, &bot[b].vionvit, &v);
-				v.x *= fabs(v.x) * (bot[b].but.frein? .01:.007);
-				v.y *= fabs(v.y) * .01;
-				//v.z *= fabs(v.z) * .1;
+				v.x = (bot[b].but.frein && vx < 150. ? .08:.00005) * vx;
+				v.y = .05 * vy;
+				v.z = 0;
 				mulmv(&obj[bot[b].vion].rot, &v, &u);
 				subv(&a, &u);
 			}
-//			if (b==visubot) printf("gdrag%d -> %"PRIVECTOR"\n", i, PVECTOR(a));
+#			ifdef PRINT_DEBUG
+			if (b == visubot) printf("gdrag%d -> %"PRIVECTOR"\n", i, PVECTOR(a));
+#			endif
 #			endif
 			if (zr < rt) rt = zr;
 
-			bool const easy = Easy || b>=NbHosts;
-			float const z_min = easy ? -200. : -130.;
-			float const z_min_without_gears = easy ? -130. : -100.;
-			float const z_min_on_rough = easy ? -100. : -80.;
-			float const z_min_for_sound = -20.;
-			float const z_min_for_smoke = -10.;
-			if (
-				(zr < z_min) ||
-				(zr < z_min_without_gears && bot[b].but.gearup) ||
-				(zr < z_min_on_rough && submap_get(obj[bot[b].vion].ak)!=0)
-			) {
-				explose(bot[b].vion,bot[b].vion);
-				return;
-			}
-			if (zr < z_min_for_sound) {
-				float t=drand48()-.5;
-				if (b==visubot) {
+			// A wheel hit the ground, make some noise/smoke
+#			define VZ_MIN_FOR_SOUND (-60.)
+#			define VZ_MIN_FOR_SMOKE (-90.)
+			if (vz < VZ_MIN_FOR_SOUND) {
+				float t = drand48()-.5;
+				if (b == visubot) {
 					if (!bot[b].but.gearup) {
 						playsound(VOICEGEAR, SCREETCH, 1+t*.08, wheel_pos, false);
 					} else {
@@ -175,33 +238,22 @@ void control_plane(int b, float dt_sec) {
 					}
 				}
 			}
-			if (zr < z_min_for_smoke) {
+			if (vz < VZ_MIN_FOR_SMOKE) {
+				int fum;
 				for (fum=0; rayonfumee[fum] && fum<NBMAXFUMEE; fum++);
 				if (fum<NBMAXFUMEE) {
 					rayonfumee[fum]=1;
 					typefumee[fum]=1;	// type poussière jaune
-					copyv(&obj[firstfumee+fum].pos,&obj[bot[b].vion+viondesc[bot[b].navion].roue[i]].pos);
+					obj[firstfumee+fum].pos = *wheel_pos;
 					controlepos(firstfumee+fum);
 				}
-			} else {
-				// nice landing !
-				if (b==bmanu && IsFlying && fabs(obj[bot[b].vion].rot.x.x)>.8) {
-					subv3(&obj[bot[b].babase].pos,&obj[bot[b].vion].pos,&v);
-					if (norme2(&v)<ECHELLE*ECHELLE*1.5) {
-						bot[b].gold+=300;
-						playsound(VOICEEXTER, BRAVO, 1, &voices_in_my_head, true);
-					}
-				}
 			}
-			if (b==bmanu) IsFlying=0;
 		}
 	}
 
 #	ifndef NTORSION
 	{	// des effets de moment angulaire
 		// 1 lacet pour les ailes
-		double vy = scalaire(&bot[b].vionvit, &obj[bot[b].vion].rot.y);
-		double vz = scalaire(&bot[b].vionvit, &obj[bot[b].vion].rot.z);
 		// Commands are the most effective when vx=200. (then kx=1)
 		float kx;
 		double const kx1 = .0001*(vx-40)*(vx-40);
@@ -218,7 +270,7 @@ void control_plane(int b, float dt_sec) {
 		double const prof = .001*vz + bot[b].yctl * kx;
 		double const gouv = .001*vy +
 			// rear wheel in contact with the ground
-			(touchdown_mask & 4 ? -vx*.1*bot[b].xctl : 0.);
+			(touchdown_mask & 4 ? -vx*.06*bot[b].xctl : 0.);
 
 		double const deriv =
 			(bot[b].xctl * kx)/(1. + .05*bot[b].nbomb) /*+
@@ -229,14 +281,44 @@ void control_plane(int b, float dt_sec) {
 #	endif
 
 	if (touchdown_mask) {
-		a.z -= rt / (dt_sec * dt_sec);
-//		if (b == visubot) printf("ground -> %"PRIVECTOR"\n", PVECTOR(a));
-/*		obj[bot[b].vion].pos.z -= rt;	// at t+dt, be out of the ground
-		bot[b].vionvit.z = 0.;
-		a.x = 0.;
-		if (b == visubot) printf("ground -> %"PRIVECTOR"\n", PVECTOR(a));*/
+#		ifdef PRINT_DEBUG
+		if (b == visubot) printf("hit ground, vz=%f\n", vz);
+#		endif
 
-		float const fix_orient = rt * 2.5 * dt_sec;
+		// So we hit the ground. With what speed?
+		bool const easy = Easy || b>=NbHosts;
+		float const vz_min = easy ? -100. : -80.;
+		float const vz_min_rough = easy ? -80. : -50.;
+		if (
+			(vz < vz_min) ||
+			(vz < vz_min_rough && (bot[b].but.gearup || submap_get(obj[bot[b].vion].ak)!=0))
+		) {
+			explose(bot[b].vion,bot[b].vion);
+			return;
+		} else {
+			// nice landing !
+			if (b==bmanu && IsFlying && fabs(obj[bot[b].vion].rot.x.x)>.8) {
+				subv3(&obj[bot[b].babase].pos,&obj[bot[b].vion].pos, &v);
+				if (norme2(&v) < ECHELLE*ECHELLE*1.5) {
+					bot[b].gold += 300;
+					playsound(VOICEEXTER, BRAVO, 1, &voices_in_my_head, true);
+				}
+			}
+		}
+		if (b==bmanu && IsFlying) {
+			IsFlying = 0;
+		}
+
+/*		a.z -= rt / (dt_sec * dt_sec);
+		if (b == visubot) printf("ground -> %"PRIVECTOR"\n", PVECTOR(a));*/
+		obj[bot[b].vion].pos.z -= rt;	// at t+dt, be out of the ground
+		bot[b].vionvit.z = 0.;
+		a.z = 0.;
+#		ifdef PRINT_DEBUG
+		if (b == visubot) printf("ground -> %"PRIVECTOR"\n", PVECTOR(a));
+#		endif
+
+		float const fix_orient = rt * 1.5 * dt_sec;
 		if (touchdown_mask&3  && !(touchdown_mask&4)) {	// either right or left wheel but not front/rear -> noise down/up
 			if (viondesc[bot[b].navion].avant) basculeY(bot[b].vion, -fix_orient);
 			else basculeY(bot[b].vion, fix_orient);
@@ -253,7 +335,7 @@ void control_plane(int b, float dt_sec) {
 
 		// Reload
 		if (touchdown_mask && vx < .5 * ONE_METER) {
-			copyv(&v, &obj[bot[b].babase].pos);
+			v = obj[bot[b].babase].pos;
 			subv(&v, &obj[bot[b].vion].pos);
 			if (norme2(&v) < ECHELLE*ECHELLE*.1) {
 				int prix, amo;
@@ -330,14 +412,18 @@ void control_plane(int b, float dt_sec) {
 				}
 			}
 		}
-	} else /* !touchdown */ if (b==bmanu && bot[b].zs > 500) IsFlying = 1;
+	} else /* !touchdown */ if (b==bmanu && bot[b].zs > 100 && !IsFlying) {
+		IsFlying = 1;
+	}
 
 	// Done computing acceleration, now move plane
 	mulv(&a, dt_sec);
-//	if (b == visubot) printf("* dt   -> %"PRIVECTOR"\n", PVECTOR(a));
 	addv(&bot[b].vionvit, &a);
-//	if (b == visubot) printf("velocity= %"PRIVECTOR"\n", PVECTOR(bot[b].vionvit));
-	copyv(&v, &bot[b].vionvit);
+#	ifdef PRINT_DEBUG
+	if (b == visubot) printf("* dt   -> %"PRIVECTOR"\n", PVECTOR(a));
+	if (b == visubot) printf("velocity= %"PRIVECTOR"\n", PVECTOR(bot[b].vionvit));
+#	endif
+	v = bot[b].vionvit;
 	mulv(&v, dt_sec);
 	addv(&obj[bot[b].vion].pos, &v);
 	controlepos(bot[b].vion);
@@ -366,14 +452,14 @@ void control_plane(int b, float dt_sec) {
 	if (bot[b].but.gear) {
 		if (bot[b].but.gearup) {
 			bot[b].but.gearup=0;
-			if (b==visubot) playsound(VOICEGEAR, GEAR_DN, 1, &obj[bot[b].vion].pos, false);	// FIXME: the pos of the gear
+			if (b == visubot) playsound(VOICEGEAR, GEAR_DN, 1, &obj[bot[b].vion].pos, false);	// FIXME: the pos of the gear
 			for (j=0; j<(viondesc[bot[b].navion].retract3roues?3:2); j++) obj[bot[b].vion+viondesc[bot[b].navion].roue[j]].aff=1;
 		}
 #		define GEAR_ROTATION_SPEED (.5 * M_PI / 1.5) // deployed in 1.5 seconds
 		bot[b].anggear -= GEAR_ROTATION_SPEED * dt_sec;
 		if (bot[b].anggear<0) bot[b].anggear=0;
 	} else if (!bot[b].but.gearup) {
-		if (b==visubot && bot[b].anggear<.1) playsound(VOICEGEAR, GEAR_UP, 1., &obj[bot[b].vion].pos, false);	// FIXME: the pos of the gear
+		if (b == visubot && bot[b].anggear<.1) playsound(VOICEGEAR, GEAR_UP, 1., &obj[bot[b].vion].pos, false);	// FIXME: the pos of the gear
 		bot[b].anggear += GEAR_ROTATION_SPEED * dt_sec;
 		if (bot[b].anggear>1.5) {
 			bot[b].anggear=1.5; bot[b].but.gearup=1;
@@ -422,7 +508,7 @@ void control_plane(int b, float dt_sec) {
 			mulv(&v, 44);
 			vector const *canon = &obj[ bot[b].vion + viondesc[bot[b].navion].firstcanon + bot[b].alterc ].pos;
 			addv(&v, canon);
-			if (b==visubot) playsound(VOICESHOT, SHOT, 1+(drand48()-.5)*.08, &v, false);
+			if (b == visubot) playsound(VOICESHOT, SHOT, 1+(drand48()-.5)*.08, &v, false);
 			else drand48();
 			gunner[nbobj-debtir]=b;
 			vieshot[nbobj-debtir]=80;
@@ -435,7 +521,7 @@ void control_plane(int b, float dt_sec) {
 	if (bot[b].but.bomb) {
 		for (i=bot[b].vion; i<bot[b].vion+nobjet[bot[b].navion].nbpieces && (obj[i].type!=BOMB || obj[i].objref!=bot[b].vion); i++);
 		if (i<bot[b].vion+nobjet[bot[b].navion].nbpieces) {
-			if (b==visubot) playsound(VOICEGEAR, BIPBIP2, 1.1, &obj[i].pos, false);
+			if (b == visubot) playsound(VOICEGEAR, BIPBIP2, 1.1, &obj[i].pos, false);
 			obj[i].objref=-1;
 			for (j=0; j<bombidx && bombe[j].o!=-1; j++);
 			if (j>=bombidx) bombidx=j+1;
@@ -513,7 +599,7 @@ void tiradonf(int z, vector *c, int i) {
 		prodvect(&m.x,&m.y,&m.z);
 		mulv(&p,40);
 		addv(&p,&obj[zep[z].o+5+i].pos);
-		gunner[nbobj-debtir]=-1;	// passe inapercu?
+		gunner[nbobj-debtir]=-1;	// passe inapercu
 		vieshot[nbobj-debtir]=90;
 		addobjet(0, &p, &m, -1, 0);
 		nbtir++;
@@ -530,7 +616,7 @@ void control_zep(int z, float dt_sec) {	// fait office de routine robot sur les 
 	balot += .04/NBZEPS;	// since this function will be called for each zep. how lame!
 	if (obj[zep[z].o].pos.z>50000) return;
 	zs=z_ground(obj[zep[z].o].pos.x,obj[zep[z].o].pos.y, true);
-#	define ZEP_SPEED (5. * ONE_METER)	// per seconds
+#	define ZEP_SPEED (2. * ONE_METER)	// per seconds
 	if (zep[z].vit > ZEP_SPEED) {
 		// Deflate
 		zep[z].angy += 5. * sin(phazy+=drand48()) * dt_sec;

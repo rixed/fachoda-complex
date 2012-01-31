@@ -186,23 +186,25 @@ debtrace:
 	}
 	return true;
 }
-void drawline(vect2dlum *p1, vect2dlum *p2, int col) {
+void drawline(vect2d const *restrict p1, vect2d const *restrict p2, int col) {
 	int s, x,y,xi, dy;
-	vect2dlum *tmp;
+	vect2d const *tmp;
 	int q;
-	if (p1->v.x>p2->v.x) { tmp=p1; p1=p2; p2=tmp; }
-	if ((dy=(p2->v.y-p1->v.y))>0) {
+	if (p1->x > p2->x) { tmp=p1; p1=p2; p2=tmp; }
+	if ((dy=(p2->y - p1->y))>0) {
 		s=1;
-		q = ((p2->v.x-p1->v.x)<<vf)/(1+dy);
+		q = ((p2->x - p1->x)<<vf)/(1+dy);
 	} else {
 		dy=-dy;
 		s=-1;
-		q = ((p2->v.x-p1->v.x)<<vf)/(1+dy);
+		q = ((p2->x - p1->x)<<vf)/(1+dy);
 	}
-	x = (p1->v.x)<<vf;
-	for (y=p1->v.y; dy>=0; dy--, y+=s) {
-		for (xi=x>>vf; xi<1+((x+q)>>vf); xi++) plot(xi-_DX,y-_DY,col);
-		x+=q;
+	x = p1->x<<vf;
+	for (y = p1->y; dy >= 0; dy--, y += s) {
+		for (xi = x>>vf; xi < 1+((x+q)>>vf); xi++) {
+			plot(xi - _DX, y - _DY, col);
+		}
+		x += q;
 	}
 }
 void drawline2(vect2d *p1, vect2d *p2, int col) {
@@ -431,7 +433,7 @@ static void darken(uchar *b)
 	*b = *b - ((*b>>2) & 0x3F);
 }
 
-void renderer(int ak, enum render_part fast){
+void renderer(int ak, enum render_part fast) {
 	int o, p, no;
 	vector c,t,pts3d;
 	int mo;
@@ -564,7 +566,7 @@ void renderer(int ak, enum render_part fast){
 									} else pts2d[p].xl = MAXINT;
 								}
 								if (obj[o].type==TIR) {
-									if (pts2d[0].v.x!=MAXINT && pts2d[1].v.x!=MAXINT) drawline(&pts2d[0],&pts2d[1],0xFFA0F0);
+									if (pts2d[0].v.x!=MAXINT && pts2d[1].v.x!=MAXINT) drawline(&pts2d[0].v, &pts2d[1].v, 0xFFA0F0);
 								} else {
 									for (p=0; p<mod[obj[o].model].nbfaces[mo]; p++) {
 										// test de visibilité entre cam et normale
@@ -635,3 +637,34 @@ void renderer(int ak, enum render_part fast){
 		if (fast!=1) { o=obj[o].prec; no--; } else o=obj[o].next;
 	} while (o!=-1);
 }
+
+static bool to_camera(vector const *v3d, vect2d *v2d)
+{
+	vector vc = *v3d;
+	vector vc_c;
+	subv(&vc, &cam.pos);
+	mulmtv(&cam.rot, &vc, &vc_c);
+	if (vc_c.z > 0.) {
+		proj(v2d, &vc_c);
+		return true;
+	}
+	return false;
+}
+
+#ifdef VEC_DEBUG
+vector debug_vector[NB_DBG_VECS][2];
+void draw_debug(void)
+{
+	static int debug_vector_color[] = {
+		0xFF0000, 0x00FF00, 0x0000FF,
+		0xC0C000, 0xC000C0, 0x00C0C0,
+	};
+
+	for (unsigned v = 0; v < ARRAY_LEN(debug_vector); v++) {
+		vect2d pts2d[2];
+		if (to_camera(debug_vector[v]+0, pts2d+0) && to_camera(debug_vector[v]+1, pts2d+1)) {
+			drawline(pts2d+0, pts2d+1, debug_vector_color[v % ARRAY_LEN(debug_vector_color)]);
+		}
+	}
+}
+#endif

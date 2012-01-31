@@ -42,7 +42,7 @@ void rendumap() {
 	p1.v.x=19; p1.v.y=SY-SizeCharY*2+SizeCharY/2-10;
 	p2.v.x=10*cos(bot[visubot].cap)+p1.v.x;
 	p2.v.y=-10*sin(bot[visubot].cap)+p1.v.y;
-	drawline(&p1,&p2,c[(int)bot[visubot].camp]);
+	drawline(&p1.v, &p2.v, c[(int)bot[visubot].camp]);
 }
 void bpoint(vect2dc *p, int x, int y) {
 	int z, intens;
@@ -73,7 +73,7 @@ void renduroute() {
 			if (route[i+1].ak!=-1) {
 				p2.v.x=_DX+(route[i+1].i.x-ECHELLE*xcarte)*zoom/(ECHELLE*WMAP/2);
 				p2.v.y=_DY-(route[i+1].i.y-ECHELLE*ycarte)*zoom/(ECHELLE*WMAP/2);
-				drawline(&p1,&p2,coulr[typ][i&1]);
+				drawline(&p1.v, &p2.v, coulr[typ][i&1]);
 			}
 		}
 	}
