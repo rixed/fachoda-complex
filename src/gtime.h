@@ -8,7 +8,8 @@
 // Game Time (which can be stoped, restarted, accelerated...
 typedef uint_least64_t gtime;	// how many usec since beginning of the simulation
 
-gtime gtime_now(void);
+gtime gtime_now(void);	// return the current time (involve a syscall)
+gtime gtime_last(void);	// return the last gtime returned by gtime_now()
 gtime gtime_age(gtime date);
 void gtime_accel(gtime how_much);
 void gtime_stop(void);

@@ -5,6 +5,8 @@
 #include "sound.h"
 #include "gtime.h"
 
+#define SHOT_PERIOD (200 * ONE_MILLISECOND)
+
 //#define PRINT_DEBUG
 
 float soundthrust;
@@ -499,11 +501,11 @@ void control_plane(int b, float dt_sec) {
 		if (obj[bot[b].vion+i].objref!=-1) calcposrigide(bot[b].vion+i);
 	}
 	// tirs ?
-#	define SHOT_PERIOD (200 * ONE_MILLISECOND)
+	// the shot frequency is given by the number of canons
 	gtime const min_shot_period = SHOT_PERIOD / viondesc[bot[b].navion].nbcanon;
 	if (bot[b].but.canon && nbtir<NBMAXTIR && bot[b].bullets>0 && gtime_age(bot[b].last_shot) > min_shot_period) {
 		if (++bot[b].alterc>=4) bot[b].alterc=0;
-		if (bot[b].alterc<viondesc[bot[b].navion].nbcanon) {	// so that the shot frequency is given by the number of canons
+		if (bot[b].alterc<viondesc[bot[b].navion].nbcanon) {
 			copyv(&v, &obj[bot[b].vion].rot.x);
 			mulv(&v, 44);
 			vector const *canon = &obj[ bot[b].vion + viondesc[bot[b].navion].firstcanon + bot[b].alterc ].pos;
@@ -515,7 +517,7 @@ void control_plane(int b, float dt_sec) {
 			addobjet(0, &v, &obj[bot[b].vion].rot, -1, 0);
 			nbtir++;
 			bot[b].bullets--;
-			bot[b].last_shot = gtime_now();
+			bot[b].last_shot = gtime_last();
 		}
 	}
 	if (bot[b].but.bomb) {
@@ -586,7 +588,9 @@ void tiradonf(int z, vector *c, int i) {
 	vector p;
 	matrix m;
 	float s;
-	if (nbtir<NBMAXTIR) {
+	gtime const min_shot_period = SHOT_PERIOD / 6; // 6 cannons per Zeppelin
+	if (nbtir < NBMAXTIR && gtime_age(zep[z].last_shot) > min_shot_period) {
+		zep[z].last_shot = gtime_last();
 		copyv(&p,c);
 		renorme(&p);
 		s=scalaire(&p,&obj[zep[z].o].rot.y);
@@ -599,7 +603,7 @@ void tiradonf(int z, vector *c, int i) {
 		prodvect(&m.x,&m.y,&m.z);
 		mulv(&p,40);
 		addv(&p,&obj[zep[z].o+5+i].pos);
-		gunner[nbobj-debtir]=-1;	// passe inapercu
+		gunner[nbobj-debtir]=-1;	// passe inapercu (ie pas pris pour cible en retours)
 		vieshot[nbobj-debtir]=90;
 		addobjet(0, &p, &m, -1, 0);
 		nbtir++;

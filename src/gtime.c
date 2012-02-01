@@ -44,6 +44,11 @@ gtime gtime_now(void)
 	return last;
 }
 
+gtime gtime_last(void)
+{
+	return last;
+}
+
 gtime gtime_age(gtime date)
 {
 	gtime now = gtime_now();
