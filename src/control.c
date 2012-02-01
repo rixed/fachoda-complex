@@ -620,7 +620,7 @@ void control_zep(int z, float dt_sec) {	// fait office de routine robot sur les 
 	balot += .04/NBZEPS;	// since this function will be called for each zep. how lame!
 	if (obj[zep[z].o].pos.z>50000) return;
 	zs=z_ground(obj[zep[z].o].pos.x,obj[zep[z].o].pos.y, true);
-#	define ZEP_SPEED (2. * ONE_METER)	// per seconds
+#	define ZEP_SPEED (1.5 * ONE_METER)	// per seconds
 	if (zep[z].vit > ZEP_SPEED) {
 		// Deflate
 		zep[z].angy += 5. * sin(phazy+=drand48()) * dt_sec;
@@ -634,7 +634,7 @@ void control_zep(int z, float dt_sec) {	// fait office de routine robot sur les 
 		if (norme2(&v) < 2000) {
 			zep[z].nav.x=(WMAP<<NECHELLE)*drand48()*(SpaceInvaders?.1:.7);
 			zep[z].nav.y=(WMAP<<NECHELLE)*drand48()*(SpaceInvaders?.1:.7);
-			zep[z].nav.z=3000+drand48()*30000+z_ground(v.x,v.y, false);
+			zep[z].nav.z=1000+drand48()*3000+z_ground(v.x,v.y, false);
 		} else {
 			dir=cap(v.x,v.y)-zep[z].angz;
 			if (dir<-M_PI) dir+=2*M_PI;

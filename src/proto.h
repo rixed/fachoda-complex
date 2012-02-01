@@ -207,6 +207,7 @@ typedef struct {
 } bot_s;
 typedef struct {
 	short int o, cib[6];
+	gtime last_shot;
 	vector nav;
 	float angz,angy,angx;
 	float anghel;

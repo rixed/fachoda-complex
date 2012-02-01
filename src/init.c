@@ -185,11 +185,12 @@ void initworld() {
 	for (i=0; i<NBZEPS; i++) {
 		p.x=(drand48()-.5)*(WMAP<<NECHELLE)*0.8;
 		p.y=(drand48()-.5)*(WMAP<<NECHELLE)*0.8;
-		p.z=5000+z_ground(p.x,p.y, false);
+		p.z=4000+z_ground(p.x,p.y, false);
 		zep[i].o=addnobjet(NBNAVIONS+NBBASES+NBMAISONS+NBVEHICS+NBDECOS,&p, &mat_id, 0);
-		copyv(&zep[i].nav,&p);
+		zep[i].nav = p;
 		zep[i].angx=zep[i].angy=zep[i].angz=zep[i].anghel=zep[i].vit=0;
 		for (j=0; j<6; j++) zep[i].cib[j]=-1;
+		zep[i].last_shot = 0;
 	}
 	// installations au sol
 	// des villages de pauvres inocents pour souffrir
