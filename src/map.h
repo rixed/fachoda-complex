@@ -10,7 +10,7 @@ struct tile {
 	/* If has_road is set then the tile has (at least) one road crossing it,
 	 * is flat (submap is 0) and submap field encodes the road hash-key */
 	unsigned char has_road:1;
-	short first_obj;	// Number of first object above this tile
+	int first_obj;	// Number of first object above this tile (or -1 if none)
 };
 
 extern struct tile *map;

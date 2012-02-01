@@ -137,12 +137,12 @@ typedef struct {
 } modele;
 
 typedef struct {
-	short int model;		// No du modèle
 	uchar type;
 	vector pos;		// translation par rapport à l'obj de référence
 	matrix rot;		// rotation par rapport à l'obj de reference
-	short int objref;		// l'objet de référence pour la pos et la rot (-1=absolu)
-	short int next,prec;	// lien sur l'objet suivant dans la liste du tri en Z
+	int next,prec;	// lien sur l'objet suivant dans la liste du tri en Z
+	int objref;		// l'objet de référence pour la pos et la rot (-1=absolu)
+	short int model;		// No du modèle
 	short int ak;
 	vector posc;
 	float distance;	// eloignement en R2 a la camera
@@ -164,10 +164,10 @@ typedef struct {
 } nobjet_s;
 typedef struct {
 	int reward;
-	char camp;
-	short int no;
 	int dt;
 	char *endmsg;
+	int no;
+	char camp;
 } prime_s;
 typedef struct {
 	int o1, o2;
@@ -206,7 +206,7 @@ typedef struct {
 	int gold;
 } bot_s;
 typedef struct {
-	short int o, cib[6];
+	int o, cib[6];
 	gtime last_shot;
 	vector nav;
 	float angz,angy,angx;
@@ -236,7 +236,7 @@ typedef struct {
 	int roue[3];	// D,G,A
 } viondesc_s;
 typedef struct {
-	short int o, b;
+	int o, b;
 	vector vit;
 } bombe_s;
 typedef struct {
@@ -244,7 +244,7 @@ typedef struct {
 	char name[30];
 } HS_s;
 typedef struct {
-	short int o;
+	int o;
 	vector vit;
 	float a1,a2,ai1,ai2;
 } debris_s;
@@ -262,7 +262,7 @@ typedef struct {
 } route_s;
 typedef struct {
 	int r;
-	short int o;
+	int o;
 	char sens;
 	float vit;
 	int dist;
