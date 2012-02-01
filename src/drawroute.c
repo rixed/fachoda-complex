@@ -7,12 +7,11 @@
 void drawroadline(int x1, int y1, int x2, int y2, int l, pixel c1, pixel c2) {
 	// trace la route (r,r+1) en ligne, vect2dc étant calculé
 	int s,ss,ssi,ssf,medline, x,y,xi, dy, cr,cg,cb, qdizor;
-	int tmp;
 	int q, qcr,qcb,qcg;
 	if (x1>x2) {
-		tmp=x1; x1=x2; x2=tmp;
-		tmp=y1; y1=y2; y2=tmp;
-		tmp=*(int*)&c1; *(int*)&c1=*(int*)&c2; *(int*)&c2=tmp;
+		int tmp = x1; x1 = x2; x2 = tmp;
+		tmp = y1; y1 = y2; y2 = tmp;
+		pixel tmpp = c1; c1 = c2; c2 = tmpp;
 	}
 	if (x2<0 || x1>=SX) return;
 	// clip...
