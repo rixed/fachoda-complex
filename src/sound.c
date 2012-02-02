@@ -9,6 +9,8 @@
 #include <AL/alc.h>
 #include "sound.h"
 
+//#define PRINT_DEBUG
+
 static bool with_sound;
 static ALCdevice *dev;
 static ALCcontext *ctx;

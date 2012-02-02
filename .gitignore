@@ -8,4 +8,5 @@ core.*
 .depend
 *.dep
 gmon.out
-.*
+.highscores
+.keys

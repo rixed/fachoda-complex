@@ -319,10 +319,31 @@ void calcposa() {
 		}
 	}
 }
+
 int zfac;
+
+static void phplot(int x, int y, int r) {
+	int ix=0,iy=zfac*r;
+	int balance=-r, xoff=0, yoff=r, newyoff=1;
+	if (r<=0 || y<0 || y>=SY) return;
+	do {
+		int lum = ((iy&0xff00)<<8) | (iy&0xff00);
+		if (x+xoff>=0 && x+xoff<SX) MMXAddSatC((int*)videobuffer+x+xoff+y*SX, lum);
+		if (xoff && x-xoff>=0 && x-xoff<SX) MMXAddSatC((int*)videobuffer+x-xoff+y*SX, lum);
+		if (newyoff && xoff!=yoff) {
+			if (x+yoff>=0 && x+yoff<SX) MMXAddSatC((int*)videobuffer+x+yoff+y*SX, lum);
+			if (x-yoff>=0 && x-yoff<SX) MMXAddSatC((int*)videobuffer+x-yoff+y*SX, lum);
+		}
+		if ((balance += xoff + xoff + 1) >= 0) {
+			yoff--;
+			balance -= yoff + yoff;
+			newyoff=1;
+			iy-=zfac;
+		} else newyoff=0;
+		ix+=zfac;
+	} while (++xoff <= yoff);
+}
 void plotphare(int x, int y, int r) {
-	(void)x; (void)y; (void)r;
-#	if 0
 	int balance=-r, xoff=0, yoff=r, newyoff=1;
 	if (r==0 || x-r>=SX || x+r<0 || y-r>=SY || y+r<0 || r>SX) return;
 	zfac=(190<<8)/r;
@@ -335,16 +356,16 @@ void plotphare(int x, int y, int r) {
 			phplot(x,y+xoff, yoff);
 			if (xoff) phplot(x,y-xoff, yoff);
 		}
-		if ((balance += xoff++ + xoff) >= 0) {
+		if ((balance += xoff + xoff) >= 0) {
 			yoff --;
 			balance -= yoff + yoff;
 			newyoff=1;
 		} else newyoff=0;
+		xoff++;
 	} while (xoff <= yoff);
-#	endif
 }
 
-void nuplot(int x, int y, int r) {
+static void nuplot(int x, int y, int r) {
 	int ix=0,iy=zfac*r;
 	int balance=-r, xoff=0, yoff=r, newyoff=1;
 	if (r<=0 || y<0 || y>=SY) return;
@@ -387,7 +408,7 @@ void plotnuage(int x, int y, int r) {
 	} while (++xoff <= yoff);
 }
 
-void fuplot(int x, int y, int r) {
+static void fuplot(int x, int y, int r) {
 	int ix=0,iy=zfac*r;
 	int balance=-r, xoff=0, yoff=r, newyoff=1;
 	if (r<=0 || y<0 || y>=SY) return;

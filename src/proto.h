@@ -478,7 +478,6 @@ extern void MMXMemSetInt(int *deb, int coul, int n);
 extern void MMXAddSatInt(int *deb, int coul, int n);
 extern void MMXCopyToScreen(int *dest, int *src, int sx, int sy, int width);
 extern void MMXCopy(int *dest, int *src, int nbr);
-extern void fuplot(int x, int y, int r);
 extern uchar *BigFont;
 extern uchar font[112][10];
 // keycodes
