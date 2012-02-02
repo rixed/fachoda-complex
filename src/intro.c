@@ -19,8 +19,6 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <jpeglib.h>
-#include <X11/Xlib.h>
-#include <X11/keysym.h>
 #include <math.h>
 #include <time.h>
 #include <sys/time.h>

@@ -17,8 +17,7 @@
  * along with Fachoda.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <stdlib.h>
-#include <X11/Xlib.h>
-#include <X11/keysym.h>
+#include <stdio.h>
 #include <math.h>
 #include "proto.h"
 #include "map.h"
