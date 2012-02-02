@@ -77,7 +77,7 @@ typedef struct {
 	float x,y,z;
 } vector;
 #define PRIVECTOR "f,%f,%f"
-#define PVECTOR(v) v.x, v.y, v.z
+#define PVECTOR(v) (v).x, (v).y, (v).z
 typedef struct {
 	int x,y,z;
 } veci;

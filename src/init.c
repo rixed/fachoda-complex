@@ -162,7 +162,7 @@ void affjauge(float j) {
 
 void initworld() {
 	int i,j,k; vector p; matrix m;
-	bombe=(bombe_s*)malloc(NBBOT*4*sizeof(bombe_s));
+	bombe=(bombe_s*)malloc(NBBOT*4*sizeof(bombe_s));	// FIXME: most bots have 2 or 4 bombs, but spitflame has 7!
 	vehic=(vehic_s*)malloc(NBTANKBOTS*sizeof(vehic_s));
 	initmap();
 	obj=(objet*)malloc(sizeof(objet)*50000);

@@ -635,7 +635,7 @@ parse_error:
 						copyv(&obj[j].pos,&vec_zero);
 						copym(&obj[j].rot,&mat_id);
 						bombe[i].o=-1;
-						while (bombe[bombidx-1].o==-1) bombidx--;
+						while (bombidx>0 && bombe[bombidx-1].o==-1) bombidx--;
 					}
 				}
 			}

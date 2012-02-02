@@ -156,13 +156,13 @@ bool hitgun(int oc, int i) {
 	if (o1) {
 		switch (obj[o1].type) {
 		case CIBGRAT:
-			if (shooter<NBBOT && kelkan(o1)!=bot[shooter].camp) if (drand48()<.05) bot[shooter].gold+=60;
+			if (shooter>=0 && shooter<NBBOT && kelkan(o1)!=bot[shooter].camp) if (drand48()<.05) bot[shooter].gold+=60;
 			if (o1!=oc && drand48()<.01) explose(o1,i);
 			break;
 		case AVION:
 			for (j=0; j<NBBOT; j++) if (bot[j].vion==o1) {
-				if (j == gunner[i-debtir]) {
-					// Do not allow bots to shoot themselves
+				if (j == shooter) {
+					// Do not allow the shooter to shoot himself
 					return false;
 				}
 				tarif=-(bot[j].fiulloss/4+bot[j].motorloss*8+bot[j].aeroloss*8+bot[j].bloodloss*2);
@@ -186,9 +186,9 @@ bool hitgun(int oc, int i) {
 					if ((bot[j].motorloss+=drand48()*100)<0) bot[j].motorloss=127;
 					if ((bot[j].aeroloss+=drand48()*100)<0) bot[j].aeroloss=127;
 				}
-				bot[j].gunned=gunner[i-debtir];
-				tarif+=bot[j].fiulloss/4+bot[j].motorloss*8+bot[j].aeroloss*8+bot[j].bloodloss*2;
-				if (shooter<NBBOT) {
+				if (shooter>=0) bot[j].gunned=shooter;
+				tarif += bot[j].fiulloss/4 + bot[j].motorloss*8 + bot[j].aeroloss*8 + bot[j].bloodloss*2;
+				if (shooter>=0 && shooter<NBBOT) {
 				  if (bot[j].camp!=bot[shooter].camp) bot[shooter].gold+=tarif;
 				  else bot[shooter].gold-=tarif;
 				}

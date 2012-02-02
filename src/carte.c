@@ -92,7 +92,7 @@ void rendumapbg() {
 		}
 	}
 	bpoint(&p1,0,0);
-	bpoint(&p2,WMAP,WMAP);
+	bpoint(&p2,WMAP-1,WMAP-1);
 	for (y=0; y<SY; y++) {
 		if (p1.v.x>0) MMXMemSetInt((int*)videobuffer+y*SX,0,p1.v.x);
 		if (p2.v.x<SX) MMXMemSetInt((int*)videobuffer+y*SX+p2.v.x-1,0,SX-p2.v.x+1);

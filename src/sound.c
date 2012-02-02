@@ -254,14 +254,18 @@ exit0:
 	return -1;
 }
 
-static vector last_pos;
+static vector listener_pos;
 void update_listener(vector const *pos, vector const *velocity, matrix const *rot)
 {
 	if (! with_sound) return;
 
 	ALenum err;
 
-	last_pos = *pos;
+#	ifdef PRINT_DEBUG
+	printf("update_listener(pos=%"PRIVECTOR", vel=%"PRIVECTOR")\n", PVECTOR(*pos), PVECTOR(*velocity));
+#	endif
+
+	listener_pos = *pos;
 
 	alListener3f(AL_POSITION, pos->x, pos->y, pos->z);
 	if ((err = alGetError()) != AL_NO_ERROR) fprintf(stderr, "Cannot set listener's position to %f,%f,%f: %s\n", pos->x, pos->y, pos->z, al_strerror(err));
@@ -289,9 +293,19 @@ void playsound(enum voice voice, sample_e samp, float pitch, vector const *pos, 
 
 	ALenum err;
 
+#	ifdef PRINT_DEBUG
+	printf("play_sound(voice=%d, sample=%d, pos=%"PRIVECTOR", %s)\n",
+		voice, samp, PVECTOR(*pos), relative ? "relative":"absolute");
+#	endif
+
 	vector d = *pos;
-	if (! relative) subv(&d, &last_pos);
-	if (norme2(&d) > MAX_DIST*MAX_DIST) return;
+	if (! relative) subv(&d, &listener_pos);
+	if (norme2(&d) > MAX_DIST*MAX_DIST) {
+#		ifdef PRINT_DEBUG
+		printf("...too far!\n");
+#		endif
+		return;
+	}
 
 	assert(voice < ARRAY_LEN(sources));
 	assert(samp < ARRAY_LEN(buffers));
@@ -320,7 +334,13 @@ void attachsound(enum voice voice, sample_e samp, float pitch, vector const *pos
 {
 	if (! with_sound) return;
 
+#	ifdef PRINT_DEBUG
+	printf("attachsound(voice=%d, sample=%d, pos=%"PRIVECTOR", %s)\n",
+		voice, samp, PVECTOR(*pos), relative ? "relative":"absolute");
+#	endif
 	playsound(voice, samp, pitch, pos, relative);
+
+	assert(voice < ARRAY_LEN(source_pos));
 	source_pos[voice] = pos;
 }
 
