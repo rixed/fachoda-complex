@@ -503,7 +503,6 @@ void initworld() {
     bot[bmanu].camp=camp;
     bot[bmanu].navion=monvion-1;
     //if (NetCamp()==-1) {printf("Net Error\n"); exit(-1); }
-    IsFlying=SpaceInvaders;
     printf("Playing with %d planes & %d tanks\nPlayers :\n",NBBOT,NBTANKBOTS);
     for (i=0; i<NbHosts; i++) printf("%s, camp %d, in a %s\n",playbotname[i],bot[i].camp+1, viondesc[bot[i].navion].name);
     for (i=0; i<NBBOT; i++) {
@@ -555,6 +554,7 @@ void initworld() {
         bot[i].bullets=viondesc[bot[i].navion].bulletsmax;
         bot[i].cibv=bot[i].cibt=-1;
         bot[i].gold=i>NbHosts?30000:2000;
+        bot[i].is_flying = SpaceInvaders;
         armstate(i);
         if (!SpaceInvaders) copyv(&bot[i].vionvit,&vec_zero);
         else {

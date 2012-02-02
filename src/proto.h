@@ -222,6 +222,7 @@ typedef struct {
     float cap;
     int burning;
     int gold;
+    bool is_flying;
 } bot_s;
 typedef struct {
     int o, cib[6];
@@ -449,7 +450,6 @@ extern pixel32 *tbtile, *tbback, *tbback1, *tbback2;
 extern uchar *tbz;
 extern int *tbwidth;
 // control
-extern int IsFlying;
 extern float soundthrust;
 extern void control_plane(int b, float dt_sec);
 extern void control_vehic(int v, float dt_sec);

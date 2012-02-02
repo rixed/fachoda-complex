@@ -28,7 +28,6 @@
 //#define PRINT_DEBUG
 
 float soundthrust;
-int IsFlying;
 
 void controlepos(int i) {
     int xk,yk,ak;
@@ -317,7 +316,7 @@ void control_plane(int b, float dt_sec) {
             return;
         } else {
             // nice landing !
-            if (b==bmanu && IsFlying && fabs(obj[bot[b].vion].rot.x.x)>.8) {
+            if (b==bmanu && bot[b].is_flying && fabs(obj[bot[b].vion].rot.x.x)>.8) {
                 subv3(&obj[bot[b].babase].pos,&obj[bot[b].vion].pos, &v);
                 if (norme2(&v) < ECHELLE*ECHELLE*1.5) {
                     bot[b].gold += 300;
@@ -325,15 +324,12 @@ void control_plane(int b, float dt_sec) {
                 }
             }
         }
-        if (b==bmanu && IsFlying) {
-            IsFlying = 0;
-        }
+        bot[b].is_flying = false;
 
 /*      a.z -= rt / (dt_sec * dt_sec);
         if (b == visubot) printf("ground -> %"PRIVECTOR"\n", PVECTOR(a));*/
-        obj[bot[b].vion].pos.z -= rt;   // at t+dt, be out of the ground
-        bot[b].vionvit.z = 0.;
-        a.z = 0.;
+        obj[bot[b].vion].pos.z -= rt;   // At t+dt, be out of the ground
+        a.z = - bot[b].vionvit.z;
 #       ifdef PRINT_DEBUG
         if (b == visubot) printf("ground -> %"PRIVECTOR"\n", PVECTOR(a));
 #       endif
@@ -432,8 +428,8 @@ void control_plane(int b, float dt_sec) {
                 }
             }
         }
-    } else /* !touchdown */ if (b==bmanu && bot[b].zs > 100 && !IsFlying) {
-        IsFlying = 1;
+    } else /* !touchdown */ if (bot[b].zs > 100) {
+        bot[b].is_flying = true;
     }
 
     // Done computing acceleration, now move plane
