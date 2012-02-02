@@ -231,12 +231,15 @@ choiz:
         }
     }
 }
-double cap(double x, double y) {    // entre 0 et 2PI
-    double a;
-    a=acos(x/sqrt(y*y+x*x));
-    if (y<0) a=2*M_PI-a;
+
+double cap(double x, double y) {    // Returns cap between 0 and 2*M_PI
+    double const d2 = y*y + x*x;
+    if (d2 == 0.) return 0;
+    double a = acos(x / sqrt(d2));
+    if (y<0) a = 2*M_PI - a;
     return a;
 }
+
 void robot(int b){
     float vit,m,n,a,dist,disth;
     float distfrap2, dc;
