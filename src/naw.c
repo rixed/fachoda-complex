@@ -1,5 +1,21 @@
 // -*- c-basic-offset: 4; c-backslash-column: 79; indent-tabs-mode: nil -*-
 // vim:sw=4 ts=4 sts=4 expandtab
+/* Copyright 2012
+ * This file is part of Fachoda.
+ *
+ * Fachoda is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Fachoda is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Fachoda.  If not, see <http://www.gnu.org/licenses/>.
+ */
 #include <stdlib.h>
 #include <stdio.h>
 #include <inttypes.h>
@@ -314,7 +330,10 @@ int main(int narg, char **arg) {
         {  100, "marine craccRa"}
     };
 //  vect2dc p1={0,-60,{150,200,40}},p2={40,20,{40,220,50}},p3={-50,80,{100,10,240}},p4={0,0,{240,40,140}}; float bolop=0;
-    printf(" Fachoda Complex v2 - (c) Cedric Cellier, april 2000\n"
+    printf("Fachoda Complex - (C) 2000-2012 Cedric Cellier\n"
+"This program comes with ABSOLUTELY NO WARRANTY.\n"
+"This is free software, and you are welcome to redistribute it\n"
+"under certain conditions; See http://www.gnu.org/licenses/gpl-3.0.html for details.\n"
 "\n"
 "   fullscreen      : play in DGA mode instead of windowed mode\n"
 "   x n             : X size of the window (default : 320)\n"
