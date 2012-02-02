@@ -155,7 +155,7 @@ typedef struct {
 } modele;
 
 typedef struct {
-    uchar type;
+    uchar type; // FIXME: use mod[obj.modele].type?
     vector pos;     // translation par rapport à l'obj de référence
     matrix rot;     // rotation par rapport à l'obj de reference
     int next,prec;  // lien sur l'objet suivant dans la liste du tri en Z
@@ -239,9 +239,12 @@ typedef struct {
     vector p;
     int moteur:1;
     int tir:1;
-    int cibt,cibv;
-    float ang0,ang1,ang2;
+    int cibt;   // object targeted as a ground target
+    int cibv;   // plane target
+    float ang0; // cap in the map
+    float ang1, ang2;    // orientation of the turret
     int ocanon;
+    gtime last_shot;
 } vehic_s;
 
 typedef struct {

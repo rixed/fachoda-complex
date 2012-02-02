@@ -585,6 +585,7 @@ void initworld() {
         vehic[i].cibt=-1;
         vehic[i].ang0=vehic[i].ang1=vehic[i].ang2=0;
         vehic[i].ocanon=0;
+        vehic[i].last_shot = 0;
         vehic[i].nom=tankname;
     }
     printf("Adding clouds...\n");

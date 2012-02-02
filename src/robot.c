@@ -66,84 +66,118 @@ double bombz2(vector v, vector u) {
     } while (dd<d);
     return d;
 }
-void newcibvehic(int v) {
-    int i, j=0;
-    double r;
-choiz:
-    if (j++>10) vehic[v].cibt=-1;
-    else {
-        r=drand48();
-        if (r<.3) {
-            // attaque un village
-            int a=NBVILLAGES*drand48();
-            i=0;
-            do {
-                vehic[v].cibt=village[a].o1+(village[a].o2-village[a].o1)*drand48();
-                i++;
-            } while(i<10 && obj[vehic[v].cibt].type!=CIBGRAT);
-            if (i==10) goto choiz;
-        } else {
-            // attaque un tank
-            i=0;
-            do {
-                vehic[v].cibt=(int)(NBTANKBOTS*drand48());
-                i++;
-            } while(i<10 && obj[vehic[v].cibt].type!=VEHIC && vehic[vehic[v].cibt].camp==vehic[v].camp);
-            if (i==10) goto choiz;
-            else vehic[v].cibt=vehic[vehic[v].cibt].o1;
-        }
+
+// Look for a flying target for tank v
+static int vehic_new_flying_target(int v)
+{
+    vector p;
+    int cib = drand48()*NBBOT;
+    if (bot[cib].camp != -1 && bot[cib].camp != vehic[v].camp) {
+        subv3(&obj[bot[cib].vion].pos, &obj[vehic[v].o1].pos, &p);
+        if (norme2(&p) < 5000000) return bot[cib].vion;
     }
+
+    // no target found
+    return -1;
 }
-void robotvehic(int v) {
-    vector p,u;
-    int cib,vol;
-    double xx,yy,n;
-    if (vehic[v].camp==-1) return;
-    if (vehic[v].cibv==-1) {
-        cib=drand48()*NBBOT;
-        if (bot[cib].camp!=-1 && bot[cib].camp!=vehic[v].camp) {
-            subv3(&obj[bot[cib].vion].pos,&obj[vehic[v].o1].pos,&p);
-            if (norme2(&p)<5000000) vehic[v].cibv=bot[cib].vion;
-        }
-    }
-    vehic[v].tir=0;
-    if (vehic[v].cibt==-1 || obj[vehic[v].cibt].type==DECO) newcibvehic(v);
-    if (vehic[v].cibv!=-1 && obj[vehic[v].cibv].type!=DECO) {
-        cib=vehic[v].cibv;
-        vol=1;
-    } else {
-        cib=vehic[v].cibt;
-        vehic[v].cibv=-1;
-        vol=0;
-    }
-    if (cib!=-1) {
-        subv3(&obj[cib].pos,&obj[vehic[v].o1].pos,&p);
-        n=renorme(&p);
-        if (n<4000) {
-            if (n<400) vehic[v].moteur=0;
-            yy=scalaire(&p,&obj[vehic[v].o1+1].rot.y);
-            xx=scalaire(&p,&obj[vehic[v].o1+1].rot.x);
-            if (xx<0) vehic[v].ang1+=.4;
-            else {
-                vehic[v].ang1+=.4*yy;
-                if (yy>-.2 && yy<.2) {
-                    double tz;
-                    if (++vehic[v].ocanon>=4) vehic[v].ocanon=0;
-                    subv3(&obj[cib].pos,&obj[vehic[v].o1+3+vehic[v].ocanon].pos,&u);
-                    if ((tz=u.z-tirz(obj[vehic[v].o1+2].rot.x.z,sqrt(u.x*u.x+u.y*u.y)))>0) vehic[v].ang2+=tz<100?.001*tz:.1;
-                    else if (tz<0) vehic[v].ang2+=tz>-100?.001*tz:-.1;
-                    if (tz>-100 && tz<100 && n<2500 && imgcount&1) vehic[v].tir=1;
-                }
+
+// Look for another ground target
+static int vehic_new_ground_target(int v)
+{
+    for (int j = 0; j < 10; j++) {
+        double r = drand48();
+        if (r < .3) {
+            // go for a village
+            int a = NBVILLAGES*drand48();
+            for (int i = 0; i < 10; i++) {
+                int cib = village[a].o1 + (village[a].o2 - village[a].o1)*drand48();
+                if (obj[cib].type == CIBGRAT) return cib;
             }
         } else {
-            if (vol) vehic[v].cibv=-1;
-            vehic[v].moteur=1;
-            yy=scalaire(&p,&obj[vehic[v].o1].rot.y);
-            xx=scalaire(&p,&obj[vehic[v].o1].rot.x);
-            if (xx<0) vehic[v].ang0+=.01;
-            else if (yy>0) vehic[v].ang0+=.01;
-            else vehic[v].ang0-=.01;
+            // go for another tank
+            for (int i = 0; i < 10; i++) {
+                int v2 = NBTANKBOTS*drand48();
+                if (obj[vehic[v2].o1].type == VEHIC && vehic[v2].camp != vehic[v].camp && vehic[v2].camp != -1) {
+                    return vehic[v2].o1;
+                }
+            }
         }
+    }
+
+    // no target found
+    return -1;
+}
+
+void robotvehic(int v)
+{
+    vector p, u;
+    double xx, yy, n;
+
+    if (vehic[v].camp == -1) return;
+    vehic[v].tir = 0;
+
+    // Try to aquire a flying target
+    // Notice that any object can become a DECO when crashed or destroyed
+    if (vehic[v].cibv != -1 && obj[vehic[v].cibv].type == DECO) {
+        vehic[v].cibv = -1;
+    }
+    if (vehic[v].cibv == -1) {
+        vehic[v].cibv = vehic_new_flying_target(v);
+    }
+
+    if (vehic[v].cibt != -1 && obj[vehic[v].cibt].type == DECO) {
+        vehic[v].cibt = -1;
+    }
+    if (vehic[v].cibt == -1) {
+        vehic[v].cibt = vehic_new_ground_target(v);
+    }
+
+    // Choose to aim at the flying target if we have one, then the ground target
+    int cib = vehic[v].cibv;
+    int vol = 1;
+    if (cib == -1) {
+        cib = vehic[v].cibt;
+        vol = 0;
+    }
+
+    if (cib == -1) {
+        // No target? Life's not worth living.
+        return;
+    }
+
+    subv3(&obj[cib].pos, &obj[vehic[v].o1].pos, &p);
+    n = renorme(&p);
+    if (n < 4000) {
+        // Target is close enough to deal with it. Only change turret position.
+        if (n < 600) vehic[v].moteur = 0;
+        yy = scalaire(&p, &obj[vehic[v].o1+1].rot.y);
+        xx = scalaire(&p, &obj[vehic[v].o1+1].rot.x);
+        if (xx < 0) {
+            vehic[v].ang1 += .4;
+        } else {
+            vehic[v].ang1 += .4 * yy;
+            if (yy > -.2 && yy < .2) {
+                subv3(&obj[cib].pos, &obj[vehic[v].o1+3+vehic[v].ocanon].pos, &u);
+                double tz = u.z - tirz(obj[vehic[v].o1+2].rot.x.z, sqrt(u.x*u.x + u.y*u.y));
+                if (tz > 0.) {
+                    vehic[v].ang2 += tz < 100. ? .001*tz : .1;
+                } else if (tz<0) {
+                    vehic[v].ang2 += tz >-100. ? .001*tz :-.1;
+                }
+                if (tz > -100. && tz < 100. && n < 2500.) {
+                    vehic[v].tir = 1;
+                }
+            }
+        }
+    } else {
+        // Target is not close enough to fire at it, get closer.
+        if (vol) vehic[v].cibv = -1;
+        vehic[v].moteur = 1;
+        yy = scalaire(&p, &obj[vehic[v].o1].rot.y);
+        xx = scalaire(&p, &obj[vehic[v].o1].rot.x);
+        if (xx < 0.) vehic[v].ang0 += .01;
+        else if (yy > 0.) vehic[v].ang0 += .01;
+        else vehic[v].ang0 -= .01;
     }
 }
 

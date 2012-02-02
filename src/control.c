@@ -567,11 +567,11 @@ void control_vehic(int v, float dt_sec) {
     m.z.x=0; m.z.y=0; m.z.z=1;
     copym(&obj[o].rot,&m);
     if (vehic[v].moteur) {
-#       define TANK_SPEED (2. * ONE_METER) // per seconds
+#       define TANK_SPEED (1.4 * ONE_METER) // per seconds
         copyv(&p, &obj[o].rot.x);
         mulv(&p, TANK_SPEED * dt_sec);
         addv(&obj[o].pos, &p);
-        obj[o].pos.z=z_ground(obj[o].pos.x,obj[o].pos.y, true);
+        obj[o].pos.z = z_ground(obj[o].pos.x,obj[o].pos.y, true);
         controlepos(o);
     }
     c=cos(vehic[v].ang1);
@@ -586,16 +586,19 @@ void control_vehic(int v, float dt_sec) {
     m.z.x=-s;m.z.y=0; m.z.z=c;
     calcposarti(o+2,&m);
     for (i=o+3; i<vehic[v].o2; i++) calcposrigide(i);
-    if (vehic[v].tir && nbtir<NBMAXTIR) {
-        // TODO: a gun object with a last_shot date?
-        copyv(&p,&obj[o+3+vehic[v].ocanon].rot.x);
-        mulv(&p,90);
-        copyv(&u,&obj[o+3+vehic[v].ocanon].pos);
-        addv(&p,&u);
-        gunner[nbobj-debtir]=v|(1<<NTANKMARK);
-        vieshot[nbobj-debtir]=70;
+
+    gtime const min_shot_period = SHOT_PERIOD / 4;
+    if (vehic[v].tir && nbtir < NBMAXTIR && gtime_age(vehic[v].last_shot) > min_shot_period) {
+        vehic[v].last_shot = gtime_last();
+        p = obj[o+3+vehic[v].ocanon].rot.x;
+        mulv(&p, 90.);
+        u = obj[o+3+vehic[v].ocanon].pos;
+        addv(&p, &u);
+        gunner[nbobj-debtir] = v|(1<<NTANKMARK);
+        vieshot[nbobj-debtir] = 70;
         addobjet(0, &p, &obj[o+3+vehic[v].ocanon].rot, -1, 0);
-        nbtir++;
+        if (++vehic[v].ocanon >= 4) vehic[v].ocanon = 0;
+        nbtir ++;
     }
 }
 
