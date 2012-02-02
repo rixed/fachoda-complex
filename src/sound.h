@@ -1,3 +1,5 @@
+// -*- c-basic-offset: 4; c-backslash-column: 79; indent-tabs-mode: nil -*-
+// vim:sw=4 ts=4 sts=4 expandtab
 #ifndef SOUND_H_120123
 #define SOUND_H_120123
 

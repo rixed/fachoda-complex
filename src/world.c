@@ -1,3 +1,5 @@
+// -*- c-basic-offset: 4; c-backslash-column: 79; indent-tabs-mode: nil -*-
+// vim:sw=4 ts=4 sts=4 expandtab
 #include <stdlib.h>
 #include <math.h>
 #include "proto.h"
@@ -15,7 +17,7 @@ extern inline void mulm3(matrix *r, matrix const *c, matrix const *a);
 extern inline void mulmt3(matrix *r, matrix const *c, matrix const *a);
 float norme(vector *u)
 {
-	return sqrt(u->x*u->x+u->y*u->y+u->z*u->z);
+    return sqrt(u->x*u->x+u->y*u->y+u->z*u->z);
 }
 extern inline float norme2(vector const *u);
 extern inline float scalaire(vector const *u, vector const *v);
@@ -35,7 +37,7 @@ extern inline void cap_dist(vector *a, float dist);
 extern inline void randomm(matrix *m);
 
 void randomv(vector *v) {
-	v->x=drand48()-.5;
-	v->y=drand48()-.5;
-	v->z=drand48()-.5;
+    v->x=drand48()-.5;
+    v->y=drand48()-.5;
+    v->z=drand48()-.5;
 }

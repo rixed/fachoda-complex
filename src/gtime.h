@@ -1,3 +1,5 @@
+// -*- c-basic-offset: 4; c-backslash-column: 79; indent-tabs-mode: nil -*-
+// vim:sw=4 ts=4 sts=4 expandtab
 #ifndef GTIME_H_120126
 #define GTIME_H_120126
 #include <stdint.h>
@@ -6,10 +8,10 @@
 #define ONE_MILLISECOND 1000ULL
 
 // Game Time (which can be stoped, restarted, accelerated...
-typedef uint_least64_t gtime;	// how many usec since beginning of the simulation
+typedef uint_least64_t gtime;   // how many usec since beginning of the simulation
 
-gtime gtime_now(void);	// return the current time (involve a syscall)
-gtime gtime_last(void);	// return the last gtime returned by gtime_now()
+gtime gtime_now(void);  // return the current time (involve a syscall)
+gtime gtime_last(void); // return the last gtime returned by gtime_now()
 gtime gtime_age(gtime date);
 void gtime_accel(gtime how_much);
 void gtime_stop(void);
