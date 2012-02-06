@@ -60,7 +60,7 @@ enum {
     kc_flaps,
     kc_brakes,
     kc_autopilot,
-    kc_buziness,
+    kc_business,
     kc_down,
     kc_up,
     kc_left,

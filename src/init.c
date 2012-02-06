@@ -521,45 +521,47 @@ void initworld() {
             m.y.y=0;
         } else {
             randomhm(&m);
-            copyv(&p,&vec_zero);
-            if (bot[i].camp<2) p.y+=1000; else p.y-=1000;
-            if (bot[i].camp&1) p.x+=1000; else p.x-=1000;
-            if (i>=NbHosts) {
-                p.x*=2*((i-NbHosts));
-                p.y*=2*((i-NbHosts));
-                p.z=0;
+            p = vec_zero;
+            if (bot[i].camp < 2) p.y += 1000; else p.y -= 1000;
+            if (bot[i].camp & 1) p.x += 1000; else p.x -= 1000;
+            if (i >= NbHosts) {
+                p.x *= 2*((i-NbHosts));
+                p.y *= 2*((i-NbHosts));
+                p.z = 0;
             } else {
-                p.x+=(drand48()-.5)*400;
-                p.y+=(drand48()-.5)*400;
-                p.z=100*i;
+                p.x += (drand48()-.5)*400;
+                p.y += (drand48()-.5)*400;
+                p.z = 100*i;
             }
-            p.z+=16000;
+            p.z += 16000.;
         }
-        if (i>=NbHosts) bot[i].navion=drand48()*NBNAVIONS;
-        bot[i].vion=addnobjet(bot[i].navion,&p,&m, 0);
-        bot[i].but.gear=!SpaceInvaders;
-        bot[i].but.canon=0;
-        bot[i].but.bomb=0;
-        bot[i].but.gearup=0;
-        bot[i].but.frein=0;
-        bot[i].but.commerce=0;
-        bot[i].anghel=0;
-        bot[i].anggear=0;
-        bot[i].xctl=bot[i].yctl=0;
-        bot[i].thrust=SpaceInvaders?1:0;
-        bot[i].manoeuvre=SpaceInvaders?4:0;
-        bot[i].voltige=0; bot[i].gunned=-1;
-        bot[i].fiulloss=bot[i].bloodloss=bot[i].motorloss=bot[i].aeroloss=0;
-        bot[i].fiul=viondesc[bot[i].navion].fiulmax;
-        bot[i].bullets=viondesc[bot[i].navion].bulletsmax;
-        bot[i].cibv=bot[i].cibt=-1;
-        bot[i].gold=i>NbHosts?30000:2000;
+        if (i >= NbHosts) bot[i].navion = drand48()*NBNAVIONS;
+        bot[i].vion = addnobjet(bot[i].navion,&p,&m, 0);
+        bot[i].but.gear = !SpaceInvaders;
+        bot[i].but.canon = 0;
+        bot[i].but.bomb = 0;
+        bot[i].but.gearup = 0;
+        bot[i].but.frein = 0;
+        bot[i].but.business = 0;
+        bot[i].anghel = 0;
+        bot[i].anggear = 0;
+        bot[i].xctl = bot[i].yctl = 0;
+        bot[i].thrust = SpaceInvaders ? 1.:0.;
+        bot[i].manoeuvre = SpaceInvaders ? 4.:0.;
+        bot[i].voltige = 0;
+        bot[i].gunned = -1;
+        bot[i].fiulloss = bot[i].bloodloss = bot[i].motorloss = bot[i].aeroloss = 0;
+        bot[i].fiul = viondesc[bot[i].navion].fiulmax;
+        bot[i].bullets = viondesc[bot[i].navion].bulletsmax;
+        bot[i].cibv = bot[i].cibt = -1;
+        bot[i].gold = i > NbHosts ? 30000:2000;
         bot[i].is_flying = SpaceInvaders;
         armstate(i);
-        if (!SpaceInvaders) copyv(&bot[i].vionvit,&vec_zero);
-        else {
-            copyv(&bot[i].vionvit,&obj[bot[i].vion].rot.x);
-            mulv(&bot[i].vionvit,20);
+        if (!SpaceInvaders) {
+            bot[i].vionvit = vec_zero;
+        } else {
+            bot[i].vionvit = obj[bot[i].vion].rot.x;
+            mulv(&bot[i].vionvit, 2. * ONE_METER);
             newnav(i);
         }
     }

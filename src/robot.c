@@ -192,10 +192,10 @@ void armstate(int b) {
 }
 void newnav(int b) {
     if (SpaceInvaders) {
-        bot[b].u.x=bot[b].u.y=0;
-        bot[b].u.z=16000;
-        bot[b].vc=20;
-        bot[b].manoeuvre=4;
+        bot[b].u.x = bot[b].u.y = 0.;
+        bot[b].u.z = 16000.;
+        bot[b].vc = 20;
+        bot[b].manoeuvre = 4;
         return;
     }
     if (bot[b].cibt!=-1 && bot[b].nbomb && bot[b].fiul>viondesc[bot[b].navion].fiulmax/2) {

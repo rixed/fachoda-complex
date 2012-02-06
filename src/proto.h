@@ -131,7 +131,7 @@ typedef struct {
     char flap:1;
     char gearup:1;
     char frein:1;
-    char commerce:1;
+    char business:1;
     char repere:1;
 } bouton_s;
 typedef struct {

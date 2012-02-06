@@ -863,9 +863,9 @@ parse_error:
                         ct.z = DogBotDir;
                         ct.y = obj[bot[visubot].vion].rot.z;
                         neg(&ct.y);
-                        orthov(&ct.y,&ct.z);
+                        orthov(&ct.y, &ct.z);
                         renorme(&ct.y);
-                        prodvect(&ct.y,&ct.z,&ct.x);
+                        prodvect(&ct.y, &ct.z, &ct.x);
                     }
                     if (avancevisu) {
                         // Go for the instrument pannel
@@ -1048,13 +1048,12 @@ parse_error:
                 if (msgactutime && bot[visubot].camp==campactu) pstr(msgactu,10,0xFFFF00);
                 if (view == VIEW_DOGFIGHT && bot[DogBot].camp!=-1) {
                     char vn[100];
-                    strcpy(vn,viondesc[bot[DogBot].navion].name);
-                    if (DogBot<NbHosts) {
-                        strcat(vn," (");
-                        strcat(vn,&(playbotname[DogBot])[0]);
-                        strcat(vn,")");
-                    }
-                    pstr(vn,SY-12, colcamp[(int)bot[DogBot].camp]);
+                    snprintf(vn, sizeof(vn), "%s%s%s%s",
+                        viondesc[bot[DogBot].navion].name,
+                        DogBot < NbHosts ? " (" : "",
+                        DogBot < NbHosts ? playbotname[DogBot] : "",
+                        DogBot < NbHosts ? ")" : "");
+                    pstr(vn, SY-12, colcamp[(int)bot[DogBot].camp]);
                 }
                 // Display current balance
                 if (bot[bmanu].gold-2000>maxgold) {

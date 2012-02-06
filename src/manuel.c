@@ -134,7 +134,7 @@ void manuel(int b) {
     }
     if (kreset(gkeys[kc_nextbot].kc)) {
         if (view == VIEW_ANYTHING_CHEAT) {
-            if (++visuobj>=nbobj) visuobj = 0;
+            if (++visuobj >= nbobj) visuobj = 0;
         } else if (view == VIEW_DOGFIGHT) {
             NextDogBot();
         } else {
@@ -230,7 +230,7 @@ void manuel(int b) {
         playsound(VOICEGEAR, BIPBIP, 1., &obj[bot[b].vion].pos, false);
     }
     bot[b].but.frein=kread(gkeys[kc_brakes].kc);
-    if (kreset(gkeys[kc_buziness].kc)) bot[b].but.commerce=1;
+    if (kreset(gkeys[kc_business].kc)) bot[b].but.business = 1;
     if (kreset(gkeys[kc_autopilot].kc)) {
         autopilot^=1;
         playsound(VOICEGEAR, BIPBIP, 1., &obj[bot[b].vion].pos, false);
@@ -257,7 +257,7 @@ void manuel(int b) {
         obj[bot[visubot].vion].pos.z += 500;
         bot[visubot].vionvit.z = 0;
     }
-    if (Gruge && kreset(gkeys[kc_gunned].kc)) /*bot[visubot].gunned=bmanu;*/ hitgun(zep[0].o,zep[0].o);
+    if (Gruge && kreset(gkeys[kc_gunned].kc)) bot[visubot].gunned=bmanu;
     if (!autopilot && !mapmode) {
         if (MouseCtl) {
             bot[b].xctl = ((xmouse-_DX)/(double)_DX);

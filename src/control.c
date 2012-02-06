@@ -405,23 +405,23 @@ void control_plane(int b, float dt_sec) {
                     bot[b].gold-=bot[b].burning*10;
                     bot[b].burning=0;
                 }
-                if (bot[b].but.commerce) {
-                    i=bot[b].vion;
+                if (bot[b].but.business) {
+                    i = bot[b].vion;
                     do {
                         int v;
-                        bot[b].gold+=viondesc[bot[b].navion].prix;
+                        bot[b].gold += viondesc[bot[b].navion].prix;
                         do {
                             i=obj[i].next;
                             if (i==-1) i=map[obj[bot[b].vion].ak].first_obj;
                         } while (obj[i].type!=AVION || mod[obj[i].model].fixe!=0);
-                        bot[b].navion=mod[obj[i].model].nobjet;
-                        bot[b].gold-=viondesc[bot[b].navion].prix;
+                        bot[b].navion = mod[obj[i].model].nobjet;
+                        bot[b].gold -= viondesc[bot[b].navion].prix;
                         for (j=v=0; v<NBBOT; v++) {
                             if (v!=b && bot[v].vion==i) { j=1; break; }
                         }
                     } while (j || bot[b].gold<0);
-                    if (i!=bot[b].vion) {
-                        bot[b].vion=i;
+                    if (i != bot[b].vion) {
+                        bot[b].vion = i;
                         armstate(b);
                         playsound(VOICEEXTER, TARATATA, 1+(bot[b].navion-1)*.1, &voices_in_my_head, true);
                     }
@@ -551,7 +551,7 @@ void control_plane(int b, float dt_sec) {
         copyv(&repere[repidx],&obj[bot[b].vion].pos);
         if (++repidx>NBREPMAX) repidx=0;
     }
-    bot[b].but.bomb=bot[b].but.canon=bot[b].but.commerce=bot[b].but.repere=0;
+    bot[b].but.bomb = bot[b].but.canon = bot[b].but.business = bot[b].but.repere = 0;
 }
 
 void control_vehic(int v, float dt_sec) {
