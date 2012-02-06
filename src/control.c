@@ -334,7 +334,7 @@ void control_plane(int b, float dt_sec) {
         if (b == visubot) printf("ground -> %"PRIVECTOR"\n", PVECTOR(a));
 #       endif
 
-        float const fix_orient = rt * .1 * dt_sec;
+        float const fix_orient = rt * 1. * dt_sec;
         if (touchdown_mask&3  && !(touchdown_mask&4)) { // either right or left wheel but not front/rear -> noise down/up
             if (viondesc[bot[b].navion].avant) basculeY(bot[b].vion, -fix_orient);
             else basculeY(bot[b].vion, fix_orient);
