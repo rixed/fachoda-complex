@@ -91,7 +91,7 @@ int opensound(bool with_sound_)
     }
     for (unsigned s = 0; s < ARRAY_LEN(sources); s++) {
         alSourcef(sources[s], AL_MAX_DISTANCE, MAX_DIST);
-        alSourcef(sources[s], AL_REFERENCE_DISTANCE, 100.);
+        alSourcef(sources[s], AL_REFERENCE_DISTANCE, 2. * ONE_METER);
     }
     alSpeedOfSound(34330.); // our unit of distance is approx the cm
 
