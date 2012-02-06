@@ -683,7 +683,7 @@ parse_error:
                     debris[i].a1 += debris[i].ai1 * dt_sec;
                     debris[i].a2 += debris[i].ai2 * dt_sec;
                     controlepos(debris[i].o);
-                    mulv(&debris[i].vit, pow(.9, dt_sec));
+                    mulv(&debris[i].vit, pow(.99, dt_sec));
                     debris[i].vit.z -= G * dt_sec;
                     zs=z_ground(obj[debris[i].o].pos.x,obj[debris[i].o].pos.y, true);
                     if (obj[debris[i].o].pos.z<zs) {
@@ -902,8 +902,8 @@ parse_error:
                         static vector prev_vit;
                         vector acc;
                         subv3(&bot[visubot].vionvit, &prev_vit, &acc);
-                        mulv(&acc, .03/dt_sec);
-                        cap_dist(&acc, 4.);
+                        mulv(&acc, .02/dt_sec);
+                        cap_dist(&acc, 3.);
                         subv(&obj[0].pos, &acc);
                         prev_vit = bot[visubot].vionvit;
                     }

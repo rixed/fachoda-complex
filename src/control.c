@@ -133,7 +133,7 @@ void control_plane(int b, float dt_sec) {
 #   endif
 
 #   ifndef NTHRUST
-#   define THRUST_ACC (1. * G)  // at full thrust, with motorpower=1, fail to compensate gravity
+#   define THRUST_ACC (.7 * G)  // at full thrust, with motorpower=1, fail to compensate gravity
     {   // Thrust
         double k = THRUST_ACC * bot[b].thrust * alt_factor * (1-bot[b].motorloss/128.) * viondesc[bot[b].navion].motorpower;
         v = obj[bot[b].vion].rot.x;
@@ -159,10 +159,10 @@ void control_plane(int b, float dt_sec) {
         if (bot[b].but.flap) k += .03;
         k *= alt_factor;
         // linear up to around 150 and proportional to v*v afterward (so that we can't stop abruptly)
-#       define LINEAR_DRAG_MAXSPEED 150
+#       define LINEAR_DRAG_MAXSPEED 200
 #       define LDM LINEAR_DRAG_MAXSPEED
-#       define LIN_FACTOR .6
-#       define SQ_FACTOR .003
+#       define LIN_FACTOR .3
+#       define SQ_FACTOR .006
 #       define DRAG(what, factor) \
             fabs(what) < LDM ? \
                 (factor)*LIN_FACTOR*(what) : \
@@ -190,11 +190,11 @@ void control_plane(int b, float dt_sec) {
 
     double zs = obj[bot[b].vion].pos.z - bot[b].zs; // ground altitude
 #   ifndef NLIFT
-    {   // miracle des airs, les ailes portent...
-#       define MIN_SPEED_FOR_LIFT 90
+    {
+#       define MIN_SPEED_FOR_LIFT 120
         float kx = vx < MIN_SPEED_FOR_LIFT ?
-            0. : MIN(.0001*(vx-MIN_SPEED_FOR_LIFT)*(vx-MIN_SPEED_FOR_LIFT), 1.2*exp(-.001*vx));
-        // kx max is aprox 1., when vx is around 200
+            0. : MIN(.00005*(vx-MIN_SPEED_FOR_LIFT)*(vx-MIN_SPEED_FOR_LIFT), 1.2*exp(-.001*vx));
+        // kx max is aprox 1., when vx is around 250
         // TODO: add lift with a-o-a?
         float lift = viondesc[bot[b].navion].lift;
         if (bot[b].but.flap) lift *= 1.2;
@@ -232,7 +232,7 @@ void control_plane(int b, float dt_sec) {
                 mulv(&v, .4);
                 subv(&a, &v);
             } else {
-                v.x = (bot[b].but.frein && vx < 150. ? .08:.00005) * vx;
+                v.x = (bot[b].but.frein && vx < 1. * ONE_METER ? .08:.00005) * vx;
                 v.y = .05 * vy;
                 v.z = 0;
                 mulmv(&obj[bot[b].vion].rot, &v, &u);
@@ -306,8 +306,8 @@ void control_plane(int b, float dt_sec) {
 
         // So we hit the ground. With what speed?
         bool const easy = Easy || b>=NbHosts;
-        float const vz_min = easy ? -100. : -80.;
-        float const vz_min_rough = easy ? -80. : -50.;
+        float const vz_min = easy ? -150. : -100.;
+        float const vz_min_rough = easy ? -100. : -70.;
         if (
             (vz < vz_min) ||
             (vz < vz_min_rough && (bot[b].but.gearup || submap_get(obj[bot[b].vion].ak)!=0))
@@ -350,7 +350,7 @@ void control_plane(int b, float dt_sec) {
         //if (touchdown_mask&3) basculeZ(bot[b].vion, -bot[b].xctl* dt_sec);    // petite gruge pour diriger en roulant
 
         // Reload
-        if (touchdown_mask && vx < .5 * ONE_METER) {
+        if (touchdown_mask && vx < .05 * ONE_METER) {
             v = obj[bot[b].babase].pos;
             subv(&v, &obj[bot[b].vion].pos);
             if (norme2(&v) < ECHELLE*ECHELLE*.1) {
