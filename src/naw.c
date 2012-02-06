@@ -548,7 +548,7 @@ parse_error:
 
     gtime_start();
     do {
-        if (accel) gtime_accel(1000); // add 1 msec
+        if (accel) gtime_accel(100. * ONE_MILLISECOND);
         float const dt_sec = gtime_next_sec();
 //      printf("dt = %f\n", dt_sec);
 
@@ -808,7 +808,7 @@ parse_error:
             }
 
             // Draw the frame
-            if (!accel || 0 == (imgcount&63)) {
+            if (!accel || 0 == (imgcount&31)) {
                 // où est la caméra ?
                 if (view == VIEW_ROTATING_BOMB) {
                     if (!visubomb || obj[visubomb].objref!=-1) {
@@ -1106,7 +1106,7 @@ parse_error:
                 }
                 plotcursor(xmouse,ymouse);
                 buffer2video();
-            } else fprintf(stderr, "skip frame\n");
+            }
         }
     } while (quitte<2);
     // FIN
