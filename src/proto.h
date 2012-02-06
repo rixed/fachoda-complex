@@ -292,7 +292,6 @@ typedef struct {
 
 // naw.c
 extern int const NbHosts, MonoMode;
-extern char hostname[250];
 extern vector ExplozePos; extern int Exploze;
 extern int DebMoulins, FinMoulins;
 extern void akref(int ak,vector *r);
@@ -335,7 +334,7 @@ extern objet *obj;
 extern int nbobj, debtir;
 extern double focale;
 extern matrix Light;
-extern char WINDOW,PHONG;
+extern char PHONG;
 extern float TROPLOIN,TROPLOIN2;
 extern int _DX,_DY,SX,SY,SYTB,SXTB,SIZECERCLE,POLYMAX,TBY;
 extern int nbtir;
@@ -349,12 +348,12 @@ extern uchar *typefumee;
 extern int firstfumee;
 extern void tournevion(int v, float d, float p, float g);
 // video_interf
-extern int bank, size, width, BufVidOffset, depth, XCONVERT;
+extern int bank, size, width, BufVidOffset, depth;
 extern pixel32 *videobuffer;
 extern char *video;
 extern void buffer2video(void);
 extern char getscancode(void);
-extern void initvideo(void);
+extern void initvideo(bool fullscreen);
 extern int kread(unsigned n);
 extern int kreset(unsigned n);
 extern void xproceed(void);

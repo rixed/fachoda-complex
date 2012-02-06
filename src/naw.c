@@ -49,7 +49,6 @@ int nbobj, debtir, firstfumee, fumeedispo, DebMoulins, FinMoulins;
 float AngleMoulin=0;
 uchar *rayonfumee;
 uchar *typefumee;
-char hostname[250]="localhost";
 int fumeesource[NBFUMEESOURCE], fumeesourceintens[NBFUMEESOURCE];
 double focale;
 int camp=1, AllowResurrect=1, Easy=0, Gruge=0, ViewAll=0, SpaceInvaders=0, monvion=1, lang=1, Dark=-1, Fleuve=1, MouseCtl=1, Accident=1500, Smooth=7;
@@ -66,7 +65,6 @@ bombe_s *bombe; int bombidx;
 char (*playbotname)[30];
 debris_s debris[NBGRAVMAX];
 // options changeables à la ligne de com :
-char WINDOW=1;
 char PHONG=1;
 float TROPLOIN=120.,TROPLOIN2;
 int _DX,_DY,SX=400,SY=250,SYTB,SXTB,SIZECERCLE,POLYMAX=25,TBY;
@@ -329,31 +327,27 @@ int main(int narg, char **arg) {
         {  200, "Abbe de la Sainte Gamelle"},
         {  100, "marine craccRa"}
     };
-//  vect2dc p1={0,-60,{150,200,40}},p2={40,20,{40,220,50}},p3={-50,80,{100,10,240}},p4={0,0,{240,40,140}}; float bolop=0;
     printf("Fachoda Complex - (C) 2000-2012 Cedric Cellier\n"
 "This program comes with ABSOLUTELY NO WARRANTY.\n"
 "This is free software, and you are welcome to redistribute it\n"
 "under certain conditions; See http://www.gnu.org/licenses/gpl-3.0.html for details.\n"
 "\n"
-"   fullscreen      : play in DGA mode instead of windowed mode\n"
+"   fullscreen      : Plain in fullscreen mode\n"
 "   x n             : X size of the window (default : 320)\n"
 "   y n             : Y size (default : 200)\n"
 "   night           : Play at night\n"
 "   camp 1|2|3|4    : the camp you want to fly for (default : 1)\n"
 "   drone n         : number of drones (default : 30)\n"
 "   tank n          : total number of tanks (default : 200)\n"
-"   host name       : name of the machine that runs the server (default : localhost)\n"
-"   mortal          : resurections are forbiden (default : come back as soon as dead just like the little Jesus)\n"
+"   mortal          : forbids resurections (default : come back in another plane)\n"
 "   name            : your name in the game (default : your user id)\n"
 "   easy            : easy mode (default : guess)\n"
 "   viewall         : view all enemies on the map (default : no)\n"
 "   nosound         : turn sound OFF (default : sound on)\n"
-"   killemAll       : Kill em All !!! (default : just be kool, this is a game)\n"
+"   killemAll       : Kill em All! (default : just be kool, this is a game)\n"
 "   plane n         : The plane you start with : 1 for Dewoitine, 2 for Corsair, etc (default : 2)\n"
 "   french          : Pour que les textes soient en francais (defaut : frenglish)\n"
 "   keys            : Redefine the keys and save in file '.keys'\n"
-"   nogus           : force the use of /dev/dsp instead of /dev/sequencer\n"
-"   xcolor          : for X11 version, let X converts pixel values (slower, but can solve palette errors on some video cards)\n"
 "   gruge           : Who knows ?\n"
 );
     /*
@@ -366,41 +360,39 @@ int main(int narg, char **arg) {
         Command line parser
                              */
     bool with_sound = true;
+    bool fullscreen = false;
 
     for (i=1; i<narg; i++) {
         int c=0;
         while (arg[i][c]=='-' || arg[i][c]==' ') c++;
-        if (!strcmp(&arg[i][c],"fullscreen")) WINDOW=0;
-        else if (!strcmp(&arg[i][c],"night")) Dark=1;
-        else if (!strcmp(&arg[i][c],"x")) {
+        if (0 == strcasecmp(&arg[i][c], "fullscreen")) fullscreen = true;
+        else if (0 == strcasecmp(&arg[i][c],"night")) Dark=1;
+        else if (0 == strcasecmp(&arg[i][c],"x")) {
             if (++i==narg || sscanf(arg[i],"%d",&SX)!=1) goto parse_error;
-        } else if (!strcmp(&arg[i][c],"y")) {
+        } else if (0 == strcasecmp(&arg[i][c],"y")) {
             if (++i==narg || sscanf(arg[i],"%d",&SY)!=1) goto parse_error;
-        } else if (!strcmp(&arg[i][c],"camp")) {
+        } else if (0 == strcasecmp(&arg[i][c],"camp")) {
             if (++i==narg || sscanf(arg[i],"%d",&camp)!=1 || camp<1 || camp>4) goto parse_error;
-        } else if (!strcmp(&arg[i][c],"drone")) {
+        } else if (0 == strcasecmp(&arg[i][c],"drone")) {
             if (++i==narg || sscanf(arg[i],"%d",&NBBOT)!=1 || NBBOT<0 || NBBOT>100) goto parse_error;
-        } else if (!strcmp(&arg[i][c],"tank")) {
+        } else if (0 == strcasecmp(&arg[i][c],"tank")) {
             if (++i==narg || sscanf(arg[i],"%d",&NBTANKBOTS)!=1 || NBTANKBOTS<1 || NBTANKBOTS>500) goto parse_error;
-        } else if (!strcmp(&arg[i][c],"host")) {
-            if (++i==narg || sscanf(arg[i],"%s",hostname)!=1) goto parse_error;
-        } else if (!strcmp(&arg[i][c],"mortal")) AllowResurrect=0;
-        else if (!strcmp(&arg[i][c],"name")) {
+        } else if (0 == strcasecmp(&arg[i][c],"mortal")) AllowResurrect=0;
+        else if (0 == strcasecmp(&arg[i][c],"name")) {
             if (++i==narg) goto parse_error; else {
                 for (j=0; j<(int)strlen(arg[i]) && j<29; j++) myname[j]=arg[i][j];
                 myname[j]='\0';
                 }
-        } else if (!strcmp(&arg[i][c],"easy")) Easy=1;
-        else if (!strcmp(&arg[i][c],"viewall")) ViewAll=1;
-        else if (!strcmp(&arg[i][c],"nosound")) with_sound=false;
-        else if (!strcmp(&arg[i][c],"nomouse")) MouseCtl=0;
-        else if (!strcmp(&arg[i][c],"killemall")) SpaceInvaders=1;
-        else if (!strcmp(&arg[i][c],"plane")) {
+        } else if (0 == strcasecmp(&arg[i][c],"easy")) Easy=1;
+        else if (0 == strcasecmp(&arg[i][c],"viewall")) ViewAll=1;
+        else if (0 == strcasecmp(&arg[i][c],"nosound")) with_sound=false;
+        else if (0 == strcasecmp(&arg[i][c],"nomouse")) MouseCtl=0;
+        else if (0 == strcasecmp(&arg[i][c],"killemall")) SpaceInvaders=1;
+        else if (0 == strcasecmp(&arg[i][c],"plane")) {
             if (++i==narg || sscanf(arg[i],"%d",&monvion)!=1 || monvion<1 || monvion>NBNAVIONS) goto parse_error;
-        } else if (!strcmp(&arg[i][c],"french")) lang=0;
-        else if (!strcmp(&arg[i][c],"keys")) RedefineKeys=1;
-        else if (!strcmp(&arg[i][c],"gruge")) Gruge=1;
-        else if (!strcmp(&arg[i][c],"xcolor")) XCONVERT=1;
+        } else if (0 == strcasecmp(&arg[i][c],"french")) lang=0;
+        else if (0 == strcasecmp(&arg[i][c],"keys")) RedefineKeys=1;
+        else if (0 == strcasecmp(&arg[i][c],"gruge")) Gruge=1;
         else {
 parse_error:
             printf("Something was wrong in your command line...\n");
@@ -419,10 +411,6 @@ parse_error:
     TBY=SY-SYTB;
     SXTB=SYTB*2; //SX>>1;
     focale=_DX;
-    if (!WINDOW && XCONVERT) {
-        WINDOW=1;
-        printf("Can't let X11 converts the pixel values in DGA mode\n");
-    }
     /* lire les highscore */
     if ((file=fopen(".highscores","r"))!=NULL) {
         fread(&highscore,sizeof(HS_s),20,file);
@@ -446,7 +434,7 @@ parse_error:
                */
     videobuffer=(pixel32*)malloc(SX*SY*sizeof(pixel32));
     BufVidOffset=SX*sizeof(pixel32);
-    initvideo();
+    initvideo(fullscreen);
     //  printf("Img bpp=%d\n",depth);
     drawtbback();
 /*  fontname=XListFonts(disp,"-freefont-cooper-*-*-*-*-*-*-100-*-*-*-*-*",1,&i);

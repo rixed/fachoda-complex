@@ -28,7 +28,7 @@ int bank, size, width, BufVidOffset, yview=0, depth, XCONVERT=0;
 pixel32 *videobuffer;
 char *video;
 
-void initvideo() {
+void initvideo(bool fullscreen) {
     int i;
     int r, g, b;
     if (SDL_Init(SDL_INIT_VIDEO)<0) {
@@ -36,7 +36,7 @@ void initvideo() {
         exit(1);
     }
     atexit(SDL_Quit);
-    if ((screen=SDL_SetVideoMode(SX,SY,0, SDL_SWSURFACE|SDL_ANYFORMAT|(WINDOW?0:SDL_FULLSCREEN)))==NULL) {
+    if ((screen=SDL_SetVideoMode(SX,SY,0, SDL_SWSURFACE|SDL_ANYFORMAT|(fullscreen?SDL_FULLSCREEN:0)))==NULL) {
         fprintf(stderr,"Couldn't set video mode : %s\n",SDL_GetError());
         exit(1);
     }
