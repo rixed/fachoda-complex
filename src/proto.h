@@ -76,7 +76,7 @@
 //#define NBNOMVILLAGE 5
 
 typedef enum { CAMERA, TIR, AVION, CIBGRAT, BOMB, PHARE, VEHIC, DECO, GRAV, NUAGE, FUMEE, TABBORD, ZEPPELIN } type_e;
-typedef enum { PRESENT, BIPINTRO, SHOT, GEAR_DN, GEAR_UP, SCREETCH, TAXI, MOTOR, HIT, MESSAGE, EXPLOZ, EXPLOZ2, TOLE, BIPBIP, BIPBIP2, BIPBIP3, FEU, TARATATA, ALLELUIA, ALERT, DEATH, PAIN, BRAVO, NB_SAMPLES } sample_e;
+typedef enum { PRESENT, BIPINTRO, SHOT, GEAR_DN, GEAR_UP, SCREETCH, LOW_SPEED, MOTOR, HIT, MESSAGE, EXPLOZ, EXPLOZ2, TOLE, BIPBIP, BIPBIP2, BIPBIP3, FEU, TARATATA, ALLELUIA, ALERT, DEATH, PAIN, BRAVO, NB_SAMPLES } sample_e;
 enum voice { VOICEGEAR, VOICESHOT, VOICEMOTOR, VOICEEXTER, VOICEALERT, NB_VOICES };
 
 typedef unsigned char uchar;
@@ -206,8 +206,31 @@ typedef struct {
     gtime last_shot;
     float zs;
     float xctl,yctl,thrust;
-    char manoeuvre;
-    char voltige;
+    /* Normaly a bot is in maneuver (ie going to bomb something), but it can be
+     * interrupted to fight/escape before returning to it's plan. */
+    enum aerobatic {
+        MANEUVER,   // see below field
+        TURN,       // high rate turn
+        RECOVER,    // level the wings
+        CLIMB_VERT, // high rate climb
+        TAIL,       // follow target's six
+        CLIMB,      // regain altitude
+    } aerobatic;
+    enum maneuver {
+        PARKING,
+        TAXI,
+        LINE_UP,
+        TAKE_OFF,
+        NAVIG,
+        DIVE_N_BOMB,
+        NOSE_UP,
+        ILS_1,
+        ILS_2,
+        ILS_3,
+        EVADE,
+        HEDGEHOP,
+        BOMBING,
+    } maneuver;
     vector u,v;
     matrix m;
     int cibt,cibv,a;
@@ -224,6 +247,10 @@ typedef struct {
     int gold;
     bool is_flying;
 } bot_s;
+
+char const *aerobatic_2_str(enum aerobatic);
+char const *maneuver_2_str(enum maneuver);
+
 typedef struct {
     int o, cib[6];
     gtime last_shot;

@@ -459,7 +459,7 @@ parse_error:
     loadsample(GEAR_DN,"snd/gear_dn.raw", false, 1.);
     loadsample(GEAR_UP,"snd/gear_up.raw", false, 1.);
     loadsample(SCREETCH,"snd/screetch.raw", false, 1.);
-    load_wave(TAXI, "snd2/taxi.wav", true, .4);
+    load_wave(LOW_SPEED, "snd2/taxi.wav", true, .4);
     load_wave(MOTOR, "snd2/spit2.wav", true, .7);
     loadsample(HIT,"snd/hit.raw", false, 1.);
     loadsample(MESSAGE,"snd/message.raw", false, 1.);
@@ -1007,8 +1007,12 @@ parse_error:
                 }
                 if (view == VIEW_DOGFIGHT && bot[bmanu].camp!=-1) cercle(0,0,10,colcamp[(int)bot[bmanu].camp]);
                 plotmouse(_DX*bot[visubot].xctl,_DY*bot[visubot].yctl);
-/*              if (bot[visubot].voltige) pnum(bot[visubot].voltige,SX-50,20,0xFFFFFF,1);
-                else pnum(bot[visubot].manoeuvre,SX-50,20,0xFFFF00,1);
+                if (bot[visubot].aerobatic != MANEUVER) {
+                    pstr(aerobatic_2_str(bot[visubot].aerobatic), 20, 0xFF8080);
+                } else {
+                    pstr(maneuver_2_str(bot[visubot].maneuver), 20, 0x80FF80);
+                }
+/*
                 pnum(bot[visubot].vitlin,SX-50,30,0xFFFFFF,1);
                 pnum(norme(&bot[visubot].vionvit),SX-50,40,0xFFFF,1);
                 pnum(bot[visubot].zs,SX-50,50,0xFFFF,1);

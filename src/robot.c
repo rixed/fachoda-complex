@@ -19,11 +19,47 @@
 #include <stdlib.h>
 #include <math.h>
 #include <values.h>
+#include <assert.h>
 #include "proto.h"
 bot_s *bot;
 vehic_s *vehic;
 voiture_s *voiture;
 zep_s *zep;
+
+char const *aerobatic_2_str(enum aerobatic aerobatic)
+{
+    switch (aerobatic) {
+        case MANEUVER:   return "maneuver";
+        case TURN:       return "turn";
+        case RECOVER:    return "recover";
+        case CLIMB_VERT: return "high climb";
+        case TAIL:       return "follow 6s";
+        case CLIMB:      return "climb";
+    }
+    assert(!"Invalid aerobatic");
+    return "INVALID";
+}
+
+char const *maneuver_2_str(enum maneuver maneuver)
+{
+    switch (maneuver) {
+        case PARKING:     return "parking";
+        case TAXI:        return "taxi";
+        case LINE_UP:     return "line up";
+        case TAKE_OFF:    return "take off";
+        case NAVIG:       return "navigation";
+        case DIVE_N_BOMB: return "dive and bomb";
+        case NOSE_UP:     return "nose up";
+        case ILS_1:       return "ILS(1)";
+        case ILS_2:       return "ILS(2)";
+        case ILS_3:       return "ILS(3)";
+        case EVADE:       return "evade";
+        case HEDGEHOP:    return "hedgehop";
+        case BOMBING:     return "bombing";
+    }
+    assert(!"Invalid maneuver");
+    return "INVALID";
+}
 
 double tirz(double dz, double d) {
     double z=0, l=0;
@@ -195,43 +231,43 @@ void newnav(int b) {
         bot[b].u.x = bot[b].u.y = 0.;
         bot[b].u.z = 16000.;
         bot[b].vc = 20;
-        bot[b].manoeuvre = 4;
+        bot[b].maneuver = NAVIG;
         return;
     }
     if (bot[b].cibt!=-1 && bot[b].nbomb && bot[b].fiul>viondesc[bot[b].navion].fiulmax/2) {
-        if (bot[b].manoeuvre!=6) {
+        if (bot[b].maneuver != NOSE_UP) {
             copyv(&bot[b].u,&obj[bot[b].cibt].pos);
             bot[b].vc=35;
-            bot[b].manoeuvre=4;
+            bot[b].maneuver = NAVIG;
         } else {
             copyv(&bot[b].u,&obj[bot[b].vion].rot.x);
             mulv(&bot[b].u,25000);
             bot[b].u.z=1000;
             addv(&bot[b].u,&obj[bot[b].vion].pos);
             bot[b].vc=50;   // on s'éloigne fissa!
-            bot[b].manoeuvre=10;
+            bot[b].maneuver = EVADE;
         }
         bot[b].u.z+=3000;
     } else {
-        if (bot[b].manoeuvre!=7 && bot[b].manoeuvre!=8 && bot[b].manoeuvre!=9) {
+        if (bot[b].maneuver != ILS_1 && bot[b].maneuver != ILS_2 && bot[b].maneuver != ILS_3) {
             copyv(&bot[b].u,&obj[bot[b].babase].rot.x);
             mulv(&bot[b].u,6000);
             addv(&bot[b].u,&obj[bot[b].babase].pos);
             bot[b].u.z=1000+obj[bot[b].vion].pos.z-bot[b].zs;
-            bot[b].manoeuvre=7;
+            bot[b].maneuver = ILS_1;
             bot[b].vc=30;
             bot[b].cibt=-1;
-        } else if (bot[b].manoeuvre==7) {
+        } else if (bot[b].maneuver == ILS_1) {
             copyv(&bot[b].u,&obj[bot[b].babase].rot.x);
             mulv(&bot[b].u,1500);
             addv(&bot[b].u,&obj[bot[b].babase].pos);
             bot[b].u.z=obj[bot[b].vion].pos.z-bot[b].zs+300;
-            bot[b].manoeuvre=8;
+            bot[b].maneuver = ILS_2;
             bot[b].vc=16;
-        } else if (bot[b].manoeuvre==8) {
+        } else if (bot[b].maneuver == ILS_2) {
             copyv(&bot[b].u,&obj[bot[b].babase].pos);
             bot[b].but.gear=1;
-            bot[b].manoeuvre=9;
+            bot[b].maneuver = ILS_3;
             bot[b].vc=9;
         }
     }
@@ -280,19 +316,20 @@ void robot(int b){
     vector u,v,c;
     int o=bot[b].vion;
     if (bot[b].camp==-1) return;
-//  printf("bot %d man %d ",b,bot[b].manoeuvre);
+//  printf("bot %d man %d ",b,bot[b].maneuver);
     vit=norme(&bot[b].vionvit);
 #define zs bot[b].zs
     if (bot[b].gunned!=-1) {    // il reviendra a chaque fois en cas de voltige...
         if (!(bot[b].gunned&(1<<NTANKMARK))) {  // si c'est un bot qui l'a touché
             if (bot[b].cibv!=bot[bot[b].gunned].vion && bot[bot[b].gunned].camp!=bot[b].camp) {
-                bot[b].voltige=1;   // virage serré
+                bot[b].aerobatic = TURN;
                 bot[b].cibv=bot[bot[b].gunned].vion;
             }
         } else {
-            bot[b].cibt=vehic[bot[b].gunned&((1<<NTANKMARK)-1)].o1;
-            bot[b].manoeuvre=4; bot[b].voltige=0;   // il va voir sa mere lui !
-            bot[b].gunned=-1;
+            bot[b].cibt = vehic[bot[b].gunned&((1<<NTANKMARK)-1)].o1;
+            bot[b].maneuver = NAVIG;
+            bot[b].aerobatic = MANEUVER;   // il va voir sa mere lui !
+            bot[b].gunned = -1;
         }
     } else {
         if (bot[b].cibv==-1) {
@@ -301,29 +338,29 @@ void robot(int b){
                 subv3(&obj[bot[cib].vion].pos,&obj[bot[b].vion].pos,&u);
                 if (norme2(&u)<ECHELLE*ECHELLE*10) {
                     bot[b].cibv=bot[cib].vion;
-                    bot[b].voltige=4;
+                    bot[b].aerobatic = TAIL;
                     bot[b].gunned=cib;
                 }
             }
         }
     }
-    if (bot[b].voltige && obj[bot[b].cibv].type==DECO) {
-        bot[b].voltige=0;
+    if (bot[b].aerobatic && obj[bot[b].cibv].type==DECO) {
+        bot[b].aerobatic = MANEUVER;
         bot[b].cibv=-1;
-        bot[b].manoeuvre=4;
+        bot[b].maneuver = NAVIG;
         bot[b].gunned=-1;
     }
-    switch (bot[b].voltige) {
-    case 0:
-        switch (bot[b].manoeuvre) {
-        case 0: // parking
+    switch (bot[b].aerobatic) {
+    case MANEUVER:
+        switch (bot[b].maneuver) {
+        case PARKING:
             copyv(&bot[b].u,&obj[bot[b].babase].pos);
             copyv(&bot[b].v,&obj[bot[b].babase].rot.x);
             bot[b].but.gear=1;
             newcib(b);
-            if (bot[b].cibt!=-1) bot[b].manoeuvre=1;
+            if (bot[b].cibt!=-1) bot[b].maneuver = TAXI;
             break;
-        case 1: // taxi
+        case TAXI:
             subv3(&bot[b].u,&obj[o].pos,&u);
             n=norme(&u);
             if (n>300) m=2; else m=1;
@@ -338,11 +375,11 @@ void robot(int b){
             } else {
                 bot[b].thrust=0;    // pour reloader les bombes
                 bot[b].but.frein=1;
-                if (vit<.1) bot[b].manoeuvre=2;
+                if (vit<.1) bot[b].maneuver = LINE_UP;
             }
 //          printf("n %.0f xc %.3f\n",n,bot[b].xctl);
             break;
-        case 2: // alignement
+        case LINE_UP:
             bot[b].thrust=0.01;
             bot[b].but.frein=0;
             bot[b].xctl=-4*scalaire(&bot[b].v,&obj[o].rot.y);
@@ -350,10 +387,10 @@ void robot(int b){
                 if (bot[b].xctl>0) bot[b].xctl=1;
                 else bot[b].xctl=-1;
             }
-            if (fabs(bot[b].xctl)<.02) bot[b].manoeuvre=3;
+            if (fabs(bot[b].xctl)<.02) bot[b].maneuver = TAKE_OFF;
 //          printf("xc %.3f\n",bot[b].xctl);
             break;
-        case 3: // décollage
+        case TAKE_OFF:
             bot[b].thrust=1;
             bot[b].but.flap=1;
             bot[b].xctl=0;
@@ -371,16 +408,16 @@ void robot(int b){
             }
 //          printf("vit %.1f alt %.1f yc %.3f\n",vit,obj[o].pos.z,bot[b].yctl);
             break;
-        case 4: // NAV
-        case 10:    // escape from a mefait
-        case 7: // ILS
-        case 8: // ILS
-        case 9:
-        case 11:    // vol rasant et...
-        case 12:    // ...et bombardement !
-            if ((bot[b].manoeuvre==4 || bot[b].manoeuvre==7 || bot[b].manoeuvre==10) && bot[b].vitlin>19) bot[b].but.flap=0;
+        case NAVIG:
+        case EVADE:
+        case ILS_1:
+        case ILS_2:
+        case ILS_3:
+        case HEDGEHOP:
+        case BOMBING:
+            if ((bot[b].maneuver == NAVIG || bot[b].maneuver == ILS_1 || bot[b].maneuver == EVADE) && bot[b].vitlin>19) bot[b].but.flap = 0;
             else bot[b].but.flap=1;
-            if (bot[b].cibt!=-1 && bot[b].manoeuvre!=10) {  // recopie les coords des fois que la cible bouge
+            if (bot[b].cibt!=-1 && bot[b].maneuver != EVADE) {  // recopie les coords des fois que la cible bouge
                 bot[b].u.x=obj[bot[b].cibt].pos.x;
                 bot[b].u.y=obj[bot[b].cibt].pos.y;
             }
@@ -390,13 +427,13 @@ void robot(int b){
             dc=cap(v.x,v.y)-bot[b].cap;
             if (dc<-M_PI) dc+=2*M_PI;
             else if (dc>M_PI) dc-=2*M_PI;
-            if (bot[b].manoeuvre==11 && n<4000) {
-                bot[b].manoeuvre=12;
+            if (bot[b].maneuver == HEDGEHOP && n<4000) {
+                bot[b].maneuver = BOMBING;
                 bot[b].vc=18;
                 bot[b].u.z=obj[bot[b].cibt].pos.z+1100;
                 bot[b].df=MAXDOUBLE;
             }
-            if (bot[b].manoeuvre==12) {
+            if (bot[b].maneuver == BOMBING) {
                 vector c;
                 if (obj[bot[b].cibt].type==DECO) {
                     newcib(b);
@@ -407,28 +444,31 @@ void robot(int b){
                     subv(&c,&obj[bot[b].vion].pos);
                     if ((distfrap2=bombz2(bot[b].vionvit,c))<7000) {    // diminuer n'augmente pas la precision !
                         bot[b].but.bomb=1;
-                        bot[b].manoeuvre=6;
+                        bot[b].maneuver = NOSE_UP;
                     }
                     if (distfrap2<bot[b].df) bot[b].df=distfrap2;
-                    if (dc<-M_PI/2 || dc>M_PI/2) bot[b].manoeuvre=6;
+                    if (dc<-M_PI/2 || dc>M_PI/2) bot[b].maneuver = NOSE_UP;
                 }
             }
-            if (bot[b].manoeuvre==10 && n<3000) { newnav(b); break; }
-            if (bot[b].manoeuvre==4 && bot[b].cibt!=-1) {
+            if (bot[b].maneuver == EVADE && n<3000) {
+                newnav(b);
+                break;
+            }
+            if (bot[b].maneuver == NAVIG && bot[b].cibt!=-1) {
                 if (n<40000) {
                     bot[b].u.z=obj[bot[b].cibt].pos.z+1500;
                     bot[b].vc=35;
-                    bot[b].manoeuvre=11;
+                    bot[b].maneuver = HEDGEHOP;
         //          if (visubot==b) printf("razant\n");
                     break;
                 } else if (n<7000) {
                     bot[b].u.z=obj[bot[b].cibt].pos.z+800;
             //      if (visubot==b) printf("Basse altitude!\n");
                 }
-            } else if (bot[b].manoeuvre>=4 && bot[b].manoeuvre<9 && n<2000 && !SpaceInvaders){
+            } else if (bot[b].maneuver >= NAVIG && bot[b].maneuver < ILS_3 && n<2000 && !SpaceInvaders){
                 newnav(b);
                 break;
-            } else if (bot[b].manoeuvre==9) {
+            } else if (bot[b].maneuver == ILS_3) {
                 if (zs<30) {
                     bot[b].vc=0;
                 }
@@ -437,7 +477,7 @@ void robot(int b){
                 }
                 if (bot[b].vitlin<1) {
                 //  printf("Bot#%d de retours à la babase\n",b);
-                    bot[b].manoeuvre=0;
+                    bot[b].maneuver = PARKING;
                     break;
                 }
             }
@@ -452,12 +492,12 @@ void robot(int b){
             if (bot[b].vitlin<bot[b].vc) bot[b].thrust+=.01;
             else if (bot[b].vitlin>bot[b].vc && bot[b].thrust>.02) bot[b].thrust-=.01;
             m=bot[b].u.z-obj[o].pos.z;  // DZ
-            if (zs<6000 && (bot[b].manoeuvre==10 || bot[b].manoeuvre==4)) {
+            if (zs<6000 && (bot[b].maneuver == EVADE || bot[b].maneuver == NAVIG)) {
                 if (zs>1000) m+=12000-2*zs; else { m+=20000-5*zs; bot[b].thrust=1; };
-            } else if (zs<1000 && (bot[b].manoeuvre==11 || bot[b].manoeuvre==12)) m+=20000-20*zs;
-            else if (zs<1200 && bot[b].manoeuvre==7) m+=24000-20*zs;
-            else if (zs<500 && bot[b].manoeuvre==8) m+=10000-20*zs;
-            if ((bot [b].manoeuvre==4 || bot[b].manoeuvre==7) && n>20000) m+=5000;
+            } else if (zs<1000 && (bot[b].maneuver == HEDGEHOP || bot[b].maneuver == BOMBING)) m+=20000-20*zs;
+            else if (zs<1200 && bot[b].maneuver == ILS_1) m+=24000-20*zs;
+            else if (zs<500 && bot[b].maneuver == ILS_2) m+=10000-20*zs;
+            if ((bot [b].maneuver == NAVIG || bot[b].maneuver == ILS_1) && n>20000) m+=5000;
             m=7*atan(1e-3*m);       // rot.x.z souhaitable
             bot[b].yctl=(m-bot[b].vionvit.z)*.27;
             if (bot[b].vitlin<15 && zs>300) {
@@ -466,7 +506,7 @@ void robot(int b){
             }
 //          printf("dz %.0f Vzs %.1f yc %.3f\n",n,m,bot[b].yctl);
             break;
-        case 5: // piqué & bomb
+        case DIVE_N_BOMB:
             // on vérifie que la cible n'est pas détruite
             if (obj[bot[b].cibt].type!=DECO) {
                 double distfrap2;
@@ -474,7 +514,7 @@ void robot(int b){
                 subv(&v,&obj[o].pos);
                 if ((distfrap2=bombz2(bot[b].vionvit,v))<1000) {
                     bot[b].but.bomb=1;
-                    bot[b].manoeuvre=6;
+                    bot[b].maneuver = NOSE_UP;
                 }
                 renorme(&v);
                 bot[b].thrust=0;
@@ -483,13 +523,13 @@ void robot(int b){
                 if (n>0 || m>.1) a=-.5*atan(1*m*(n<0?1000:1)); else a=.5;
                 bot[b].xctl=(a-obj[o].rot.y.z);
                 bot[b].yctl=(v.z-obj[o].rot.x.z-.14);
-                if (zs<200) bot[b].manoeuvre=6;
+                if (zs<200) bot[b].maneuver = NOSE_UP;
             } else {    // changer de cible
                 newcib(b);
                 newnav(b);
             }
             break;
-        case 6: // redresse
+        case NOSE_UP:
             bot[b].thrust=1;
             bot[b].but.flap=1;
             bot[b].xctl=(-obj[o].rot.y.z);
@@ -498,32 +538,32 @@ void robot(int b){
             break;
         }
         break;
-    case 1: // VIRAGE SERRE
+    case TURN:
         if (obj[o].rot.y.z<0) bot[b].xctl=-1-obj[o].rot.y.z;
         else bot[b].xctl=1-obj[o].rot.y.z;
         if (obj[o].rot.z.z<0) bot[b].xctl=-bot[b].xctl;
         if (vit<13) bot[b].thrust+=.1;
         else if (vit>13) bot[b].thrust-=.01;
         bot[b].yctl=1-bot[b].xctl*bot[b].xctl;
-        if (zs<400) bot[b].voltige=0;
-        if (scalaire(&obj[o].rot.x,&obj[bot[b].cibv].rot.x)<0) bot[b].voltige=2;
+        if (zs<400) bot[b].aerobatic = MANEUVER;
+        if (scalaire(&obj[o].rot.x,&obj[bot[b].cibv].rot.x)<0) bot[b].aerobatic = RECOVER;
         break;
-    case 2: // RETABLIRE
+    case RECOVER:
         if (vit<18) bot[b].thrust+=.1;
         else if (vit>18) bot[b].thrust-=.01;
         bot[b].xctl=(-obj[o].rot.y.z);
         bot[b].yctl=(-bot[b].vionvit.z)*.13;
         if (obj[o].rot.z.z<0) bot[b].yctl=-bot[b].yctl;
-        if (obj[o].rot.z.z>.8) bot[b].voltige=4;
+        if (obj[o].rot.z.z>.8) bot[b].aerobatic = TAIL;
         break;
-    case 3: // CHANDELLE
+    case CLIMB_VERT:
         bot[b].thrust=1;
         bot[b].xctl=(-obj[o].rot.y.z);
         bot[b].yctl=(1-obj[o].rot.x.z)*.13;
-        if (bot[b].vionvit.z<0 && obj[o].rot.x.z>.5) bot[b].voltige=2;
-        if (zs<400) bot[b].voltige=0;
+        if (bot[b].vionvit.z<0 && obj[o].rot.x.z>.5) bot[b].aerobatic = RECOVER;
+        if (zs<400) bot[b].aerobatic = MANEUVER;
         break;
-    case 4: // CHERCHE 6 HEURES
+    case TAIL:
         copyv(&v,&obj[bot[b].cibv].pos);
         subv(&v,&obj[o].pos);
         disth=sqrt(v.x*v.x+v.y*v.y);
@@ -574,9 +614,9 @@ void robot(int b){
         if (zs<6000) { n+=20000-5*zs; bot[b].thrust=1; }
         m=7*atan(1e-3*n);
         bot[b].yctl=fabs(obj[o].rot.y.z)*.5+(m-bot[b].vionvit.z)*.3;
-        if (zs<3000) bot[b].voltige=5;
+        if (zs<3000) bot[b].aerobatic = CLIMB;
         break;
-    case 5: // REPRENDRE DE L'ALTITUDE
+    case CLIMB:
         bot[b].but.flap=1;
         if (obj[o].rot.x.z>0) bot[b].thrust=1;
         else {
@@ -587,7 +627,7 @@ void robot(int b){
         bot[b].yctl=(-obj[o].rot.x.z)+1.;
         if (bot[b].vionvit.z<0) bot[b].yctl=1;
         if (obj[o].rot.z.z<0) bot[b].yctl=-bot[b].yctl;
-        if (zs>3100) bot[b].voltige=4;
+        if (zs>3100) bot[b].aerobatic = TAIL;
         break;
     }
 }

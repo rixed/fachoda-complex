@@ -547,8 +547,8 @@ void initworld() {
         bot[i].anggear = 0;
         bot[i].xctl = bot[i].yctl = 0;
         bot[i].thrust = SpaceInvaders ? 1.:0.;
-        bot[i].manoeuvre = SpaceInvaders ? 4.:0.;
-        bot[i].voltige = 0;
+        bot[i].maneuver = SpaceInvaders ? NAVIG : PARKING;
+        bot[i].aerobatic = MANEUVER;
         bot[i].gunned = -1;
         bot[i].fiulloss = bot[i].bloodloss = bot[i].motorloss = bot[i].aeroloss = 0;
         bot[i].fiul = viondesc[bot[i].navion].fiulmax;

@@ -460,7 +460,7 @@ void control_plane(int b, float dt_sec) {
     if (b == visubot && bot[b].thrust != soundthrust) {
         soundthrust = bot[b].thrust;
         float const pitch = 1. + 0.1 * (soundthrust - .8);
-        attachsound(VOICEMOTOR, soundthrust <= 0.18 ? TAXI : MOTOR,
+        attachsound(VOICEMOTOR, soundthrust <= 0.18 ? LOW_SPEED : MOTOR,
                 pitch, &obj[bot[b].vion].pos, false);   // FIXME: the actual pos of the engine
     }
 
