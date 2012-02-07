@@ -125,11 +125,11 @@ typedef struct {
 } matrix;
 
 typedef struct {
-    char gear:1;
+    char gear:1;    // how we want the gears (1 = down)
     char canon:1;
     char bomb:1;
     char flap:1;
-    char gearup:1;
+    char gearup:1;  // if the gears are currently up
     char frein:1;
     char business:1;
     char repere:1;
