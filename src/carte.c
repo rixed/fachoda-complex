@@ -26,10 +26,13 @@ vector repere[NBREPMAX];
 void plotchar(int x, int y, int c, uchar m) {
     pcharlent(m+16,x-3,y-SizeCharY/2,c);
 }
-void rendumap() {
+void rendumap(void)
+{
+    static unsigned my_imgcount = 0;
     vect2dlum p1,p2;
     int o,i;
     int c[4]={ 0xFF0000, 0x00FF00, 0x0000FF, 0xFFFF00 };
+    my_imgcount ++;
     for (i=0; i<3; i++) for (o=0; o<4; o++) {
         if (ViewAll || o==bot[bmanu].camp) plotchar(_DX+(obj[babaseo[0][i][o]].pos.x-ECHELLE*xcarte)*zoom/(ECHELLE*WMAP/2),_DY-(obj[babaseo[0][i][o]].pos.y-ECHELLE*ycarte)*zoom/(ECHELLE*WMAP/2),c[o],10);
     }
@@ -42,7 +45,7 @@ void rendumap() {
         if (vehic[o].camp!=-1 && (ViewAll||vehic[o].camp==bot[bmanu].camp)) plotchar(_DX+(obj[vehic[o].o1].pos.x-ECHELLE*xcarte)*zoom/(ECHELLE*WMAP/2),_DY-(obj[vehic[o].o1].pos.y-ECHELLE*ycarte)*zoom/(ECHELLE*WMAP/2),c[(int)vehic[o].camp],14);
     }
     for (o=0; o<NBBOT; o++) {
-        if (bot[o].camp!=-1 && (ViewAll||bot[o].camp==bot[bmanu].camp)) plotchar(_DX+(obj[bot[o].vion].pos.x-ECHELLE*xcarte)*zoom/(ECHELLE*WMAP/2),_DY-(obj[bot[o].vion].pos.y-ECHELLE*ycarte)*zoom/(ECHELLE*WMAP/2),o==visubot && imgcount&1?0xFFFFFF:c[(int)bot[o].camp],12);
+        if (bot[o].camp!=-1 && (ViewAll||bot[o].camp==bot[bmanu].camp)) plotchar(_DX+(obj[bot[o].vion].pos.x-ECHELLE*xcarte)*zoom/(ECHELLE*WMAP/2),_DY-(obj[bot[o].vion].pos.y-ECHELLE*ycarte)*zoom/(ECHELLE*WMAP/2),o==visubot && my_imgcount&1?0xFFFFFF:c[(int)bot[o].camp],12);
     }
     for (o=0; o<NBREPMAX; o++) {
         if (repere[o].x!=MAXFLOAT) plotchar(_DX+(repere[o].x-ECHELLE*xcarte)*zoom/(ECHELLE*WMAP/2),_DY-(repere[o].y-ECHELLE*ycarte)*zoom/(ECHELLE*WMAP/2),0xBFEF9F,9);
@@ -96,7 +99,7 @@ void renduroute() {
         }
     }
 }
-void rendumapbg() {
+void rendumapbg(void) {
     int x,y;
     vect2dc p1,p2,p3,p4;
     for (y=0; y<WMAP-1; y++) {
