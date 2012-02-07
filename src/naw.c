@@ -303,30 +303,23 @@ int main(int narg, char **arg) {
     int caisse=0, dtcaisse=0, oldgold=0, caissetot=0, maxgold=0, initradio=0;
     char *userid;
     float angvisu1=0,n;
-    int maxrank=20;
     FILE *file;
-    HS_s highscore[20]={
-        { 5000, "Jack l'Eventreur"},
-        { 4000, "Titi Poutine"},
-        { 3500, "Oncle Picsou"},
-        { 3000, "John Royce junior"},
-        { 2500, "Rock fait l'air"},
-        { 2000, "Celui qui a dit non"},
-        { 1800, "L'ami Beria"},
-        { 1600, "Mo bout tout"},
-        { 1400, "Mite Errante"},
-        { 1200, "Heider de der"},
-        { 1000, "Jaruzelsky La Viande Froide"},
-        {  900, "Bokassa la Barique"},
-        {  800, "Le Gros Timonier"},
-        {  700, "Tonton Makoute"},
-        {  600, "Nunuche Phouet Boigny"},
-        {  500, "Foccard Fondu de plomb"},
-        {  400, "Hassan le Prophete"},
-        {  300, "Paf le chien"},
-        {  200, "Abbe de la Sainte Gamelle"},
-        {  100, "marine craccRa"}
+    HS_s highscore[] = {
+        { 4000, "George Brush"},
+        { 3500, "Donald Ducksfield"},
+        { 4000, "Ricardo Sandbag"},
+        { 3500, "Geoffrey Maller"},
+        { 3000, "Janis Karpinsku"},
+        { 2500, "Carolyn Woed"},
+        { 2000, "Steven Lou Jordan"},
+        { 1000, "Charles Craner"},
+        {  900, "Lynndie Andleng"},
+        {  800, "Ivan Frederock"},
+        {  700, "Jeremy Civil"},
+        {  600, "Armin Cruise"},
+        {  500, "Sabrina Hardman"},
     };
+    unsigned maxrank = ARRAY_LEN(highscore);
     printf("Fachoda Complex - (C) 2000-2012 Cedric Cellier\n"
 "This program comes with ABSOLUTELY NO WARRANTY.\n"
 "This is free software, and you are welcome to redistribute it\n"
@@ -411,9 +404,10 @@ parse_error:
     TBY=SY-SYTB;
     SXTB=SYTB*2; //SX>>1;
     focale=_DX;
-    /* lire les highscore */
-    if ((file=fopen(".highscores","r"))!=NULL) {
-        fread(&highscore,sizeof(HS_s),20,file);
+    /* Read saved highscore
+     * FIXME: chdir to VARDIR? */
+    if ((file = fopen(".highscores","r")) != NULL) {
+        fread(&highscore, sizeof(HS_s), ARRAY_LEN(highscore), file);
         fclose(file);
     }
     /* autres inits */
@@ -1044,14 +1038,16 @@ parse_error:
                     pstr(vn, SY-12, colcamp[(int)bot[DogBot].camp]);
                 }
                 // Display current balance
-                if (bot[bmanu].gold-2000>maxgold) {
-                    maxgold=bot[bmanu].gold-2000;
-                    if (maxrank<20) highscore[maxrank].score=maxgold;
-                    while (maxrank>0 && highscore[maxrank-1].score<maxgold) {
+                if (bot[bmanu].gold - 2000 > maxgold) {
+                    maxgold = bot[bmanu].gold - 2000;
+                    if (maxrank < ARRAY_LEN(highscore)) highscore[maxrank].score = maxgold;
+                    while (maxrank > 0 && highscore[maxrank-1].score < maxgold) {
                         maxrank--;
-                        if (maxrank<19) memcpy(&highscore[maxrank+1],&highscore[maxrank],sizeof(HS_s));
-                        highscore[maxrank].score=maxgold;
-                        strcpy(highscore[maxrank].name,&(playbotname[bmanu])[0]);
+                        if (maxrank<ARRAY_LEN(highscore)-1) {
+                            memcpy(&highscore[maxrank+1], &highscore[maxrank], sizeof(HS_s));
+                        }
+                        highscore[maxrank].score = maxgold;
+                        snprintf(highscore[maxrank].name, sizeof(highscore[maxrank].name), "%s", playbotname[bmanu]);
                     }
                 }
                 if (bot[bmanu].gold>oldgold) {
@@ -1083,11 +1079,11 @@ parse_error:
                 oldgold=bot[bmanu].gold;
 
                 if (AfficheHS) {
-                    int y=(SY-(20+2)*9)>>1;
-                    pstr("LE TOP 20 DE LA FRIME",y,0xFFFFFF);
-                    for (i=0; i<20; i++) {
+                    int y=(SY-(ARRAY_LEN(highscore)+2)*9)>>1;
+                    pstr("Hall of Shame",y,0xFFFFFF);
+                    for (unsigned i = 0; i < ARRAY_LEN(highscore); i++) {
                         char fonom[36];
-                        sprintf(fonom,"%d. %s",highscore[i].score,highscore[i].name);
+                        snprintf(fonom, sizeof(fonom), "%d. %s", highscore[i].score, highscore[i].name);
                         pstr(fonom,y+9*(2+i),i==maxrank?0xFFFF1F:0xEFD018);
                     }
                 }
@@ -1106,7 +1102,7 @@ fin:
     system("xset r on");    // pis aller
     // sauver les highscore
     if (!Easy && !ViewAll && viondesc[monvion-1].prix<=viondesc[0].prix && (file=fopen(".highscores","w+"))!=NULL) {
-        fwrite(&highscore,sizeof(HS_s),20,file);
+        fwrite(&highscore, sizeof(HS_s), ARRAY_LEN(highscore), file);
         fclose(file);
     }
     {
@@ -1123,10 +1119,17 @@ fin:
             { "PDG", "managing director" }
         };
         printf("\n-------------------------------\n\n    Best peace soldiers :\n\n");
-        for (i=0; i<20; i++) {
-            printf("    %2d) $%5d - %s\n",i,highscore[i].score,highscore[i].name);
+        for (unsigned i = 0; i < ARRAY_LEN(highscore); i++) {
+            printf("    %2d) $%5d - %s\n", i, highscore[i].score, highscore[i].name);
         }
-        i=(maxgold>2000)+(maxgold>4000)+(maxgold>6000)+(maxgold>8000)+(maxgold>10000)+(maxgold>12000)+(maxgold>14000)+(maxgold>16000);
+        i = (maxgold>2000) +
+            (maxgold>4000) +
+            (maxgold>6000) +
+            (maxgold>8000) +
+            (maxgold>10000) +
+            (maxgold>12000) +
+            (maxgold>14000) +
+            (maxgold>16000);
         printf("\n    Your score : %d\n    %s %s.\n\n",maxgold,lang?"You retreat as a":"Vous vous retirez en tant que",rank[i][lang]);
     }
     exit(0);
