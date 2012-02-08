@@ -424,10 +424,10 @@ extern void pbignum(int n, int x, int y, char just, char tot, char dolard);
 extern void loadfont(char *fn, int nx, int ny, int cy);
 extern void pchar(int m, int x, int y, int c);
 extern void pcharlent(int m, int x, int y, int c);
-extern void pword(char *m, int x, int y, int c);
-extern void pwordlent(char *m, int x, int y, int c);
-extern void pstr(char *m, int y, int c);
-extern void pstrlent(char *m, int y, int c);
+extern void pword(char const *m, int x, int y, int c);
+extern void pwordlent(char const *m, int x, int y, int c);
+extern void pstr(char const *m, int y, int c);
+extern void pstrlent(char const *m, int y, int c);
 // modele.c
 extern viondesc_s viondesc[];
 extern nobjet_s nobjet[];

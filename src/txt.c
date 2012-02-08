@@ -248,7 +248,7 @@ void pchar(int m, int x, int y, int c) {
         x-=8;
     }
 }
-void pword(char *m, int x, int y, int c) {
+void pword(char const *m, int x, int y, int c) {
     do {
         pchar(*m,x,y,c);    // pchar normalement, mais sinon present bug qd les bouttons clippent
         x+=6;
@@ -256,7 +256,7 @@ void pword(char *m, int x, int y, int c) {
     } while (*m!=' ' && is_printable(*m));
 }
 
-void pwordlent(char *m, int x, int y, int c) {
+void pwordlent(char const *m, int x, int y, int c) {
     do {
         pcharlent(*m,x,y,c);
         x+=6;
@@ -264,7 +264,7 @@ void pwordlent(char *m, int x, int y, int c) {
     } while (*m!=' ' && is_printable(*m));
 }
 
-void pstr(char *m, int y, int c) {
+void pstr(char const *m, int y, int c) {
     int l,ll,x;
     int sx1=TextClipX1?TextClipX1:0;
     int sx2=TextClipX2?TextClipX2:SX;
@@ -307,7 +307,7 @@ void pstr(char *m, int y, int c) {
     } while (*m!='\0');
 }
 
-void pstrlent(char *m, int y, int c) {
+void pstrlent(char const *m, int y, int c) {
     int l,ll,x;
     int sx1=TextClipX1?TextClipX1:0;
     int sx2=TextClipX2?TextClipX2:SX;
