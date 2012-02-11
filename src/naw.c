@@ -27,6 +27,8 @@
 #include "map.h"
 #include "sound.h"
 #include "gtime.h"
+#include "keycodesdef.h"
+
 int const NbHosts = 1;
 int const MonoMode = 1;
 
@@ -340,7 +342,7 @@ int main(int narg, char **arg) {
 "   killemAll       : Kill em All! (default : just be kool, this is a game)\n"
 "   plane n         : The plane you start with : 1 for Dewoitine, 2 for Corsair, etc (default : 2)\n"
 "   french          : Pour que les textes soient en francais (defaut : frenglish)\n"
-"   keys            : Redefine the keys and save in file '.keys'\n"
+"   keys            : Redefine the keys and save in file '.fachoda-keys'\n"
 "   gruge           : Who knows ?\n"
 );
     /*
@@ -437,11 +439,7 @@ parse_error:
     XSetState(disp,gc,0xFFFF00,0,GXcopy,0xFFFFFF);
     XSetFont(disp,gc,xfont->fid);*/
     /* KEYS */
-    if ((file=fopen(".keys","r"))!=NULL) {
-        printf("Load custom keys\n");
-        for (i=0; i<NBKEYS; i++) fread(&gkeys[i].kc,sizeof(char),1,file);
-        fclose(file);
-    }
+    keys_load();
     // PRESENTATION
     loadsample(PRESENT,"snd/pingouin.raw", false, 1.);
     animpresent();

@@ -17,7 +17,11 @@
  * along with Fachoda.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <stdlib.h>
+#include <stdio.h>
 #include <math.h>
+#include <string.h>
+#include <errno.h>
+#include <stdint.h>
 #include "proto.h"
 
 kc_s gkeys[NBKEYS] = {
@@ -72,4 +76,47 @@ kc_s gkeys[NBKEYS] = {
     {43,"Emergency UP! (...?)"},
     {52,"Gun this plane (...?)"}
 };
+
+static FILE *keyfile_open(char const *perms)
+{
+    char file_name[2048];
+    char const *home = getenv("HOME");
+    snprintf(file_name, sizeof(file_name), "%s/.fachoda-keys", home ? home:".");
+    FILE *f = fopen(file_name, perms);
+    if (! f) {
+        fprintf(stderr, "Cannot open '%s' for %s: %s\n", file_name, perms, strerror(errno));
+        return NULL;
+    }
+    return f;
+}
+
+void keys_save(void)
+{
+    FILE *f = keyfile_open("w+");
+    if (! f) return;
+
+    for (unsigned i = 0; i < ARRAY_LEN(gkeys); i++) {
+        ssize_t ret = fwrite(&gkeys[i].kc, sizeof(gkeys[i].kc), 1, f);
+        if (ret < 1) {
+            fprintf(stderr, "Cannot write key\n");
+        }
+    }
+
+    fclose(f);
+}
+
+void keys_load(void)
+{
+    FILE *f = keyfile_open("r");
+    if (! f) return;
+
+    for (unsigned i = 0; i < ARRAY_LEN(gkeys); i++) {
+        ssize_t ret = fread(&gkeys[i].kc, sizeof(gkeys[i].kc), 1, f);
+        if (ret < 1) {
+            fprintf(stderr, "Cannot read key\n");
+        }
+    }
+
+    fclose(f);
+}
 

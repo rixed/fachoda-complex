@@ -16,6 +16,8 @@
  * You should have received a copy of the GNU General Public License
  * along with Fachoda.  If not, see <http://www.gnu.org/licenses/>.
  */
+#ifndef KEYS_H_120209
+#define KEYS_H_120209
 
 enum {
     kc_esc,
@@ -81,3 +83,7 @@ enum {
     kc_gunned
 } kc_e;
 
+void keys_save(void);
+void keys_load(void);
+
+#endif

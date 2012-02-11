@@ -257,7 +257,6 @@ int presentold() {
 void redefinekeys() {
     int i,jdep,j;
     char msg[200];
-    FILE *f;
     int nbl=SY/10;
 //  darkpresent();
     for (j=0; j<NBKEYS; j++) {
@@ -276,8 +275,6 @@ void redefinekeys() {
         buffer2video();
         gkeys[j].kc=getscancode();
     }
-    f=fopen(".keys","w+");
-    for (i=0; i<NBKEYS; i++)
-        fwrite(&gkeys[i].kc,sizeof(char),1,f);
-    fclose(f);
+
+    keys_save();
 }
