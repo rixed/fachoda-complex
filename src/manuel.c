@@ -24,6 +24,7 @@
 #include "keycodesdef.h"
 #include "sound.h"
 #include "gtime.h"
+#include "robot.h"
 
 int DogBot=0;
 vector DogBotDir;
@@ -234,6 +235,10 @@ void manuel(int b) {
     if (kreset(gkeys[kc_autopilot].kc)) {
         autopilot^=1;
         playsound(VOICEGEAR, BIPBIP, 1., &obj[bot[b].vion].pos, false);
+        if (autopilot) {
+            bot[bmanu].target_speed = BEST_LIFT_SPEED;
+            bot[bmanu].target_alt = 140. * ONE_METER;
+        }
     }
     // Control du jeu
     if (MonoMode && kreset(gkeys[kc_pause].kc)) {
@@ -286,48 +291,10 @@ void manuel(int b) {
             }
         }
     } else {    // autopilot or mapmode
-        float const zs = z_ground(obj[bot[b].vion].pos.x,obj[bot[b].vion].pos.y, true);
-        float const ground_dist = obj[bot[b].vion].pos.z - zs;
-        if (ground_dist > 20. * ONE_METER) {
-#           define AUTOPILOT_SPEED (3.5 * ONE_METER)
-            float a = 0;
-            if (autopilot) {
-                // Set target vertical inclination according to required navpoint
-                double dc = cap(bot[b].u.x - obj[bot[b].vion].pos.x, bot[b].u.y - obj[bot[b].vion].pos.y) - bot[b].cap;
-                // Get it between [-PI:PI]
-                while (dc >  M_PI) dc -= 2.*M_PI;
-                while (dc < -M_PI) dc += 2.*M_PI;
-                if (dc > .5) a = -.9;
-                else if (dc < -.5) a = .9;
-                else a = -.9*dc/.5;
-                // don't lean too much if we lack vertical speed
-                if (bot[b].vionvit.z < 0.) a *= pow(.7, (-30./ONE_METER) * bot[b].vionvit.z);
-            }
-            bot[b].xctl = a - obj[bot[b].vion].rot.y.z;
-
-            // Adjust thrust
-            float const vit = scalaire(&bot[b].vionvit, &obj[bot[b].vion].rot.x);
-            if (autopilot) {
-                if (vit < AUTOPILOT_SPEED) bot[b].thrust += .01;
-                else if (vit > AUTOPILOT_SPEED && bot[b].thrust > .02) bot[b].thrust -= .01;
-            }
-
-            // Set yctl to reach a comfortable travel altitude
-            float diff_alt = 90.*ONE_METER - ground_dist;
-            float n = .7 * atan(1e-3 * diff_alt);   // ranges from -1 to 1
-            bot[b].yctl = 0.08*(n - bot[b].vionvit.z/AUTOPILOT_SPEED);
-            // flaps off
-            bot[b].but.flap = 0;
-            bot[b].but.gear = 0;
-        } else {    // low altitude
-            // forget about navpoint and level the wings
-            bot[b].xctl = -obj[bot[b].vion].rot.y.z;
-            // small incidence
-            bot[b].yctl = .2 - obj[bot[b].vion].rot.x.z;
-            // full throttle
-            bot[b].thrust = 1.;
-            // flaps on
-            bot[b].but.flap = 1;
+        if (autopilot) {
+            robot_autopilot(b);
+        } else {
+            robot_safe(b);
         }
     }
 /*  if (bot[b].xctl<-1) bot[b].xctl=-1;

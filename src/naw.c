@@ -28,6 +28,7 @@
 #include "sound.h"
 #include "gtime.h"
 #include "keycodesdef.h"
+#include "robot.h"
 
 int const NbHosts = 1;
 int const MonoMode = 1;
@@ -1016,15 +1017,16 @@ parse_error:
                 pnum(bot[visubot].zs,SX-50,50,0xFFFF,1);
                 pnum(bot[visubot].cibt,SX-50,60,0xFFFFFF,1);
                 pnum(bot[visubot].gunned,SX-50,70,0xFFFFFF,1);*/
-                // AFFICHAE DIGITAL MODE FACILE
+                // AFFICHAGE DIGITAL MODE FACILE
                 if (Easy) {
-                    pnum(bot[bmanu].vionvit.z,10,10,0xAFDF10,1);
-                    pnum(bot[bmanu].vitlin,10,20,0xFFFFFF,1);
-                    pnum(norme(&bot[bmanu].vionvit),10,30,0xFFFF,1);
-                    pnum(bot[bmanu].zs,10,40,0xFF00FF,1);
-                    if (bot[bmanu].but.gear) pword("gear",10,60,0xD0D0D0);
-                    if (bot[bmanu].but.flap) pword("flaps",10,70,0xD0D0D0);
-                    if (bot[bmanu].but.frein) pword("brakes",10,80,0xD0D0D0);
+                    int const b = visubot; // bmanu;
+                    pnum(bot[b].vionvit.z,10,10,0xAFDF10,1);
+                    pnum(bot[b].vitlin,10,20,0xFFFFFF,1);
+                    pnum(norme(&bot[b].vionvit),10,30,0xFFFF,1);
+                    pnum(bot[b].zs,10,40,0xFF00FF,1);
+                    if (bot[b].but.gear) pword("gear",10,60,0xD0D0D0);
+                    if (bot[b].but.flap) pword("flaps",10,70,0xD0D0D0);
+                    if (bot[b].but.frein) pword("brakes",10,80,0xD0D0D0);
                     if (autopilot) pword("auto",10,90,0xD0D0D0);
                 }
                 if (accel) pstr("ACCELERATED MODE",_DY/3,0xFFFFFF);

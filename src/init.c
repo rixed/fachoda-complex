@@ -21,6 +21,7 @@
 #include <math.h>
 #include <values.h>
 #include "map.h"
+#include "robot.h"
 
 char *tankname="Rug-Warrior";
 int bosse(int a) {

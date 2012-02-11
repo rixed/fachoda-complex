@@ -22,6 +22,7 @@
 #include "map.h"
 #include "sound.h"
 #include "gtime.h"
+#include "robot.h"
 
 #define SHOT_PERIOD (200 * ONE_MILLISECOND)
 
@@ -191,10 +192,9 @@ void control_plane(int b, float dt_sec) {
     double zs = obj[bot[b].vion].pos.z - bot[b].zs; // ground altitude
 #   ifndef NLIFT
     {
-#       define MIN_SPEED_FOR_LIFT 120
         float kx = vx < MIN_SPEED_FOR_LIFT ?
             0. : MIN(.00005*(vx-MIN_SPEED_FOR_LIFT)*(vx-MIN_SPEED_FOR_LIFT), 1.2*exp(-.001*vx));
-        // kx max is aprox 1., when vx is around 250
+        // kx max is aprox 1., when vx is around 250 (BEST_LIFT_SPEED!)
         // TODO: add lift with a-o-a?
         float lift = viondesc[bot[b].navion].lift;
         if (bot[b].but.flap) lift *= 1.2;

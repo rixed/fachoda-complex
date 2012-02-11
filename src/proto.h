@@ -231,10 +231,12 @@ typedef struct {
         HEDGEHOP,
         BOMBING,
     } maneuver;
-    vector u,v;
+    vector u,v; // navpoint pos and orientation (FIXME: rename!)
     matrix m;
     int cibt,cibv,a;
-    float p,vc, df;
+    float p;
+    float target_speed;
+    float target_alt;   // absolute altitude
     uchar alterc;
     int fiul;
     int fiulloss;
@@ -452,16 +454,13 @@ extern int zoom, xcarte, ycarte, repidx;
 extern void rendumap(void);
 extern void rendumapbg(void);
 extern int colcamp[4];
-// robot.c
-extern void newnav(int);
-extern double cap(double x, double y);
+
+// FIXME: defined in robot.c but should go elsewhere
 extern bot_s *bot;
 extern vehic_s *vehic;
 extern zep_s *zep;
 extern voiture_s *voiture;
-extern void robotvehic(int v);
-extern void armstate(int b);
-extern void robot(int b);
+
 //tableaubord.c
 extern int xsoute,ysoute,xthrust,ythrust,rthrust,xspeed,yspeed,rspeed,xalti,yalti,ralti,xinclin,yinclin,hinclin,dxinclin,xgear,ygear,rgear;
 extern void rectangle(int *v, int rx, int ry, int c);
@@ -479,6 +478,8 @@ extern pixel32 *tbtile, *tbback, *tbback1, *tbback2;
 extern uchar *tbz;
 extern int *tbwidth;
 // control
+#define BEST_LIFT_SPEED (2.5 * ONE_METER)    // according to control.c
+#define MIN_SPEED_FOR_LIFT 120.
 extern float soundthrust;
 extern void control_plane(int b, float dt_sec);
 extern void control_vehic(int v, float dt_sec);

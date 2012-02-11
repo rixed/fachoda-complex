@@ -21,6 +21,7 @@
 #include <math.h>
 #include <values.h>
 #include "map.h"
+#include "robot.h"
 
 #define NBMAXROUTE 5000 /* <=65534 ! */
 route_s *route;
