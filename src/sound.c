@@ -38,8 +38,9 @@ static bool buffer_looping[NB_SAMPLES]; // tells whether the sample is supposed 
 static float buffer_gain[NB_SAMPLES];
 static ALuint sources[NB_VOICES];
 static vector const *source_pos[NB_VOICES];
+static ALuint last_played[NB_VOICES];
 
-#define MAX_DIST 4000.
+#define MAX_DIST (40. * ONE_METER)
 
 vector voices_in_my_head = { 0., 1., 0. };  // upstairs...
 
@@ -92,6 +93,9 @@ int opensound(bool with_sound_)
     for (unsigned s = 0; s < ARRAY_LEN(sources); s++) {
         alSourcef(sources[s], AL_MAX_DISTANCE, MAX_DIST);
         alSourcef(sources[s], AL_REFERENCE_DISTANCE, 2. * ONE_METER);
+    }
+    for (unsigned s = 0; s < ARRAY_LEN(last_played); s++) {
+        last_played[s] = ~0U;
     }
     alSpeedOfSound(34330.); // our unit of distance is approx the cm
 
@@ -330,23 +334,39 @@ void playsound(enum voice voice, sample_e samp, float pitch, vector const *pos, 
     assert(voice < ARRAY_LEN(sources));
     assert(samp < ARRAY_LEN(buffers));
 
+    bool const already_playing = buffer_looping[samp] && last_played[voice] == samp;
     alGetError();
-    alSourceStop(sources[voice]);
-    if ((err = alGetError()) != AL_NO_ERROR) fprintf(stderr, "Cannot stop source %d: %s\n", voice, al_strerror(err));
-    alSourcei(sources[voice], AL_BUFFER, buffers[samp]);
-    if ((err = alGetError()) != AL_NO_ERROR) fprintf(stderr, "Cannot set source buffer for sample %d: %s\n", samp, al_strerror(err));
-    alSourcei(sources[voice], AL_LOOPING, buffer_looping[samp]);
-    if ((err = alGetError()) != AL_NO_ERROR) fprintf(stderr, "Cannot set source looping for voice %d: %s\n", voice, al_strerror(err));
+    // If the sound is a loop and we aleady play this sound do not stop/restart the sound
+    if (! already_playing) {
+        alSourceStop(sources[voice]);
+        if ((err = alGetError()) != AL_NO_ERROR) fprintf(stderr, "Cannot stop source %d: %s\n", voice, al_strerror(err));
+
+        alSourcei(sources[voice], AL_BUFFER, buffers[samp]);
+        if ((err = alGetError()) != AL_NO_ERROR) fprintf(stderr, "Cannot set source buffer for sample %d: %s\n", samp, al_strerror(err));
+
+        alSourcei(sources[voice], AL_LOOPING, buffer_looping[samp]);
+        if ((err = alGetError()) != AL_NO_ERROR) fprintf(stderr, "Cannot set source looping for voice %d: %s\n", voice, al_strerror(err));
+    }
+
     alSourcef(sources[voice], AL_GAIN, buffer_gain[samp]);
     if ((err = alGetError()) != AL_NO_ERROR) fprintf(stderr, "Cannot set source gain for voice %d: %s\n", voice, al_strerror(err));
+
     alSourcef(sources[voice], AL_PITCH, pitch);
     if ((err = alGetError()) != AL_NO_ERROR) fprintf(stderr, "Cannot set source pitch %f: %s\n", pitch, al_strerror(err));
+
     alSource3f(sources[voice], AL_POSITION, pos->x, pos->y, pos->z);
     if ((err = alGetError()) != AL_NO_ERROR) fprintf(stderr, "Cannot set source position at %f,%f,%f: %s\n", pos->x, pos->y, pos->z, al_strerror(err));
+
     alSourcei(sources[voice], AL_SOURCE_RELATIVE, relative ? AL_TRUE : AL_FALSE);
     if ((err = alGetError()) != AL_NO_ERROR) fprintf(stderr, "Cannot set source base to %s: %s\n", relative?"relative":"absolute", al_strerror(err));
-    alSourcePlay(sources[voice]);
-    if ((err = alGetError()) != AL_NO_ERROR) fprintf(stderr, "Cannot play source %d: %s\n", voice, al_strerror(err));
+
+    if (! already_playing) {
+        alSourcePlay(sources[voice]);
+        if ((err = alGetError()) != AL_NO_ERROR) fprintf(stderr, "Cannot play source %d: %s\n", voice, al_strerror(err));
+
+        last_played[voice] = samp;
+    }
+
     source_pos[voice] = NULL;
 }
 
