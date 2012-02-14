@@ -225,6 +225,17 @@ void drawline(vect2d const *restrict p1, vect2d const *restrict p2, int col) {
         x += q;
     }
 }
+
+void draw_rectangle(vect2d const *restrict min, vect2d const *restrict max, int col)
+{
+    vect2d const p1 = { .x = min->x, .y = max->y };
+    vect2d const p2 = { .x = max->x, .y = min->y };
+    drawline(min, &p1, col);
+    drawline(min, &p2, col);
+    drawline(max, &p1, col);
+    drawline(max, &p2, col);
+}
+
 void drawline2(vect2d *p1, vect2d *p2, int col) {
     int s, x,y,xi, dy;
     vect2d *tmp;
@@ -707,3 +718,18 @@ void draw_debug(void)
     }
 }
 #endif
+
+void draw_target(vector p, int c)
+{
+    vect2d p2d;
+    if (! to_camera(&p, &p2d)) return;
+    vect2d const min = { .x = p2d.x - 10, .y = p2d.y - 10 };
+    vect2d const max = { .x = p2d.x + 10, .y = p2d.y + 10 };
+    draw_rectangle(&min, &max, c);
+}
+
+void draw_mark(vector p, int c)
+{
+    // TODO: a cross on the floor
+    draw_target(p, c);
+}

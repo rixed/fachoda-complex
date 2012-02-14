@@ -77,8 +77,9 @@ void manuel(int b) {
         if ((MouseCtl && kreset(0)) || kreset(gkeys[kc_fire].kc)) bot[b].but.bomb=1;
         break;
     } else if ((MouseCtl && kread(0)) || kread(gkeys[kc_fire].kc)) {
-        bot[b].u.x=((xmouse-_DX)*(WMAP/2)*ECHELLE)/zoom+xcarte*ECHELLE;
-        bot[b].u.y=((_DY-ymouse)*(WMAP/2)*ECHELLE)/zoom+ycarte*ECHELLE;
+        bot[b].u.x = ((xmouse-_DX)*(WMAP/2)*ECHELLE)/zoom+xcarte*ECHELLE;
+        bot[b].u.y = ((_DY-ymouse)*(WMAP/2)*ECHELLE)/zoom+ycarte*ECHELLE;
+        bot[b].u.z = z_ground(bot[b].u.x, bot[b].u.y, true);
 //      printf("Z=%f\n",z_ground(bot[b].u.x,bot[b].u.y, true));
     }
     // BOUTON DROIT
@@ -237,7 +238,7 @@ void manuel(int b) {
         playsound(VOICEGEAR, BIPBIP, 1., &obj[bot[b].vion].pos, false);
         if (autopilot) {
             bot[bmanu].target_speed = BEST_LIFT_SPEED;
-            bot[bmanu].target_alt = 140. * ONE_METER;
+            bot[bmanu].target_rel_alt = 50. * ONE_METER;
         }
     }
     // Control du jeu
@@ -248,8 +249,7 @@ void manuel(int b) {
     AfficheHS=kread(gkeys[kc_highscores].kc);
     if (kreset(gkeys[kc_accelmode].kc) && MonoMode) { accel^=1; imgcount&=63; }
     if (kreset(gkeys[kc_basenav].kc)) {
-        bot[b].u.x=obj[bot[b].babase].pos.x;
-        bot[b].u.y=obj[bot[b].babase].pos.y;
+        bot[b].u = obj[bot[b].babase].pos;
     }
     if (kreset(gkeys[kc_mapmode].kc)) {
         mapmode^=1;
@@ -294,7 +294,7 @@ void manuel(int b) {
         if (autopilot) {
             robot_autopilot(b);
         } else {
-            robot_safe(b);
+            robot_safe(b, SAFE_LOW_ALT);
         }
     }
 /*  if (bot[b].xctl<-1) bot[b].xctl=-1;

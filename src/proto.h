@@ -222,7 +222,6 @@ typedef struct {
         LINE_UP,
         TAKE_OFF,
         NAVIG,
-        DIVE_N_BOMB,
         NOSE_UP,
         ILS_1,
         ILS_2,
@@ -233,10 +232,14 @@ typedef struct {
     } maneuver;
     vector u,v; // navpoint pos and orientation (FIXME: rename!)
     matrix m;
-    int cibt,cibv,a;
+    int cibt;   // object targeted as a ground target
+    int cibv;   // plane target
+    vector drop_mark;   // last computed bomb hit position
+    double cibt_drop_dist2; // previous distance2 from drop_mark to cibt
+    int a;
     float p;
     float target_speed;
-    float target_alt;   // absolute altitude
+    float target_rel_alt;   // relative altitude compared to u.z
     uchar alterc;
     int fiul;
     int fiulloss;
@@ -323,13 +326,13 @@ typedef struct {
 extern int const NbHosts, MonoMode;
 extern vector ExplozePos; extern int Exploze;
 extern int DebMoulins, FinMoulins;
-extern void akref(int ak,vector *r);
-extern int akpos(vector *p);
-extern void basculeY(int o, float a);
-extern void basculeX(int o, float a);
-extern void basculeZ(int o, float a);
+void akref(int ak,vector *r);
+int akpos(vector *p);
+void basculeY(int o, float a);
+void basculeX(int o, float a);
+void basculeZ(int o, float a);
 extern char (*playbotname)[30];
-extern int resurrect(void);
+int resurrect(void);
 extern int NBBOT,NBTANKBOTS, camp, AllowResurrect, Easy, Gruge, ViewAll, SpaceInvaders, monvion, lang, Dark, Fleuve, MouseCtl, Accident, Smooth;
 extern float CtlSensitiv, CtlSensActu, CtlAmortis, CtlYequ;
 extern char myname[30];
@@ -367,7 +370,7 @@ extern char PHONG;
 extern float TROPLOIN,TROPLOIN2;
 extern int _DX,_DY,SX,SY,SYTB,SXTB,SIZECERCLE,POLYMAX,TBY;
 extern int nbtir;
-extern void addobjet(int, vector *, matrix *, int, uchar);
+void addobjet(int, vector *, matrix *, int, uchar);
 extern int visubot;
 extern int gold;
 extern int gunner[NBMAXTIR];
@@ -375,34 +378,37 @@ extern short int vieshot[NBMAXTIR];
 extern uchar *rayonfumee;
 extern uchar *typefumee;
 extern int firstfumee;
-extern void tournevion(int v, float d, float p, float g);
+void tournevion(int v, float d, float p, float g);
 // video_interf
 extern int bank, size, width, BufVidOffset, depth;
 extern pixel32 *videobuffer;
 extern char *video;
-extern void buffer2video(void);
-extern char getscancode(void);
-extern void initvideo(bool fullscreen);
-extern int kread(unsigned n);
-extern int kreset(unsigned n);
-extern void xproceed(void);
+void buffer2video(void);
+char getscancode(void);
+void initvideo(bool fullscreen);
+int kread(unsigned n);
+int kreset(unsigned n);
+void xproceed(void);
 // renderer.c
-extern void calcposrigide(int o);
-extern void calcposarti(int o, matrix *m);
-extern void drawlinetb(vect2d *p1, vect2d *p2, int col);
-extern void initrender(void);
-extern void plot(int x, int y, int r);
-extern void mixplot(int x, int y, int r, int g, int b);
-extern void plotmouse(int x,int y);
-extern void plotcursor(int x,int y);
-extern void cercle(int x, int y, int radius, int c);
-extern bool polyflat(vect2d *p1, vect2d *p2, vect2d *p3, pixel color);
-extern void drawline(vect2d const *restrict p1, vect2d const *restrict p2, int col);
-extern void drawline2(vect2d *p1, vect2d *p2, int col);
-extern void calcposaind(int i);
-extern void calcposa(void);
+void calcposrigide(int o);
+void calcposarti(int o, matrix *m);
+void drawlinetb(vect2d *p1, vect2d *p2, int col);
+void initrender(void);
+void plot(int x, int y, int r);
+void mixplot(int x, int y, int r, int g, int b);
+void plotmouse(int x,int y);
+void plotcursor(int x,int y);
+void cercle(int x, int y, int radius, int c);
+void draw_target(vector, int c);
+void draw_mark(vector, int c);
+bool polyflat(vect2d *p1, vect2d *p2, vect2d *p3, pixel color);
+void drawline(vect2d const *restrict p1, vect2d const *restrict p2, int col);
+void draw_rectangle(vect2d const *restrict min, vect2d const *restrict max, int col);
+void drawline2(vect2d *p1, vect2d *p2, int col);
+void calcposaind(int i);
+void calcposa(void);
 enum render_part { GROUND, CLOUDS, SKY, ALL };  // ALL = GROUND+SKY
-extern void renderer(int ak, enum render_part);
+void renderer(int ak, enum render_part);
 #define VEC_DEBUG
 #ifdef VEC_DEBUG
 enum debug_vector {
@@ -410,49 +416,49 @@ enum debug_vector {
     NB_DBG_VECS
 };
 extern vector debug_vector[NB_DBG_VECS][2]; // start, stop
-extern void draw_debug(void);
+void draw_debug(void);
 #endif
 // txt.c
-extern void pcharady(int m, int *v, int c, int off);
+void pcharady(int m, int *v, int c, int off);
 extern int TextClipX1,TextClipX2,TextColfont;
-extern void pnumchar(int n, int x, int y, int c);
-extern void pnum(int n, int x, int y, int c, char just);
-extern void pnuma(int n, int x, int y, int c, char just);
+void pnumchar(int n, int x, int y, int c);
+void pnum(int n, int x, int y, int c, char just);
+void pnuma(int n, int x, int y, int c, char just);
 extern int SizeCharY;
 extern int SizeBigCharY, SizeBigCharX, SizeBigChar;
-extern void loadbigfont(char *fn);
-extern void pbignumchar(int n, int x, int y, int c);
-extern void pbignum(int n, int x, int y, char just, char tot, char dolard);
-extern void loadfont(char *fn, int nx, int ny, int cy);
-extern void pchar(int m, int x, int y, int c);
-extern void pcharlent(int m, int x, int y, int c);
-extern void pword(char const *m, int x, int y, int c);
-extern void pwordlent(char const *m, int x, int y, int c);
-extern void pstr(char const *m, int y, int c);
-extern void pstrlent(char const *m, int y, int c);
+void loadbigfont(char *fn);
+void pbignumchar(int n, int x, int y, int c);
+void pbignum(int n, int x, int y, char just, char tot, char dolard);
+void loadfont(char *fn, int nx, int ny, int cy);
+void pchar(int m, int x, int y, int c);
+void pcharlent(int m, int x, int y, int c);
+void pword(char const *m, int x, int y, int c);
+void pwordlent(char const *m, int x, int y, int c);
+void pstr(char const *m, int y, int c);
+void pstrlent(char const *m, int y, int c);
 // modele.c
 extern viondesc_s viondesc[];
 extern nobjet_s nobjet[];
-extern void LoadModeles(void);
-extern int addnobjet(int na, vector *p, matrix *m, uchar);
+void LoadModeles(void);
+int addnobjet(int na, vector *p, matrix *m, uchar);
 // radio.c
 extern prime_s prime[];
 extern village_s village[];
-extern void clearprime(void);
-extern void newprime(void);
+void clearprime(void);
+void newprime(void);
 extern char *nomvillage[];
 extern char msgactu[1000];
 extern int msgactutime;
 extern int campactu;
 // map.c
-extern void polyclip(vecic *p1, vecic *p2, vecic *p3);
+void polyclip(vecic *p1, vecic *p2, vecic *p3);
 extern pixel *colormap;
 extern uchar *mapcol;
 // carte.c
 extern vector repere[NBREPMAX];
 extern int zoom, xcarte, ycarte, repidx;
-extern void rendumap(void);
-extern void rendumapbg(void);
+void rendumap(void);
+void rendumapbg(void);
 extern int colcamp[4];
 
 // FIXME: defined in robot.c but should go elsewhere
@@ -463,15 +469,15 @@ extern voiture_s *voiture;
 
 //tableaubord.c
 extern int xsoute,ysoute,xthrust,ythrust,rthrust,xspeed,yspeed,rspeed,xalti,yalti,ralti,xinclin,yinclin,hinclin,dxinclin,xgear,ygear,rgear;
-extern void rectangle(int *v, int rx, int ry, int c);
-extern void disque(int *v, int r, int c);
-extern void rectangletb(pixel32 *v, int rx, int ry, int c);
-extern void disquetb(pixel32 *v, int r, int c);
-extern void rectangleZ(int x, int y, int rx, int ry, int c);
-extern void disqueZ(int x, int y, int r, int c);
-extern void loadtbtile(char *fn);
-extern void drawtbback(void);
-extern void drawtbcadrans(int b);
+void rectangle(int *v, int rx, int ry, int c);
+void disque(int *v, int r, int c);
+void rectangletb(pixel32 *v, int rx, int ry, int c);
+void disquetb(pixel32 *v, int r, int c);
+void rectangleZ(int x, int y, int rx, int ry, int c);
+void disqueZ(int x, int y, int r, int c);
+void loadtbtile(char *fn);
+void drawtbback(void);
+void drawtbcadrans(int b);
 extern int lx,ly,lz;
 extern short int sxtbtile, sytbtile;
 extern pixel32 *tbtile, *tbback, *tbback1, *tbback2;
@@ -481,51 +487,51 @@ extern int *tbwidth;
 #define BEST_LIFT_SPEED (2.5 * ONE_METER)    // according to control.c
 #define MIN_SPEED_FOR_LIFT 120.
 extern float soundthrust;
-extern void control_plane(int b, float dt_sec);
-extern void control_vehic(int v, float dt_sec);
-extern void controlepos(int i);
-extern void control_zep(int z, float dt_sec);
+void control_plane(int b, float dt_sec);
+void control_vehic(int v, float dt_sec);
+void controlepos(int i);
+void control_zep(int z, float dt_sec);
 // mapping.c
-extern void polymap(vect2dm *p1, vect2dm *p2, vect2dm *p3);
-extern void initmapping(void);
+void polymap(vect2dm *p1, vect2dm *p2, vect2dm *p3);
+void initmapping(void);
 extern int *mapping;
-extern void polyphong(vect2dlum *p1, vect2dlum *p2, vect2dlum *p3, pixel c);
+void polyphong(vect2dlum *p1, vect2dlum *p2, vect2dlum *p3, pixel c);
 // manuel.c
-extern void NextDogBot(void);
-extern void manuel(int b);
+void NextDogBot(void);
+void manuel(int b);
 extern uchar but1released,but2released;
 extern int xmouse,ymouse,bmouse;
 extern int DogBot;
 extern vector DogBotDir;
 extern float DogBotDist;
 // soleil
-extern void animsoleil(void);
-extern void initsol(void);
-extern void affsoleil(vector *L);
+void animsoleil(void);
+void initsol(void);
+void affsoleil(vector *L);
 // ravages.c
-extern int collision(int p, int o);
-extern int kelkan(int o);
+int collision(int p, int o);
+int kelkan(int o);
 // shot_idx: idx in objs list (substract debtir for index in gunner/vieshot)
-extern bool hitgun(int obj_idx, int shot_idx);
-extern void explose(int oc, int i);
+bool hitgun(int obj_idx, int shot_idx);
+void explose(int oc, int i);
 // present.c
-extern void affpresent(int,int);
+void affpresent(int,int);
 extern char *scenar[4][4][2];
-extern void redefinekeys(void);
-extern int present(void);
-extern void animpresent(void);
-extern int invaders(void);
+void redefinekeys(void);
+int present(void);
+void animpresent(void);
+int invaders(void);
 // extern int vague[4][4][4];   // vague, camp, colonne
 extern int myc, myv, myt;
 // code.as
-extern void MMXAddSat(int*,int);
-extern void MMXAddSatC(int *,int);
-extern void MMXSubSat(int*,int);
-extern void MMXFlatTransp(int *dest, int nbr, int c);
-extern void MMXMemSetInt(int *deb, int coul, int n);
-extern void MMXAddSatInt(int *deb, int coul, int n);
-extern void MMXCopyToScreen(int *dest, int *src, int sx, int sy, int width);
-extern void MMXCopy(int *dest, int *src, int nbr);
+void MMXAddSat(int*,int);
+void MMXAddSatC(int *,int);
+void MMXSubSat(int*,int);
+void MMXFlatTransp(int *dest, int nbr, int c);
+void MMXMemSetInt(int *deb, int coul, int n);
+void MMXAddSatInt(int *deb, int coul, int n);
+void MMXCopyToScreen(int *dest, int *src, int sx, int sy, int width);
+void MMXCopy(int *dest, int *src, int nbr);
 extern uchar *BigFont;
 extern uchar font[112][10];
 // keycodes
@@ -533,20 +539,20 @@ extern kc_s gkeys[NBKEYS];
 // route
 extern int largroute[3];
 extern short (*map2route)[NBREPHASH];
-extern void hashroute(void);
+void hashroute(void);
 extern int NbElmLim, EndMotorways, EndRoads;
 extern route_s *route;
 extern int routeidx;
-extern void initroute(void);
-extern void endinitroute(void);
-extern void prospectroute(vector *i,vector *f);
-extern void traceroute(vector *i,vector *f);
+void initroute(void);
+void endinitroute(void);
+void prospectroute(vector *i,vector *f);
+void traceroute(vector *i,vector *f);
 // drawroute
-extern void drawroute(int bb/*, vecic *ptref*/);
+void drawroute(int bb/*, vecic *ptref*/);
 // init
-extern void affjauge(float j);
-extern void initworld(void);
-extern void randomhm(matrix *m);
+void affjauge(float j);
+void initworld(void);
+void randomhm(matrix *m);
 
 static inline int add_sat(int a, int b, int max)
 {

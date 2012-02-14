@@ -428,7 +428,7 @@ void control_plane(int b, float dt_sec) {
                 }
             }
         }
-    } else /* !touchdown */ if (bot[b].zs > 100) {
+    } else /* !touchdown */ if (bot[b].zs > 30) {
         bot[b].is_flying = true;
     }
 

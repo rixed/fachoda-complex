@@ -615,8 +615,7 @@ parse_error:
                 if (j!=-1) {
                     int oc, fg=0;
                     // FIXME: given dt, &pos, &vit, &acc, drag factor, apply gravity?
-                    vector acc = { 0, 0, -G * dt_sec };
-                    addv(&bombe[i].vit, &acc);
+                    bombe[i].vit.z -= G * dt_sec;
                     mulv(&bombe[i].vit, pow(.9, dt_sec));
                     v = bombe[i].vit;
                     mulv(&v, dt_sec);
@@ -1002,6 +1001,14 @@ parse_error:
                             u=(exp(-i-.9)-1)*2200;
                             MMXAddSatInt((int*)videobuffer,(u<<16)+(u<<8)+u,SX*SY);
                         }
+                    }
+                    if (Easy) {
+                        if (bot[visubot].cibt != -1) {
+                            draw_target(obj[bot[visubot].cibt].pos, 0xC02080);
+                            fall_min_dist2(visubot);
+                            draw_mark(bot[visubot].drop_mark, 0x400000);
+                        }
+                        if (bot[visubot].cibv != -1) draw_target(obj[bot[visubot].cibv].pos, 0xC08020);
                     }
                 }
                 if (view == VIEW_DOGFIGHT && bot[bmanu].camp!=-1) cercle(0,0,10,colcamp[(int)bot[bmanu].camp]);

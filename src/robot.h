@@ -19,15 +19,19 @@
 #ifndef ROBOT_H_120209
 #define ROBOT_H_120209
 
+#define LOW_ALT (8. * ONE_METER)
+#define SAFE_LOW_ALT (40. * ONE_METER)
+
 char const *aerobatic_2_str(enum aerobatic);
 char const *maneuver_2_str(enum maneuver);
 void armstate(int bot);
 void newnav(int bot);
 double cap(double x, double y);
-void robot_safe(int bot);
+void robot_safe(int bot, float min_alt);
 void robot_autopilot(int bot);
 void robotvehic(int tank);
 void armstate(int bot);
 void robot(int bot);
+double fall_min_dist2(int b);   // FIXME: rename?
 
 #endif

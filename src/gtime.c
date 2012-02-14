@@ -119,8 +119,6 @@ gtime gtime_next(void)
     while (1) {
         now = gtime_now();
         dt = now - prev_gtime + 1;
-#       define MIN_DT (uint_least64_t)25000ULL  // below which we sleep
-#       define MAX_DT (uint_least64_t)300000ULL // above which we return only MAX_DT (and skip this time)
 #       ifdef DT_DEBUG
         printf("gtime_next(): dt=%"PRIuLEAST64"\n", dt);
 #       endif
