@@ -17,7 +17,7 @@ fachoda: $(OBJS)
 .PHONY: clean distclean cscope clear
 
 clean:
-	rm -f *.o *.dep core core.*
+	rm -f *.o *.dep .depend core core.*
 
 distclean: clean
 	rm -f fachoda fachoda.sdl fachodasrv cscope.out
