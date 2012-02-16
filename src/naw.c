@@ -106,6 +106,7 @@ void tournevion(int v, float d, float p, float g) {
     r.x.y=c1*s3-s1*s2*c3;   r.y.y=s1*s2*s3+c1*c3;   r.z.y=-s1*c2;
     r.x.z=c1*s2*c3+s1*s3;   r.y.z=s1*c3-s3*c1*s2;   r.z.z=c1*c2;
     mulm(&obj[v].rot,&r);
+    // renormalize/orthogonalize ?
 }
 void backgroundline(int *v,int sx,int dz,int z,int coul) {
     int x;
@@ -581,14 +582,11 @@ parse_error:
                         if (hitgun(oc, i)) vieshot[i-debtir]=0;
                     }
                 }
-#               define SHOT_SPEED (30. * ONE_METER) // in meters/secs
                 v = obj[i].rot.x;
                 mulv(&v, SHOT_SPEED * dt_sec);
                 addv(&obj[i].pos, &v);
-                v = vec_g;
-                mulv(&v, .05*dt_sec);   // FIXME: obj should have a proper velocity
-                addv(&obj[i].rot.x, &v);
-                renorme(&obj[i].rot.x);
+                obj[i].rot.x.z -= .05*dt_sec;   // FIXME: obj should have a proper velocity
+                renorme(&obj[i].rot.x); // FIXME: not at every step!
                 randomv(&obj[i].rot.y);
                 orthov(&obj[i].rot.y,&obj[i].rot.x);
                 prodvect(&obj[i].rot.x,&obj[i].rot.y,&obj[i].rot.z);

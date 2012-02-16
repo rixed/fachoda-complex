@@ -47,7 +47,7 @@ extern inline void neg(vector *v);
 extern inline void proj(vect2d *e, vector *p);
 extern inline void proji(vect2d *e, veci *p);
 extern inline float proj1(float p, float z);
-extern inline void subv3(vector *a, vector *b, vector *restrict r);
+extern inline void subv3(vector const *restrict a, vector const *restrict b, vector *restrict r);
 extern inline void addv3(vector *a, vector *b, vector *restrict r);
 extern inline void cap_dist(vector *a, float dist);
 extern inline void randomm(matrix *m);

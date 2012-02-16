@@ -37,9 +37,7 @@ char const *aerobatic_2_str(enum aerobatic aerobatic)
         case MANEUVER:   return "maneuver";
         case TURN:       return "turn";
         case RECOVER:    return "recover";
-        case CLIMB_VERT: return "high climb";
         case TAIL:       return "follow 6s";
-        case CLIMB:      return "climb";
     }
     assert(!"Invalid aerobatic");
     return "INVALID";
@@ -65,17 +63,12 @@ char const *maneuver_2_str(enum maneuver maneuver)
     return "INVALID";
 }
 
-static double tirz(double dz, double d)
+static double tirz(vector const *v0, double d)
 {
-    double z=0, l=0;
-    double dz2 = dz*dz;
-    while (l<d && dz2<1) {
-        z+=100.*dz;
-        dz+=vec_g.z*.005;
-        dz2+=(vec_g.z*.005*vec_g.z*.005)+vec_g.z*.01;
-        l+=100.*sqrt(1-dz2);
-    }
-    return z;
+    double const h_speed = SHOT_SPEED * sqrt(v0->x*v0->x + v0->y*v0->y);
+    if (h_speed == 0) return 0;
+    double const t = d / h_speed;   // the t when shot will have traversed dist d horizontaly
+    return .05 /* from naw.c */ * .5 * SQUARE(t) + SHOT_SPEED * v0->z * t;
 }
 
 /*
@@ -210,7 +203,7 @@ void robotvehic(int v)
             vehic[v].ang1 += .4 * yy;
             if (yy > -.2 && yy < .2) {
                 subv3(&obj[cib].pos, &obj[vehic[v].o1+3+vehic[v].ocanon].pos, &u);
-                double tz = u.z - tirz(obj[vehic[v].o1+2].rot.x.z, sqrt(u.x*u.x + u.y*u.y));
+                double tz = u.z - tirz(&obj[vehic[v].o1+2].rot.x, sqrt(u.x*u.x + u.y*u.y));
                 if (tz > 0.) {
                     vehic[v].ang2 += tz < 100. ? .001*tz : .1;
                 } else if (tz<0) {
@@ -367,12 +360,11 @@ static void adjust_slope(int b, float diff_alt)
     bot[b].yctl = slope - speed.z;
     CLAMP(bot[b].yctl, 1.);
 
-    // The more we roll, the more we need to pull/push the joystick
-    if (bot[b].yctl > 0) {
-        float const roll = obj[bot[b].vion].rot.y.z;
-        bot[b].yctl *= 1. + 6. * roll*roll;
-        CLAMP(bot[b].yctl, 1.);
-    }
+    // The more we roll, the more we need to pull the joystick
+    float roll = obj[bot[b].vion].rot.y.z;
+    roll = roll*roll; roll = roll*roll; roll = roll*roll;
+    bot[b].yctl += 1. - exp(-32. * roll);
+    CLAMP(bot[b].yctl, 1.);
 
     if (bot[b].thrust > 1.) bot[b].thrust = 1.;
 
@@ -391,7 +383,7 @@ static void adjust_throttle(int b, float speed)
     }
 }
 
-static void adjust_direction(int b, vector const *dir)
+static double adjust_direction_rel(int b, vector const *dir)
 {
     // First of all, do not allow the plane to get upside down
     if (obj[bot[b].vion].rot.z.z < 0) {
@@ -399,11 +391,11 @@ static void adjust_direction(int b, vector const *dir)
         if (b == visubot) printf("upside down!\n");
 #       endif
         bot[b].xctl = obj[bot[b].vion].rot.y.z > 0 ? -1. : 1.;
-        return;
+        return 0.;
     }
 
     // Set target rolling angle according to required navpoint
-    double dc = cap(dir->x - obj[bot[b].vion].pos.x, dir->y - obj[bot[b].vion].pos.y) - bot[b].cap;
+    double dc = cap(dir->x, dir->y) - bot[b].cap;
     // Get it between [-PI:PI]
     while (dc >  M_PI) dc -= 2.*M_PI;
     while (dc < -M_PI) dc += 2.*M_PI;
@@ -417,6 +409,14 @@ static void adjust_direction(int b, vector const *dir)
 #   ifdef PRINT_DEBUG
     if (b == visubot) printf("a=%f rot.y.z=%f xctl=%f\n", a, obj[bot[b].vion].rot.y.z, bot[b].xctl);
 #   endif
+    return dc;
+}
+
+static double adjust_direction(int b, vector const *pos)
+{
+    vector rel;
+    subv3(pos, &obj[bot[b].vion].pos, &rel);
+    return adjust_direction_rel(b, &rel);
 }
 
 void robot_safe(int b, float min_alt)
@@ -500,8 +500,7 @@ void robot_autopilot(int b)
 
 void robot(int b)
 {
-    float vit,m,n,a,dist,disth;
-    float dc;
+    float vit,dist,disth;
     vector u,v;
     int o=bot[b].vion;
     if (bot[b].camp==-1) return;
@@ -533,7 +532,7 @@ void robot(int b)
             }
         }
     }
-    if (bot[b].aerobatic && obj[bot[b].cibv].type == DECO) {
+    if (bot[b].aerobatic != MANEUVER && obj[bot[b].cibv].type == DECO) {
         bot[b].aerobatic = MANEUVER;
         bot[b].cibv = -1;
         bot[b].maneuver = NAVIG;
@@ -726,102 +725,81 @@ void robot(int b)
             }
             break;
         case TURN:
-            if (obj[o].rot.y.z<0) bot[b].xctl=-1-obj[o].rot.y.z;
-            else bot[b].xctl=1-obj[o].rot.y.z;
-            if (obj[o].rot.z.z<0) bot[b].xctl=-bot[b].xctl;
-            if (vit<13) bot[b].thrust+=.1;
-            else if (vit>13) bot[b].thrust-=.01;
-            bot[b].yctl=1-bot[b].xctl*bot[b].xctl;
-            if (zs<400) bot[b].aerobatic = MANEUVER;
-            if (scalaire(&obj[o].rot.x,&obj[bot[b].cibv].rot.x)<0) bot[b].aerobatic = RECOVER;
+            if (obj[o].rot.y.z < 0.) bot[b].xctl = -1. - obj[o].rot.y.z;
+            else bot[b].xctl = 1. - obj[o].rot.y.z;
+            if (obj[o].rot.z.z < 0.) bot[b].xctl = -bot[b].xctl;
+            adjust_throttle(b, BEST_LIFT_SPEED);
+            bot[b].yctl = 1. - bot[b].xctl * bot[b].xctl;
+            if (zs < 4. * ONE_METER) bot[b].aerobatic = MANEUVER;
+            if (scalaire(&obj[o].rot.x, &obj[bot[b].cibv].rot.x) < 0.) bot[b].aerobatic = RECOVER;
             break;
         case RECOVER:
-            if (vit<18) bot[b].thrust+=.1;
-            else if (vit>18) bot[b].thrust-=.01;
-            bot[b].xctl=(-obj[o].rot.y.z);
-            bot[b].yctl=(-bot[b].vionvit.z)*.13;
-            if (obj[o].rot.z.z<0) bot[b].yctl=-bot[b].yctl;
-            if (obj[o].rot.z.z>.8) bot[b].aerobatic = TAIL;
-            break;
-        case CLIMB_VERT:
-            bot[b].thrust=1;
-            bot[b].xctl=(-obj[o].rot.y.z);
-            bot[b].yctl=(1-obj[o].rot.x.z)*.13;
-            if (bot[b].vionvit.z<0 && obj[o].rot.x.z>.5) bot[b].aerobatic = RECOVER;
-            if (zs<400) bot[b].aerobatic = MANEUVER;
+            adjust_throttle(b, BEST_LIFT_SPEED);
+            bot[b].xctl = -obj[o].rot.y.z;
+            adjust_slope(b, 0.);
+            if (obj[o].rot.z.z > .8) bot[b].aerobatic = TAIL;
             break;
         case TAIL:
-            copyv(&v,&obj[bot[b].cibv].pos);
-            subv(&v,&obj[o].pos);
-            disth=sqrt(v.x*v.x+v.y*v.y);
-            copyv(&u,&bot[bot[b].gunned].vionvit);
-            if (disth<3000) mulv(&u,disth*.02);
-            addv(&v,&u);
-            a=scalaire(&v,&obj[o].rot.y);
-            dist=renorme(&v);
-            dc=cap(v.x,v.y)-bot[b].cap;
-            m=mod[obj[bot[b].cibv].model].rayoncollision;
-            if (dc<-M_PI) dc+=2*M_PI;
-            else if (dc>M_PI) dc-=2*M_PI;
-            double distfrap2=0;
-            if (dist<4000) {
-                if (dc>-M_PI/7 && dc<M_PI/7) {
-                    mulv(&obj[o].rot.x,400);
-                    addv(&obj[o].rot.x,&v);
+            subv3(&obj[bot[b].cibv].pos, &obj[o].pos, &v);
+            disth = sqrt(v.x*v.x + v.y*v.y);
+            u = bot[bot[b].gunned].vionvit;
+            // aim beyond opponent, proportional to distance
+            if (bot[b].vitlin > 0) {
+                mulv(&u, .0002*disth);
+                addv(&v, &u);
+            }
+            double dc = adjust_direction_rel(b, &v);
+            dist = renorme(&v);
+            double distfrap2 = 0;
+            if (dist < 40. * ONE_METER) {
+                if (fabsf(dc) < M_PI/7) {
+#                   ifdef PRINT_DEBUG
+                    if (b == visubot) printf("trick orientation\n");
+#                   endif
+                    mulv(&obj[o].rot.x, 400);
+                    addv(&obj[o].rot.x, &v);
                     renorme(&obj[o].rot.x);
-                    orthov(&obj[o].rot.y,&obj[o].rot.x);
+                    orthov(&obj[o].rot.y, &obj[o].rot.x);
                     renorme(&obj[o].rot.y);
-                    prodvect(&obj[o].rot.x,&obj[o].rot.y,&obj[o].rot.z);
+                    prodvect(&obj[o].rot.x, &obj[o].rot.y, &obj[o].rot.z);
                 }
-                if (a>-6*m && a<6*m && dc>-M_PI/2 && dc<M_PI/2) {
-                    distfrap2=(-tirz(obj[o].rot.x.z,disth)+obj[bot[b].cibv].pos.z-obj[o].pos.z);
-                    if (distfrap2<4*m && distfrap2>-4*m) bot[b].but.canon=1;
+                //float const a = scalaire(&v, &obj[o].rot.y);
+                float const m = mod[obj[bot[b].cibv].model].rayoncollision;
+                if (/*fabsf(a) < 6*m && fabsf(dc) < M_PI/2*/ fabsf(dc) < M_PI/8) {
+                    float const dz_shot = tirz(&obj[o].rot.x, disth);
+                    distfrap2 = obj[bot[b].cibv].pos.z - (obj[o].pos.z + dz_shot);
+                    if (fabs(distfrap2) < 3. * m) bot[b].but.canon = 1;
+#                   ifdef PRINT_DEBUG
+                    if (b == visubot) printf("dz_shot=%f bot.z=%f cib.z=%f\n", dz_shot, obj[o].pos.z, obj[bot[b].cibv].pos.z);
+#                   endif
                 }
-                vector c;
-                subv3(&bot[bot[b].gunned].vionvit, &bot[b].vionvit, &c);
-                a=scalaire(&c, &v);  // a = vitesse d'éloignement
-#define NFEU 400.
-#define ALPHA .004
-#define H (ALPHA*NFEU)
-                //  if (visubot==b) printf("dist=%f A=%f Avoulu=%f\n",dist,a,H-ALPHA*dist);
-                if (a>H-ALPHA*dist || bot[b].vitlin<15) bot[b].thrust+=.1;
-                else {
-                    if (bot[b].thrust>.06) bot[b].thrust-=.03;
-                    //  distfrap2=(bot[b].vitlin-18)*.02;
-                }
-            } else if (obj[bot[b].vion].rot.x.z>-.4) {
-                bot[b].but.flap=0;
-                bot[b].thrust=1;    // courrir après une cible (pas après le sol toutefois !)
+                // Now try to copy opponent's speed
+                vector rel_speed;
+                subv3(&bot[bot[b].gunned].vionvit, &bot[b].vionvit, &rel_speed);
+                float const away_speed = scalaire(&rel_speed, &v);
+#               define BEST_TAIL_DIST (7. * ONE_METER)
+                // while copying, we aim for a given shooting distance
+                float const target_speed = dist > BEST_TAIL_DIST ?
+                    bot[b].vitlin + away_speed + (0.6 * ONE_METER) :
+                    bot[b].vitlin + away_speed - (0.4 * ONE_METER); // be conservative with speed
+#               ifdef PRINT_DEBUG
+                if (b == visubot) printf("close, dist=%f dc=%f, distfrap2=%f, away_speed=%f, target_speed=%f\n", dist, dc, distfrap2, away_speed, target_speed);
+#               endif
+                adjust_throttle(b, target_speed);
+            } else /* opponent is far */ if (obj[bot[b].vion].rot.x.z > -.4) {
+                bot[b].but.flap = 0;
+                bot[b].thrust = 1.;    // courrir après une cible (pas après le sol toutefois !)
             }
-            if (dc>.3) a=-.9;
-            else if (dc<-.3) a=.9;
-            else a=-.9*dc/.3;
-            bot[b].xctl=(a-obj[o].rot.y.z);
-            n=(obj[bot[b].cibv].pos.z-obj[o].pos.z)*3+distfrap2*4/*30*/;    // DZ
-            if (zs<6000) { n+=20000-5*zs; bot[b].thrust=1; }
-            m=7*atan(1e-3*n);
-            bot[b].yctl=fabs(obj[o].rot.y.z)*.5+(m-bot[b].vionvit.z)*.3;
-            if (zs<3000) bot[b].aerobatic = CLIMB;
-            break;
-        case CLIMB:
-            bot[b].but.flap=1;
-            if (obj[o].rot.x.z>0) bot[b].thrust=1;
-            else {
-                if (bot[b].vitlin<19) bot[b].thrust+=.2;
-                else if (bot[b].vitlin>23) bot[b].thrust-=.2;
-            }
-            bot[b].xctl=(-obj[o].rot.y.z);
-            bot[b].yctl=(-obj[o].rot.x.z)+1.;
-            if (bot[b].vionvit.z<0) bot[b].yctl=1;
-            if (obj[o].rot.z.z<0) bot[b].yctl=-bot[b].yctl;
-            if (zs>3100) bot[b].aerobatic = TAIL;
+            // adjust slope
+            float const dz = zs > 20. * ONE_METER ?
+                (obj[bot[b].cibv].pos.z - obj[o].pos.z) + distfrap2*4. :
+                30. * ONE_METER - zs;
+            adjust_slope(b, dz);
             break;
     }
     // Ensure controls are within bounds
     if (bot[b].thrust < 0.) bot[b].thrust = 0.;
     else if (bot[b].thrust > 1.) bot[b].thrust = 1.;
-    if (bot[b].xctl < -1.) bot[b].xctl = -1;
-    else if (bot[b].xctl > 1.) bot[b].xctl = 1;
-    if (bot[b].yctl < -1.) bot[b].yctl = -1;
-    else if (bot[b].yctl > 1.) bot[b].yctl = 1;
+    CLAMP(bot[b].xctl, 1.);
+    CLAMP(bot[b].yctl, 1.);
 }

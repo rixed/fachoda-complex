@@ -44,6 +44,7 @@
 #define G (3. * ONE_METER)  // actual gravity is of course 10, but we like it smaller so that planes can fly slower
 #define G_FACTOR .5
 #define NTANKMARK 12    // 11 bits pour les No de tanks
+#define SHOT_SPEED (30. * ONE_METER) // in meters/secs
 #define vf 8    // 12
 #define vfm (1<<vf)
 
@@ -214,9 +215,7 @@ typedef struct {
         MANEUVER,   // see below field
         TURN,       // high rate turn
         RECOVER,    // level the wings
-        CLIMB_VERT, // high rate climb
         TAIL,       // follow target's six
-        CLIMB,      // regain altitude
     } aerobatic;
     enum maneuver {
         PARKING,
@@ -248,7 +247,7 @@ typedef struct {
     char motorloss;
     char aeroloss;
     int bloodloss;
-    int gunned;
+    int gunned; // bot/tank number of the oponent (while cibv/cibt is the object number)
     float cap;
     int burning;
     int gold;
@@ -664,7 +663,7 @@ static inline void mulmtv(matrix *n, vector *v, vector *r) {
     r->z = n->z.x*t.x+n->z.y*t.y+n->z.z*t.z;
 }
 static inline void neg(vector *v) { v->x=-v->x; v->y=-v->y; v->z=-v->z; }
-static inline void subv3(vector *a, vector *b, vector *restrict r) {    // il faut r!=a,b
+static inline void subv3(vector const *restrict a, vector const *restrict b, vector *restrict r) {    // il faut r!=a,b
     r->x = a->x-b->x;
     r->y = a->y-b->y;
     r->z = a->z-b->z;
