@@ -31,11 +31,13 @@ void initrender() {
 #define MAXNO 5000
     oL=(matrix*)malloc(MAXNO*sizeof(matrix));   // nb objet max dans un ak
 }
-void plot(int x, int y, int r){
+void plot(int x, int y, int r)
+{
     if(x<_DX && x>=-_DX && y<_DY && y>=-_DY) {
         ((int*)videobuffer)[x+_DX+SX*(y+_DY)]=r;
     }
 }
+
 void mixplot(int x, int y, int r, int g, int b){
     int c;
     int rr,gg,bb;
@@ -209,14 +211,16 @@ void drawline(vect2d const *restrict p1, vect2d const *restrict p2, int col) {
     vect2d const *tmp;
     int q;
     if (p1->x > p2->x) { tmp=p1; p1=p2; p2=tmp; }
-    if ((dy=(p2->y - p1->y))>0) {
-        s=1;
+    if ((dy = p2->y - p1->y) > 0) {
+        s = 1;
         q = ((p2->x - p1->x)<<vf)/(1+dy);
     } else {
-        dy=-dy;
-        s=-1;
+        dy = -dy;
+        s = -1;
         q = ((p2->x - p1->x)<<vf)/(1+dy);
     }
+    // FIXME: clipping
+    if (p2->x - p1->x > SX || dy > SY) return;
     x = p1->x<<vf;
     for (y = p1->y; dy >= 0; dy--, y += s) {
         for (xi = x>>vf; xi < 1+((x+q)>>vf); xi++) {
