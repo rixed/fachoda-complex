@@ -242,6 +242,18 @@ void armstate(int b)
     }
 }
 
+static void landing_approach(int b)
+{
+    bot[b].maneuver = ILS_1;
+    bot[b].u = obj[bot[b].babase].rot.x;
+    mulv(&bot[b].u, 130. * ONE_METER);
+    addv(&bot[b].u, &obj[bot[b].babase].pos);
+    bot[b].u.z = z_ground(bot[b].u.x, bot[b].u.y, false);
+    bot[b].target_speed = 2.5 * ONE_METER;
+    bot[b].target_rel_alt = 16. * ONE_METER;
+    bot[b].cibt = -1;
+}
+
 void newnav(int b)
 {
     if (SpaceInvaders) {
@@ -258,14 +270,7 @@ void newnav(int b)
         bot[b].target_rel_alt = 100. * ONE_METER;
         bot[b].maneuver = NAVIG;
     } else if (bot[b].maneuver != ILS_1 && bot[b].maneuver != ILS_2 && bot[b].maneuver != ILS_3) {
-        bot[b].u = obj[bot[b].babase].rot.x;
-        mulv(&bot[b].u, 6000);
-        addv(&bot[b].u, &obj[bot[b].babase].pos);
-        bot[b].u.z = z_ground(bot[b].u.x, bot[b].u.y, false);
-        bot[b].target_speed = 3. * ONE_METER;
-        bot[b].target_rel_alt = 1000.;
-        bot[b].maneuver = ILS_1;
-        bot[b].cibt = -1;
+        landing_approach(b);
     }
 }
 
@@ -315,29 +320,65 @@ double cap(double x, double y)
 // FIXME: use control.c to predict the vert speed from the slope and target the correct slope
 static void adjust_slope(int b, float diff_alt)
 {
-    float const  n = .7 * atan(.001 * diff_alt);    // ranges from -1 to 1
-    vector v;
-    mulmtv(&obj[bot[b].vion].rot, &bot[b].vionvit, &v);
-    renorme(&v);
-    bot[b].yctl = n - obj[bot[b].vion].rot.x.z;
-    if (n > 0 && bot[b].vitlin < BEST_LIFT_SPEED) {
+    vector speed = bot[b].vionvit;
+    renorme(&speed);
+
+    // First we choose the target slope (ie. rot.x.z), then we change actual one with yctl
+    // (note: we should choose vertical speed instead)
+    float slope = .7 * atan(.001 * diff_alt);    // ranges from -1 to 1
+#   ifdef PRINT_DEBUG
+    if (b==visubot) printf("naive slope: %f ", slope);
+#   endif
+
+    // But we do not want to have a slope too distinct from plane actual direction
+    float aoa = slope - speed.z;  // from -2 to 2
+    // The more linear speed we have, the more we can turn
+    if (bot[b].vitlin < 0) { // don't know how to handle this
+        bot[b].thrust = 1.;
+        return;
+    }
+    float const max_aoa = 0.01 + powf(bot[b].vitlin / (2. * BEST_LIFT_SPEED), 5.2);
+    aoa = max_aoa*atan(5. * aoa);  // smoothly cap the angle of attack
+    slope = aoa + speed.z;
+#   ifdef PRINT_DEBUG
+    if (b==visubot) printf("capped slope: %f ", slope);
+#   endif
+
+    if (slope > 0 && bot[b].vitlin < BEST_LIFT_SPEED) {
         float vr = bot[b].vitlin/BEST_LIFT_SPEED;
         vr *= vr; vr *= vr; vr *= vr;
-        bot[b].yctl = (1. - vr) * -obj[bot[b].vion].rot.x.z + vr * bot[b].yctl;
+        slope = (1. - vr) * -speed.z + vr * slope;
         bot[b].thrust += .1;
-        if (n > .1) {
+        if (slope > .1) {
             bot[b].but.flap = 1;
         }
+#       ifdef PRINT_DEBUG
+        if (b==visubot) printf("vitlin slope: %f ", slope);
+#       endif
     }
 
-    if (n > 0.5) {
+    if (diff_alt > 0. && speed.z < 0.5 * ONE_METER) {
         bot[b].but.flap = 1;
+        CLAMP(bot[b].xctl, 1.);
         bot[b].thrust = 1.;
-        bot[b].xctl = (bot[b].xctl-obj[bot[b].vion].rot.y.z)*.5;
     }
+
+    // Choose yctl according to target slope
+    bot[b].yctl = slope - speed.z;
+    CLAMP(bot[b].yctl, 1.);
+
+    // The more we roll, the more we need to pull/push the joystick
+    if (bot[b].yctl > 0) {
+        float const roll = obj[bot[b].vion].rot.y.z;
+        bot[b].yctl *= 1. + 6. * roll*roll;
+        CLAMP(bot[b].yctl, 1.);
+    }
+
+    if (bot[b].thrust > 1.) bot[b].thrust = 1.;
+
 #   ifdef PRINT_DEBUG
-    if (b == visubot) printf("z=%f, vitlin=%f, diff_alt=%f, n=%f, yctl=%f\n",
-        obj[bot[b].vion].pos.z, bot[b].vitlin, diff_alt, n, bot[b].yctl);
+    if (b == visubot) printf("vitlin=%f, diff_alt=%f, Sz=%f, slope=%f, yctl=%f, rot.x.z=%f\n",
+        bot[b].vitlin, diff_alt, speed.z, slope, bot[b].yctl, obj[bot[b].vion].rot.x.z);
 #   endif
 }
 
@@ -352,18 +393,30 @@ static void adjust_throttle(int b, float speed)
 
 static void adjust_direction(int b, vector const *dir)
 {
+    // First of all, do not allow the plane to get upside down
+    if (obj[bot[b].vion].rot.z.z < 0) {
+#       ifdef PRINT_DEBUG
+        if (b == visubot) printf("upside down!\n");
+#       endif
+        bot[b].xctl = obj[bot[b].vion].rot.y.z > 0 ? -1. : 1.;
+        return;
+    }
+
     // Set target rolling angle according to required navpoint
     double dc = cap(dir->x - obj[bot[b].vion].pos.x, dir->y - obj[bot[b].vion].pos.y) - bot[b].cap;
     // Get it between [-PI:PI]
     while (dc >  M_PI) dc -= 2.*M_PI;
     while (dc < -M_PI) dc += 2.*M_PI;
     float a = 0;
-    if (dc > .5) a = -.9;
-    else if (dc < -.5) a = .9;
-    else a = -.9*dc/.5;
-    // don't lean too much if we lack vertical speed
-//    if (bot[b].vionvit.z < 0.) a *= pow(.7, (-30./ONE_METER) * bot[b].vionvit.z);
+    float const a_max = sqrtf(1.001 - SQUARE(obj[bot[b].vion].rot.x.z));
+    if (dc > .5) a = -a_max;
+    else if (dc < -.5) a = a_max;
+    else a = a_max*dc/-.5;
     bot[b].xctl = a - obj[bot[b].vion].rot.y.z;
+    CLAMP(bot[b].xctl, 1.);
+#   ifdef PRINT_DEBUG
+    if (b == visubot) printf("a=%f rot.y.z=%f xctl=%f\n", a, obj[bot[b].vion].rot.y.z, bot[b].xctl);
+#   endif
 }
 
 void robot_safe(int b, float min_alt)
@@ -381,10 +434,13 @@ void robot_safe(int b, float min_alt)
 
     // allow only a few roll
     adjust_direction(b, &bot[b].u);
-    float r = fabsf(obj[bot[b].vion].rot.y.z);
-    r = 1. - r;
-    r *= r; r *= r;
-    bot[b].xctl = (1. - r) * (-obj[bot[b].vion].rot.y.z) + r * bot[b].xctl;
+    if (obj[bot[b].vion].rot.z.z >= 0) {
+        float r = fabsf(obj[bot[b].vion].rot.y.z);
+        r = 1. - r;
+        r *= r; r *= r;
+        bot[b].xctl = (1. - r) * (-obj[bot[b].vion].rot.y.z) + r * bot[b].xctl;
+        CLAMP(bot[b].xctl, 1.);
+    }
 
     if (bot[b].zs >= min_alt) {
         // Flaps, etc
@@ -399,7 +455,7 @@ void robot_safe(int b, float min_alt)
     } else {
         // If the ground is near, try to keep our altitude
         bot[b].but.flap = 1;
-        adjust_throttle(b, 50. * ONE_METER);
+        bot[b].thrust = 1.;
 #       ifdef PRINT_DEBUG
         if (b == visubot) printf("safe, low: %f < %f\n", bot[b].zs, min_alt);
 #       endif
@@ -422,10 +478,13 @@ void robot_autopilot(int b)
     float low_alt = SAFE_LOW_ALT;
     vector v;
     float d = dist_from_navpoint(b, &v);
-    if (d < 40. * ONE_METER) {
-        low_alt = LOW_ALT;
+    if (d < 80. * ONE_METER) {  // only allow low altitudes when close from destination
+        low_alt = MIN(LOW_ALT, bot[b].target_rel_alt);
     }
 
+#   ifdef PRINT_DEBUG
+    if (b == visubot) printf("d=%f, low_alt=%f, rel_alt=%f\n", d, low_alt, bot[b].target_rel_alt);
+#   endif
     if (bot[b].zs < low_alt) {
         robot_safe(b, low_alt);
         return;
@@ -462,7 +521,7 @@ void robot(int b)
             bot[b].gunned = -1;
         }
     } else {
-        if (0 && bot[b].cibv == -1 && bot[b].bullets>100 && bot[b].fiul>70000) {
+        if (bot[b].cibv == -1 && bot[b].bullets>100 && bot[b].fiul>70000) {
             int cib = drand48()*NBBOT;
             if (bot[cib].camp!=-1 && bot[cib].camp!=bot[b].camp) {
                 subv3(&obj[bot[cib].vion].pos,&obj[bot[b].vion].pos,&u);
@@ -506,6 +565,7 @@ void robot(int b)
                         if (scalaire(&u, &obj[o].rot.x) < 0.) {
                             bot[b].xctl = bot[b].xctl > 0. ? 1. : -1.;
                         }
+                        CLAMP(bot[b].xctl, 1.);
                     } else {
                         bot[b].thrust = 0.;    // to trigger reload
                         bot[b].but.frein = 1;
@@ -520,27 +580,31 @@ void robot(int b)
                     break;
                 case LINE_UP:
                     bot[b].thrust = 0.1;
-                    bot[b].but.frein = 0;
+                    bot[b].but.frein = 1;
                     bot[b].xctl = -4*scalaire(&bot[b].v, &obj[o].rot.y);
                     if (scalaire(&bot[b].v, &obj[o].rot.x) < 0.) {
                         bot[b].xctl = bot[b].xctl > 0. ? 1. : -1.;
                     }
+                    CLAMP(bot[b].xctl, 1.);
                     if (fabs(bot[b].xctl) < .02) bot[b].maneuver = TAKE_OFF;
                     break;
                 case TAKE_OFF:
                     bot[b].thrust = 1.;
                     bot[b].but.flap = 1;
+                    bot[b].but.frein = 0;
                     bot[b].xctl = 0.;
                     if (vit > 1. * ONE_METER) {
                         // Small trick: use rebound to gain lift
                         bot[b].xctl = .01;
                     }
-                    if (vit > 1.2 * ONE_METER) {
-                        bot[b].xctl = 0.;
-                        adjust_slope(b, 0.);    // level the nose
-                    }
-                    if (vit > 1.8 * ONE_METER) {
+                    if (vit > 1.5 * ONE_METER) {
                         bot[b].xctl = -obj[o].rot.y.z;
+                        bot[b].yctl = -obj[o].rot.x.z;    // level the nose
+                        CLAMP(bot[b].yctl, 1.);
+                        CLAMP(bot[b].xctl, 1.);
+                    }
+                    if (vit > 2.4 * ONE_METER) {
+                        adjust_slope(b, ONE_METER);
                     }
                     if (bot[b].is_flying) {
                         armstate(b);
@@ -559,12 +623,9 @@ void robot(int b)
                 case HEDGEHOP:
                     robot_autopilot(b);
                     d = dist_from_navpoint(b, &u);
-                    if (d < 70. * ONE_METER) {
-                        bot[b].target_rel_alt = 8. * ONE_METER;
-                    }
                     if (d < 40. * ONE_METER) {
-                        bot[b].target_speed = 1.5 * ONE_METER;
-                        bot[b].target_rel_alt = 6. * ONE_METER;
+                        bot[b].target_speed = 1.9 * ONE_METER;
+                        bot[b].target_rel_alt = 9. * ONE_METER;
                         bot[b].cibt_drop_dist2 = DBL_MAX;
                         bot[b].maneuver = BOMBING;
                     }
@@ -576,12 +637,11 @@ void robot(int b)
                         newnav(b);
                         break;
                     } else {
-#                       define SQUARE(x) ((x)*(x))
                         double df = fall_min_dist2(b);
                         if (
-                            df < SQUARE(7. * ONE_METER) &&
-                            df > bot[b].cibt_drop_dist2
-                        ) {
+                                df < SQUARE(7. * ONE_METER) &&
+                                df > bot[b].cibt_drop_dist2
+                           ) {
                             bot[b].but.bomb = 1;
                             bot[b].maneuver = NOSE_UP;
                         } else {
@@ -610,29 +670,32 @@ void robot(int b)
                 case ILS_1:
                     robot_autopilot(b);
                     d = dist_from_navpoint(b, &u);
-                    if (d < 10. * ONE_METER) {
-                        bot[b].u = obj[bot[b].babase].rot.x;
-                        mulv(&bot[b].u, 1500);
-                        addv(&bot[b].u, &obj[bot[b].babase].pos);
-                        bot[b].u.z = z_ground(bot[b].u.x, bot[b].u.y, false);
-                        bot[b].target_speed = 1.6 * ONE_METER;
-                        bot[b].target_rel_alt = 300.;
-                        bot[b].maneuver = ILS_2;
-                    }
+                    if (d > 90. * ONE_METER) break;
+                    if (scalaire(&obj[bot[b].vion].rot.x, &obj[bot[b].babase].rot.x) > -.7) break;
+                    bot[b].u = obj[bot[b].babase].rot.x;
+                    mulv(&bot[b].u, 50. * ONE_METER);
+                    addv(&bot[b].u, &obj[bot[b].babase].pos);
+                    bot[b].u.z = z_ground(bot[b].u.x, bot[b].u.y, false);
+                    bot[b].target_speed = 2.0 * ONE_METER;
+                    bot[b].target_rel_alt = 11. * ONE_METER;
+                    bot[b].maneuver = ILS_2;
                     break;
                 case ILS_2:
                     robot_autopilot(b);
                     d = dist_from_navpoint(b, &u);
-                    if (d < 10. * ONE_METER) {
-                        bot[b].u = obj[bot[b].babase].pos;
-                        bot[b].but.gear = 1;
-                        bot[b].maneuver = ILS_3;
-                        bot[b].target_speed = .9 * ONE_METER;
-                        bot[b].target_rel_alt = 0.;
+                    if (d > 40. * ONE_METER) break;
+                    if (scalaire(&obj[bot[b].vion].rot.x, &obj[bot[b].babase].rot.x) > -.6) {
+                        landing_approach(b);    // abort
                     }
+                    bot[b].u = obj[bot[b].babase].pos;
+                    bot[b].maneuver = ILS_3;
+                    bot[b].target_speed = 1.9 * ONE_METER;
+                    bot[b].target_rel_alt = 0.;
                     break;
                 case ILS_3:
                     robot_autopilot(b);
+                    bot[b].but.gear = 1;    // whatever the autopilot does
+                    bot[b].but.flap = 1;
                     if (zs < 30.) {
                         bot[b].target_speed = 0.;
                     }
@@ -648,6 +711,7 @@ void robot(int b)
                     bot[b].thrust = 1.;
                     bot[b].but.flap = 1;
                     bot[b].xctl = -obj[o].rot.y.z;
+                    CLAMP(bot[b].xctl, 1.);
                     bot[b].yctl = 1.;
                     if (bot[b].vionvit.z > .5) {
                         bot[b].u = obj[bot[b].vion].rot.x;

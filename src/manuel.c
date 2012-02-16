@@ -238,7 +238,7 @@ void manuel(int b) {
         playsound(VOICEGEAR, BIPBIP, 1., &obj[bot[b].vion].pos, false);
         if (autopilot) {
             bot[bmanu].target_speed = BEST_LIFT_SPEED;
-            bot[bmanu].target_rel_alt = 50. * ONE_METER;
+            bot[bmanu].target_rel_alt = 100. * ONE_METER;
         }
     }
     // Control du jeu

@@ -111,7 +111,8 @@ void control_plane(int b, float dt_sec) {
 #   define MAX_ALTITUDE (200 * ONE_METER)
     float r = obj[bot[b].vion].pos.z/MAX_ALTITUDE;
     if (r > 1.) r = 1.;
-    float const alt_factor = 1 - r*r*r*r;
+    r *= r; r *= r; r *= r;
+    float const alt_factor = 1 - r;
 
     // Acceleration
     vector a = {
@@ -198,7 +199,7 @@ void control_plane(int b, float dt_sec) {
         // TODO: add lift with a-o-a?
         float lift = viondesc[bot[b].navion].lift;
         if (bot[b].but.flap) lift *= 1.2;
-        if (zs < 2. * ONE_METER) lift *= 1.1;   // more lift when close to the ground
+        if (zs < 5. * ONE_METER) lift *= 1.1;   // more lift when close to the ground
         lift *= alt_factor; // less lift with altitude
         u = obj[bot[b].vion].rot.z;
         mulv(&u, (G * 1.) * lift * kx * (1-bot[b].aeroloss/128.));
