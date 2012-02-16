@@ -25,6 +25,8 @@
 
 #define MIN(a,b) ((a)<=(b)?(a):(b))
 #define MAX(a,b) ((b)<=(a)?(a):(b))
+#define CLAMP(x, v) do { if ((x) < -(v)) x = -(v); else if ((x) > v) x = v; } while (0)
+#define SQUARE(x) ((x)*(x))
 #define ARRAY_LEN(x) (sizeof(x)/sizeof((x)[0]))
 
 #define NHASH 11    // 2048 eléments dans la table de hash

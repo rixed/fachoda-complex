@@ -560,6 +560,9 @@ void initworld() {
         armstate(i);
         if (!SpaceInvaders) {
             bot[i].vionvit = vec_zero;
+            bot[i].target_rel_alt = 100. * ONE_METER;
+            bot[i].u.x = bot[i].u.y = 0.;
+            bot[i].u.z = z_ground(bot[i].u.x, bot[i].u.y, true);
         } else {
             bot[i].vionvit = obj[bot[i].vion].rot.x;
             mulv(&bot[i].vionvit, 2. * ONE_METER);

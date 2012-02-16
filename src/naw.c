@@ -1011,6 +1011,9 @@ parse_error:
                             draw_mark(bot[visubot].drop_mark, 0x400000);
                         }
                         if (bot[visubot].cibv != -1) draw_target(obj[bot[visubot].cibv].pos, 0xC08020);
+                        vector nav = bot[visubot].u;
+                        nav.z += bot[visubot].target_rel_alt;
+                        draw_target(nav, 0x20F830);
                     }
                 }
                 if (view == VIEW_DOGFIGHT && bot[bmanu].camp!=-1) cercle(0,0,10,colcamp[(int)bot[bmanu].camp]);
@@ -1029,14 +1032,26 @@ parse_error:
                 // AFFICHAGE DIGITAL MODE FACILE
                 if (Easy) {
                     int const b = visubot; // bmanu;
-                    pnum(bot[b].vionvit.z,10,10,0xAFDF10,1);
-                    pnum(bot[b].vitlin,10,20,0xFFFFFF,1);
-                    pnum(norme(&bot[b].vionvit),10,30,0xFFFF,1);
-                    pnum(bot[b].zs,10,40,0xFF00FF,1);
+                    pword("Sz:", 10, 10, 0x406040);
+                    pnum(bot[b].vionvit.z, 40, 10, 0xAFDF10, 1);
+                    pword("Sl:", 10, 20, 0x406040);
+                    pnum(bot[b].vitlin, 40, 20, 0xFFFFFF, 1);
+                    if (autopilot || b != bmanu) {
+                        float const diff_speed = bot[b].target_speed - bot[b].vitlin;
+                        pnum(diff_speed, 40+4*10, 20, diff_speed > 0 ? 0xD0D0F0 : 0xF0D0D0, 1);
+                    }
+                    pword("St:", 10, 30, 0x406040);
+                    pnum(norme(&bot[b].vionvit), 40, 30, 0x00FFFF, 1);
+                    pword("Zg:", 10, 40, 0x406040);
+                    pnum(bot[b].zs, 40, 40, 0xFF00FF, 1);
+                    if (autopilot || b != bmanu) {
+                        float const diff_alt = (bot[b].u.z + bot[b].target_rel_alt) - obj[bot[b].vion].pos.z;
+                        pnum(diff_alt, 40+4*10, 40, diff_alt > 0 ? 0xD0D0F0 : 0xF0D0D0, 1);
+                    }
                     if (bot[b].but.gear) pword("gear",10,60,0xD0D0D0);
                     if (bot[b].but.flap) pword("flaps",10,70,0xD0D0D0);
                     if (bot[b].but.frein) pword("brakes",10,80,0xD0D0D0);
-                    if (autopilot) pword("auto",10,90,0xD0D0D0);
+                    if (autopilot) pword("auto", 10, 90, 0xD0D0D0);
                 }
                 if (accel) pstr("ACCELERATED MODE",_DY/3,0xFFFFFF);
                 if (quitte==1) pstr("Quit ? Yes/No",_DY/2-8,0xFFFFFF);
