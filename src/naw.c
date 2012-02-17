@@ -665,17 +665,18 @@ parse_error:
                     debris[i].vit.z -= G * dt_sec;
                     zs=z_ground(obj[debris[i].o].pos.x,obj[debris[i].o].pos.y, true);
                     if (obj[debris[i].o].pos.z < zs) {
+                        // bounce
                         obj[debris[i].o].pos.z = zs;
-                        debris[i].vit.z = -debris[i].vit.z;
+                        debris[i].vit.z = -0.5*debris[i].vit.z;
+                        debris[i].vit.x *= 1.5*drand48();
+                        debris[i].vit.y *= 1.5*drand48();
                         debris[i].ai1 = drand48()*debris[i].ai1;
                         debris[i].ai2 = drand48()*debris[i].ai2;
-                        mulv(&debris[i].vit, .5);
-                        if (fabsf(debris[i].vit.z) < 1.) {
+                        if (fabsf(debris[i].vit.z) < 30.) {
                         //  copym(&obj[debris[i].o].rot,&mat_id);
                         //  randomhm(&obj[debris[i].o].rot);
-                            debris[i].o=-1;
+                            debris[i].o = -1;
                         }
-
                     }
                 }
             }
