@@ -24,7 +24,7 @@
 #include "gtime.h"
 #include "robot.h"
 
-#define SHOT_PERIOD (200 * ONE_MILLISECOND)
+#define SHOT_PERIOD (300 * ONE_MILLISECOND)
 
 //#define PRINT_DEBUG
 

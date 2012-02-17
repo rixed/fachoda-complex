@@ -745,56 +745,65 @@ void robot(int b)
             u = bot[bot[b].gunned].vionvit;
             // aim beyond opponent, proportional to distance
             if (bot[b].vitlin > 0) {
-                mulv(&u, .0002*disth);
+                mulv(&u, .002*disth);
                 addv(&v, &u);
             }
             double dc = adjust_direction_rel(b, &v);
             dist = renorme(&v);
             double distfrap2 = 0;
-            if (dist < 40. * ONE_METER) {
-                if (fabsf(dc) < M_PI/7) {
-#                   ifdef PRINT_DEBUG
-                    if (b == visubot) printf("trick orientation\n");
-#                   endif
-                    mulv(&obj[o].rot.x, 400);
-                    addv(&obj[o].rot.x, &v);
-                    renorme(&obj[o].rot.x);
-                    orthov(&obj[o].rot.y, &obj[o].rot.x);
-                    renorme(&obj[o].rot.y);
-                    prodvect(&obj[o].rot.x, &obj[o].rot.y, &obj[o].rot.z);
+            float target_speed = BEST_LIFT_SPEED;
+            float min_z = 30. * ONE_METER;  // will be lowered if odds look good
+            if (fabs(dc) < M_PI/4) {    // opponent is in front of us
+                min_z = 20. * ONE_METER;
+                if (dist < 35. * ONE_METER) {   // and close. shot ?
+                    min_z = 15. * ONE_METER;
+                    if (fabsf(dc) < M_PI/7) {
+                        min_z = 10. * ONE_METER;
+                        mulv(&obj[o].rot.x, 400);
+                        addv(&obj[o].rot.x, &v);
+                        renorme(&obj[o].rot.x);
+                        orthov(&obj[o].rot.y, &obj[o].rot.x);
+                        renorme(&obj[o].rot.y);
+                        prodvect(&obj[o].rot.x, &obj[o].rot.y, &obj[o].rot.z);
+                    }
+                    //float const a = scalaire(&v, &obj[o].rot.y);
+                    float const m = mod[obj[bot[b].cibv].model].rayoncollision;
+                    if (/*fabsf(a) < 6*m && fabsf(dc) < M_PI/2*/ fabsf(dc) < M_PI/8) {
+                        min_z = 8. * ONE_METER;
+                        float const dz_shot = tirz(&obj[o].rot.x, disth);
+                        distfrap2 = obj[bot[b].cibv].pos.z - (obj[o].pos.z + dz_shot);
+                        if (fabs(distfrap2) < 3. * m) bot[b].but.canon = 1;
+#                       ifdef PRINT_DEBUG
+                        if (b == visubot) printf("dz_shot=%f bot.z=%f cib.z=%f\n", dz_shot, obj[o].pos.z, obj[bot[b].cibv].pos.z);
+#                       endif
+                    }
                 }
-                //float const a = scalaire(&v, &obj[o].rot.y);
-                float const m = mod[obj[bot[b].cibv].model].rayoncollision;
-                if (/*fabsf(a) < 6*m && fabsf(dc) < M_PI/2*/ fabsf(dc) < M_PI/8) {
-                    float const dz_shot = tirz(&obj[o].rot.x, disth);
-                    distfrap2 = obj[bot[b].cibv].pos.z - (obj[o].pos.z + dz_shot);
-                    if (fabs(distfrap2) < 3. * m) bot[b].but.canon = 1;
-#                   ifdef PRINT_DEBUG
-                    if (b == visubot) printf("dz_shot=%f bot.z=%f cib.z=%f\n", dz_shot, obj[o].pos.z, obj[bot[b].cibv].pos.z);
-#                   endif
-                }
-                // Now try to copy opponent's speed
+                // try to copy opponent's speed
                 vector rel_speed;
                 subv3(&bot[bot[b].gunned].vionvit, &bot[b].vionvit, &rel_speed);
                 float const away_speed = scalaire(&rel_speed, &v);
 #               define BEST_TAIL_DIST (7. * ONE_METER)
                 // while copying, we aim for a given shooting distance
-                float const target_speed = dist > BEST_TAIL_DIST ?
+                target_speed = dist > BEST_TAIL_DIST ?
                     bot[b].vitlin + away_speed + (0.6 * ONE_METER) :
                     bot[b].vitlin + away_speed - (0.4 * ONE_METER); // be conservative with speed
-#               ifdef PRINT_DEBUG
-                if (b == visubot) printf("close, dist=%f dc=%f, distfrap2=%f, away_speed=%f, target_speed=%f\n", dist, dc, distfrap2, away_speed, target_speed);
-#               endif
-                adjust_throttle(b, target_speed);
-            } else /* opponent is far */ if (obj[bot[b].vion].rot.x.z > -.4) {
-                bot[b].but.flap = 0;
-                bot[b].thrust = 1.;    // courrir après une cible (pas après le sol toutefois !)
             }
+#           ifdef PRINT_DEBUG
+            if (b == visubot) printf("close, dist=%f dc=%f, distfrap2=%f, target_speed=%f\n", dist, dc, distfrap2, target_speed);
+#           endif
+            // if we are too low deal with the ground first
+            if (zs < min_z) {
+                robot_safe(b, 5. * min_z);
+                break;
+            }
+            adjust_throttle(b, target_speed);
             // adjust slope
-            float const dz = zs > 20. * ONE_METER ?
-                (obj[bot[b].cibv].pos.z - obj[o].pos.z) + distfrap2*4. :
-                30. * ONE_METER - zs;
-            adjust_slope(b, dz);
+            adjust_slope(b, obj[bot[b].cibv].pos.z - obj[o].pos.z);
+            // try to lower distfrap2
+            if (dist > 0) {
+                bot[b].yctl += 100. * distfrap2/dist;
+                CLAMP(bot[b].yctl, 1.);
+            }
             break;
     }
     // Ensure controls are within bounds
