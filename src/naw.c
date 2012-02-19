@@ -463,8 +463,8 @@ parse_error:
     load_wave(MOTOR, "snd2/spit2.wav", true, .7);
     loadsample(HIT,"snd/hit.raw", false, 1.);
     loadsample(MESSAGE,"snd/message.raw", false, 1.);
-    loadsample(EXPLOZ,"snd/exploz.raw", false, 1.);
-    loadsample(EXPLOZ2,"snd/explo1.raw", false, 1.);
+    load_wave(EXPLOZ,"snd2/bombhit.wav", false, 1.);
+    load_wave(BOMB_BLAST,"snd2/boum.wav", false, 1.);
     loadsample(TOLE,"snd/tole.raw", false, 1.);
     loadsample(BIPBIP,"snd/bipbip.raw", false, 1.);
     loadsample(BIPBIP2,"snd/bipbip2.raw", false, 1.);
@@ -474,8 +474,8 @@ parse_error:
     loadsample(ALLELUIA,"snd/alleluia.raw", false, 1.);
     loadsample(ALERT,"snd/alert.raw", false, 1.);
     loadsample(PAIN,"snd/pain.raw", false, 1.);
-    loadsample(DEATH,"snd/death.raw", false, 1.);
-    loadsample(BRAVO,"snd/bravo.raw", false, 1.);
+    load_wave(DEATH,"snd2/death.wav", false, 1.);
+    load_wave(BRAVO,"snd2/bravo.wav", false, 1.);
     /*
         contact le serveur
                            */
@@ -627,9 +627,7 @@ parse_error:
                             break;
                         }
                     if (fg || obj[j].pos.z<z_ground(obj[j].pos.x,obj[j].pos.y, true)) {
-                        if (!fg) {
-                            playsound(VOICEEXTER, EXPLOZ2, 1+(drand48()-.5)*.08, &obj[j].pos, false);
-                        }
+                        playsound(VOICEEXTER2, BOMB_BLAST, 1+(drand48()-.5)*.08, &obj[j].pos, false);
                         obj[j].objref=bot[bombe[i].b].babase;
                         copyv(&obj[j].pos,&vec_zero);
                         copym(&obj[j].rot,&mat_id);
