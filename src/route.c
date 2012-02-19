@@ -243,12 +243,15 @@ void prospectroute(vector *i, vector *f) {
         k=routeidx-2;
         if (k>=0) {
 //          akref(route[k].ak,&v);
-            copyv(&v,&route[k].i);
-            subv(&v,f);
-            if (norme(&v)<2.*ECHELLE && routeidx<bestfin) {
-                copyv(&bestp1,&p1);
-                copyv(&bestp2,&p2);
-                bestfin=routeidx;
+            v = route[k].i;
+            subv(&v, f);
+            if (
+                routeidx < bestfin &&
+                norme(&v) < 2.*ECHELLE
+            ) {
+                bestp1 = p1;
+                bestp2 = p2;
+                bestfin = routeidx;
             }
         }
         routeidx=deb;

@@ -490,7 +490,6 @@ static void darken(uchar *b)
 void renderer(int ak, enum render_part fast) {
     int o, p, no;
     vector c,t,pts3d;
-    int mo;
     double rayonapparent=0;
     matrix co;
     vect2d e;
@@ -600,8 +599,7 @@ void renderer(int ak, enum render_part fast) {
                         if (rayonapparent>.3) {
                             if (rayonapparent<.5) plot(e.x-_DX,e.y-_DY,0x0);
                             else {
-                                //  if (rayonapparent>=7) mo=0; else mo=1;
-                                if (obj[o].distance<(ECHELLE*ECHELLE*.14)) mo=0; else mo=1;
+                                int mo = obj[o].distance<(ECHELLE*ECHELLE*.14) ? 0 : 1;
                                 // on calcule alors la pos de la cam dans le repère de l'objet, ie ObjT*(campos-objpos)
                                 mulmtv(&obj[o].rot,&obj[o].t,&c);
                                 neg(&c);

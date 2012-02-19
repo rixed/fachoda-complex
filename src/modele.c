@@ -19,7 +19,11 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
+#include <assert.h>
+#include <errno.h>
+#include <string.h>
 #include "proto.h"
+#include "file.h"
 
 //    NOM,                      NOM LIGHT,    PERE,PLAT,BOMB,MOBIL,PLATLIGHT
 piece_s zeppelin[] = {
@@ -618,19 +622,15 @@ void loadmodele(int n, char *fn, char *fnlight, int type, int pere, int plat, in
     facelight ftmp;
     vector u,v;
     char fncol[200];
-    if((in=fopen(fn,"r"))==NULL) {
-        printf("%s !?\n",fn);
-        perror("fopen");
-        exit(-1);
-    }
-    fread(&mod[n].offset, sizeof(vector), 1, in);
-    fread(&mod[n].nbpts[0], sizeof(int), 1, in);
-    fread(&mod[n].nbfaces[0], sizeof(int), 1, in);
+    in = file_open(fn, "r");
+    file_read(&mod[n].offset, sizeof(vector), in);
+    file_read(&mod[n].nbpts[0], sizeof(int), in);
+    file_read(&mod[n].nbfaces[0], sizeof(int), in);
     mod[n].pts[0]=malloc(mod[n].nbpts[0]*sizeof(vector));
     mod[n].fac[0]=malloc(mod[n].nbfaces[0]*sizeof(face));
-    fread(mod[n].pts[0], sizeof(vector), mod[n].nbpts[0], in);
+    file_read(mod[n].pts[0], sizeof(vector) * mod[n].nbpts[0], in);
     for (i=0; i<mod[n].nbfaces[0]; i++) {
-        fread(&ftmp, sizeof(facelight), 1, in);
+        file_read(&ftmp, sizeof(facelight), in);
         for (j=0; j<3; j++) mod[n].fac[0][i].p[j]=ftmp.p[j];
         // normale à la face
         if (plat)
@@ -654,33 +654,34 @@ void loadmodele(int n, char *fn, char *fnlight, int type, int pere, int plat, in
         copyv(&mod[n].norm[0][i],&u);
     }
     fclose(in);
-    // load les couleures
+    // load colors
+    static pixel const black = { 0, 0, 0 };
     sprintf(fncol,"%s.col",fn);
     in=fopen(fncol,"r");
-    if (in!=NULL) {
-        for (i=0; i<mod[n].nbfaces[0]; i++) fread(&mod[n].fac[0][i].color,sizeof(pixel), 1, in);
+    if (in) {
+        for (i=0; i<mod[n].nbfaces[0]; i++) file_read(&mod[n].fac[0][i].color,sizeof(pixel), in);
         fclose(in);
+    } else {
+        fprintf(stderr, "Cannot open %s: %s\n", fncol, strerror(errno));
+        for (i=0; i<mod[n].nbfaces[0]; i++) mod[n].fac[0][i].color = black;
     }
     // IDEM AVEC LA VERSION LIGHT
     if (fnlight==NULL) {
         mod[n].pts[1]=NULL;
         mod[n].norm[1]=NULL;
         mod[n].fac[1]=NULL;
-        mod[n].nbpts[1]=0; mod[n].nbfaces[1]=0;
+        mod[n].nbpts[1]=0;
+        mod[n].nbfaces[1]=0;
     } else {
-        if((in=fopen(fnlight,"r"))==NULL) {
-            printf("%s !?\n",fnlight);
-            perror("fopen");
-            exit(-1);
-        }
-        fread(&u, sizeof(vector), 1, in);
-        fread(&mod[n].nbpts[1], sizeof(int), 1, in);
-        fread(&mod[n].nbfaces[1], sizeof(int), 1, in);
+        in = file_open(fnlight, "r");
+        file_read(&u, sizeof(vector), in);
+        file_read(&mod[n].nbpts[1], sizeof(int), in);
+        file_read(&mod[n].nbfaces[1], sizeof(int), in);
         mod[n].pts[1]=malloc(mod[n].nbpts[1]*sizeof(vector));
         mod[n].fac[1]=malloc(mod[n].nbfaces[1]*sizeof(face));
-        fread(mod[n].pts[1], sizeof(vector), mod[n].nbpts[1], in);
+        file_read(mod[n].pts[1], sizeof(vector) * mod[n].nbpts[1], in);
         for (i=0; i<mod[n].nbfaces[1]; i++) {
-            fread(&ftmp, sizeof(facelight), 1, in);
+            file_read(&ftmp, sizeof(facelight), in);
             for (j=0; j<3; j++) mod[n].fac[1][i].p[j]=ftmp.p[j];
             if (plat2) copyv(&mod[n].fac[1][i].norm,&vec_zero);
             else {
@@ -705,12 +706,17 @@ void loadmodele(int n, char *fn, char *fnlight, int type, int pere, int plat, in
         // load les couleures
         sprintf(fncol,"%s.col",fnlight);
         in=fopen(fncol,"r");
-        if (in!=NULL) {
-            for (i=0; i<mod[n].nbfaces[1]; i++) fread(&mod[n].fac[1][i].color,sizeof(pixel), 1, in);
+        if (in) {
+            for (i=0; i<mod[n].nbfaces[1]; i++) file_read(&mod[n].fac[1][i].color, sizeof(pixel), in);
             fclose(in);
-        } else {    // sauve les meubles en prenant la couleur de l'aute modele
-            for (i=0; i<mod[n].nbfaces[1] && i<mod[n].nbfaces[0]; i++)
-                mod[n].fac[1][i].color=mod[n].fac[0][i].color;
+        } else {
+            fprintf(stderr, "Cannot open %s: %s\n", fncol, strerror(errno));
+            // use detailed model colors
+            for (i=0; i<mod[n].nbfaces[1]; i++) {
+                mod[n].fac[1][i].color = i < mod[n].nbfaces[0] ?
+                    mod[n].fac[0][i].color :
+                    black;
+            }
         }
     }
     mod[n].type=type;
