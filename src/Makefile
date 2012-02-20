@@ -35,9 +35,14 @@ install: fachoda $(COMPDATA)
 	install --strip fachoda $(DESTDIR)$(BINDIR)
 	install $(COMPDATA) $(DESTDIR)$(DATADIR)
 	install ../COPYING ../GPL.txt ../README.md $(DESTDIR)$(DOCDIR)
-	for d in $(SUBDATADIRS); do \
-		install -d $(DESTDIR)$(DATADIR)/$$d ;\
-		install $$d/* $(DESTDIR)$(DATADIR)/$$d ;\
+	@for d in $(SUBDATADIRS); do \
+		install -d "$(DESTDIR)$(DATADIR)/$$d" ;\
+		for f in $$d/*; do \
+			if ! echo "$$f" | grep .dxf >/dev/null; then \
+				echo "Installing $$f" ;\
+				install "$$f" "$(DESTDIR)$(DATADIR)/$$d" ;\
+			fi \
+		done \
 	done
 
 clean:
