@@ -747,7 +747,7 @@ void robot(int b)
             u = bot[bot[b].gunned].vionvit;
             // aim beyond opponent, proportional to distance
             if (bot[b].vitlin > 0) {
-                mulv(&u, .002*disth);
+                mulv(&u, .0016*disth);
                 addv(&v, &u);
             }
             double dc = adjust_direction_rel(b, &v);
