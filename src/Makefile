@@ -1,6 +1,7 @@
 PREFIX   := /usr/local
 BINDIR   := $(PREFIX)/games
 DATADIR  := $(PREFIX)/lib/games/fachoda
+DOCDIR   := $(PREFIX)/share/doc/fachoda
 CFLAGS   := $(CFLAGS) -std=c99 -W -Wall -D_GNU_SOURCE ${shell sdl-config --cflags} -DDATADIR='"$(DATADIR)"'
 LDFLAGS  := $(LDFLAGS) -lm -ljpeg -lopenal ${shell sdl-config --libs}
 
@@ -30,9 +31,10 @@ SUBDATADIRS := \
 
 COMPDATA = $(wildcard *.jpg) $(wildcard *.tga)
 install: fachoda $(COMPDATA)
-	install -d $(DESTDIR)$(BINDIR) $(DESTDIR)$(DATADIR)
+	install -d $(DESTDIR)$(BINDIR) $(DESTDIR)$(DATADIR) $(DESTDIR)$(DOCDIR)
 	install --strip fachoda $(DESTDIR)$(BINDIR)
 	install $(COMPDATA) $(DESTDIR)$(DATADIR)
+	install ../COPYING ../GPL.txt ../README $(DESTDIR)$(DOCDIR)
 	for d in $(SUBDATADIRS); do \
 		install -d $(DESTDIR)$(DATADIR)/$$d ;\
 		install $$d/* $(DESTDIR)$(DATADIR)/$$d ;\
