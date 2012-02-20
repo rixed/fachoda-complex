@@ -23,6 +23,7 @@
 #include <errno.h>
 #include <stdint.h>
 #include "proto.h"
+#include "file.h"
 
 kc_s gkeys[NBKEYS] = {
     {9,"Quit"},
@@ -79,15 +80,7 @@ kc_s gkeys[NBKEYS] = {
 
 static FILE *keyfile_open(char const *perms)
 {
-    char file_name[2048];
-    char const *home = getenv("HOME");
-    snprintf(file_name, sizeof(file_name), "%s/.fachoda-keys", home ? home:".");
-    FILE *f = fopen(file_name, perms);
-    if (! f) {
-        fprintf(stderr, "Cannot open '%s' for %s: %s\n", file_name, perms, strerror(errno));
-        return NULL;
-    }
-    return f;
+    return file_open(".fachoda-keys", getenv("HOME"), perms);
 }
 
 void keys_save(void)

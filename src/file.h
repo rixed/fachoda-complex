@@ -24,8 +24,7 @@
 
 // FIXME: use unistd instead of sloppy stdio
 
-// abort on any error
-FILE *file_open(char const *name, char const *mode);
+FILE *file_open(char const *name, char const *dir, char const *mode);
 void file_read(void *ptr, size_t size, FILE *f);
 
 #endif

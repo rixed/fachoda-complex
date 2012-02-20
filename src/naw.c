@@ -29,6 +29,7 @@
 #include "gtime.h"
 #include "keycodesdef.h"
 #include "robot.h"
+#include "file.h"
 
 int const NbHosts = 1;
 int const MonoMode = 1;
@@ -584,9 +585,8 @@ parse_error:
     TBY=SY-SYTB;
     SXTB=SYTB*2; //SX>>1;
     focale=_DX;
-    /* Read saved highscore
-     * FIXME: chdir to VARDIR? */
-    if ((file = fopen(".highscores","r")) != NULL) {
+    // Read saved highscores (from home)
+    if ((file = file_open(".fachoda-highscores", getenv("HOME"), "r")) != NULL) {
         fread(&highscore, sizeof(HS_s), ARRAY_LEN(highscore), file);
         fclose(file);
     }
@@ -1135,7 +1135,7 @@ fin:
     exitsound();
     system("xset r on");    // pis aller
     // sauver les highscore
-    if (!Easy && !ViewAll && viondesc[monvion-1].prix<=viondesc[0].prix && (file=fopen(".highscores","w+"))!=NULL) {
+    if (!Easy && !ViewAll && viondesc[monvion-1].prix<=viondesc[0].prix && (file=file_open(".fachoda-highscores", getenv("HOME"), "w+"))!=NULL) {
         fwrite(&highscore, sizeof(HS_s), ARRAY_LEN(highscore), file);
         fclose(file);
     }

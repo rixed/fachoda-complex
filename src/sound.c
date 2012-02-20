@@ -26,6 +26,7 @@
 #include <AL/al.h>
 #include <AL/alc.h>
 #include "sound.h"
+#include "file.h"
 
 //#define PRINT_DEBUG
 
@@ -125,9 +126,8 @@ exit0:
 
 static void *load_file(char const *fn, size_t *size)
 {
-    FILE *in = fopen(fn, "r");
+    FILE *in = file_open(fn, DATADIR, "r");
     if (! in) {
-        fprintf(stderr, "Cannot fopen(%s): %s\n", fn, strerror(errno));
         goto exit0;
     }
 

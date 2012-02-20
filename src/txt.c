@@ -22,6 +22,8 @@
 #include <string.h>
 #include <assert.h>
 #include "proto.h"
+#include "file.h"
+
 unsigned char num[10][8]= {
     { 0x3E,0x41,0x41,0x41,0x41,0x41,0x41,0x3E },        // 0
     { 0x08,0x18,0x38,0x18,0x18,0x18,0x18,0x3C },        // 1
@@ -84,8 +86,8 @@ void loadfont(char *fn, int nx, int ny, int cy) {
     int x,y,fx,fy,i,sx=0,sy=0;
     pixel *itmp;
     SizeCharY=cy;
-    if ((fil=fopen(fn,"r"))==NULL) {
-        perror("fopen font file"); exit(-1);
+    if ((fil=file_open(fn, DATADIR, "r"))==NULL) {
+        exit(-1);
     }
     fseek(fil,12,SEEK_SET);
     fread(&sx,2,1,fil);
@@ -113,8 +115,8 @@ void loadbigfont(char *fn) {
     FILE *fil;
     int x,y,fx,sx=0,sy=0;
     pixel32 *itmp;
-    if ((fil=fopen(fn,"r"))==NULL) {
-        perror("fopen bigfont file"); exit(-1);
+    if ((fil=file_open(fn, DATADIR, "r"))==NULL) {
+        exit(-1);
     }
     fseek(fil,12,SEEK_SET);
     fread(&sx,2,1,fil);

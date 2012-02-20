@@ -25,6 +25,7 @@
 #include "proto.h"
 #include "keycodesdef.h"
 #include "sound.h"
+#include "file.h"
 
 pixel32 *presentimg;
 
@@ -39,8 +40,7 @@ void jloadpresent() {
 //  dest_mgr = jinit_write_bmp(&cinfo, FALSE);
     cinfo.err = jpeg_std_error(&jerr);
     jpeg_create_decompress(&cinfo);
-    if ((input_file = fopen("complex.jpg","r")) == NULL) {
-        perror("fopen");
+    if ((input_file = file_open("complex.jpg", DATADIR, "r")) == NULL) {
         exit(-1);
     }
     jpeg_stdio_src(&cinfo, input_file);

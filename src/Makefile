@@ -1,4 +1,7 @@
-CFLAGS   := $(CFLAGS) -std=c99 -W -Wall -D_GNU_SOURCE ${shell sdl-config --cflags}
+PREFIX   := /usr/local
+BINDIR   := $(PREFIX)/games
+DATADIR  := $(PREFIX)/lib/games/fachoda
+CFLAGS   := $(CFLAGS) -std=c99 -W -Wall -D_GNU_SOURCE ${shell sdl-config --cflags} -DDATADIR='"$(DATADIR)"'
 LDFLAGS  := $(LDFLAGS) -lm -ljpeg -lopenal ${shell sdl-config --libs}
 
 SRCS = \
@@ -14,7 +17,26 @@ OBJS = ${subst .c,.o,$(SRCS)}
 fachoda: $(OBJS)
 	$(CC) -o $@ $(CFLAGS) $^ $(LDFLAGS)
 
-.PHONY: clean distclean cscope clear
+.PHONY: clean distclean cscope clear install
+
+SUBDATADIRS := \
+	snd snd2 \
+	arbre2 base1 base1light bovide chalet corsair corsairlight \
+	d501 d501light eglise egliselight ferme maison \
+	moshito moshitolight moulin reverbere \
+	snophill snoplight sol spitflame spitflamelight \
+	tank tanklight toyvion toyvionlight tracteur usine \
+	van vehic vion1 vion2 zeppelin
+
+COMPDATA = $(wildcard *.jpg) $(wildcard *.tga)
+install: fachoda $(COMPDATA)
+	install -d $(DESTDIR)$(BINDIR) $(DESTDIR)$(DATADIR)
+	install --strip fachoda $(DESTDIR)$(BINDIR)
+	install $(COMPDATA) $(DESTDIR)$(DATADIR)
+	for d in $(SUBDATADIRS); do \
+		install -d $(DESTDIR)$(DATADIR)/$$d ;\
+		install $$d/* $(DESTDIR)$(DATADIR)/$$d ;\
+	done
 
 clean:
 	rm -f *.o *.dep .depend core core.*

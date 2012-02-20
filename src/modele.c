@@ -622,7 +622,7 @@ void loadmodele(int n, char *fn, char *fnlight, int type, int pere, int plat, in
     facelight ftmp;
     vector u,v;
     char fncol[200];
-    in = file_open(fn, "r");
+    in = file_open(fn, DATADIR, "r");
     file_read(&mod[n].offset, sizeof(vector), in);
     file_read(&mod[n].nbpts[0], sizeof(int), in);
     file_read(&mod[n].nbfaces[0], sizeof(int), in);
@@ -657,12 +657,11 @@ void loadmodele(int n, char *fn, char *fnlight, int type, int pere, int plat, in
     // load colors
     static pixel const black = { 0, 0, 0 };
     sprintf(fncol,"%s.col",fn);
-    in=fopen(fncol,"r");
+    in=file_open(fncol, DATADIR, "r");
     if (in) {
         for (i=0; i<mod[n].nbfaces[0]; i++) file_read(&mod[n].fac[0][i].color,sizeof(pixel), in);
         fclose(in);
     } else {
-        fprintf(stderr, "Cannot open %s: %s\n", fncol, strerror(errno));
         for (i=0; i<mod[n].nbfaces[0]; i++) mod[n].fac[0][i].color = black;
     }
     // IDEM AVEC LA VERSION LIGHT
@@ -673,7 +672,7 @@ void loadmodele(int n, char *fn, char *fnlight, int type, int pere, int plat, in
         mod[n].nbpts[1]=0;
         mod[n].nbfaces[1]=0;
     } else {
-        in = file_open(fnlight, "r");
+        in = file_open(fnlight, DATADIR, "r");
         file_read(&u, sizeof(vector), in);
         file_read(&mod[n].nbpts[1], sizeof(int), in);
         file_read(&mod[n].nbfaces[1], sizeof(int), in);
@@ -705,12 +704,11 @@ void loadmodele(int n, char *fn, char *fnlight, int type, int pere, int plat, in
         fclose(in);
         // load les couleures
         sprintf(fncol,"%s.col",fnlight);
-        in=fopen(fncol,"r");
+        in=file_open(fncol, DATADIR, "r");
         if (in) {
             for (i=0; i<mod[n].nbfaces[1]; i++) file_read(&mod[n].fac[1][i].color, sizeof(pixel), in);
             fclose(in);
         } else {
-            fprintf(stderr, "Cannot open %s: %s\n", fncol, strerror(errno));
             // use detailed model colors
             for (i=0; i<mod[n].nbfaces[1]; i++) {
                 mod[n].fac[1][i].color = i < mod[n].nbfaces[0] ?

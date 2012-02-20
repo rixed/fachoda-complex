@@ -20,6 +20,8 @@
 #include <stdio.h>
 #include <math.h>
 #include "proto.h"
+#include "file.h"
+
 short int sxtbtile, sytbtile;
 int xsoute,ysoute,xthrust,ythrust,rthrust,xspeed,yspeed,rspeed,xassi,yassi,rassi,xinclin,yinclin,hinclin,dxinclin,xgear,ygear,rgear,xflap,yflap,rflap,xvert,yvert,rvert,xalti,yalti,ralti,xbous,ybous,hbous,dxbous,rbous,xfrein,yfrein,rfrein,xauto,yauto,rauto;
 pixel32 *tbtile, *tbback, *tbback1, *tbback2;
@@ -122,8 +124,8 @@ void loadtbtile(char *fn) {
     int x,y;
     pixel32 *vid;
     float delta, a;
-    if ((f=fopen(fn,"r"))==NULL) {
-        perror("fopen tile file"); exit(-1);
+    if ((f=file_open(fn, DATADIR, "r"))==NULL) {
+        exit(-1);
     }
     fseek(f,12,SEEK_SET);
     fread(&sxtbtile,2,1,f);
