@@ -58,10 +58,7 @@ void addbabase(int c) {
     int x,y;
     int x1[4] = { WMAP/5., 3.*WMAP/5., WMAP/5., 3.*WMAP/5. };
     int y1[4] = { WMAP/5., WMAP/5., 3.*WMAP/5., 3.*WMAP/5. };
-    int a[3];
-    for (unsigned b=0; b < ARRAY_LEN(a); b++) {
-        a[b] = x1[c] + (y1[c]<NWMAP);   // set all bases at default location before searching better places
-    }
+    int a[3] = { 0, 0, 0 };
     matrix m;
     vector p,pp;
     for (y=y1[c]; y<y1[c]+3.*WMAP/10.; y+=5)
@@ -76,6 +73,9 @@ void addbabase(int c) {
             }
         }
     for (x=0; x<3; x++) {
+        if (a[x] == 0) {    // use default location if nothing better was found
+            a[x] = x1[x] + (y1[x]<NWMAP);
+        }
         int yb=a[x]>>NWMAP;
         int xb=a[x]-(yb<<NWMAP);
         p.x=(xb-(WMAP>>1))*ECHELLE+ECHELLE/2;
