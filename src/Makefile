@@ -34,7 +34,7 @@ install: fachoda $(COMPDATA)
 	install -d $(DESTDIR)$(BINDIR) $(DESTDIR)$(DATADIR) $(DESTDIR)$(DOCDIR)
 	install --strip fachoda $(DESTDIR)$(BINDIR)
 	install $(COMPDATA) $(DESTDIR)$(DATADIR)
-	install ../COPYING ../GPL.txt ../README $(DESTDIR)$(DOCDIR)
+	install ../COPYING ../GPL.txt ../README.md $(DESTDIR)$(DOCDIR)
 	for d in $(SUBDATADIRS); do \
 		install -d $(DESTDIR)$(DATADIR)/$$d ;\
 		install $$d/* $(DESTDIR)$(DATADIR)/$$d ;\
