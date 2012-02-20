@@ -252,9 +252,9 @@ void control_plane(int b, float dt_sec) {
                 float t = drand48()-.5;
                 if (b == visubot) {
                     if (!bot[b].but.gearup) {
-                        playsound(VOICEGEAR, SCREETCH, 1+t*.08, wheel_pos, false);
+                        playsound(VOICEGEAR, SCREETCH, 1+t*.08, wheel_pos, false, false);
                     } else {
-                        playsound(VOICEGEAR, TOLE, 1+t*.08, wheel_pos, false);
+                        playsound(VOICEGEAR, TOLE, 1+t*.08, wheel_pos, false, false);
                     }
                 }
             }
@@ -321,7 +321,7 @@ void control_plane(int b, float dt_sec) {
                 subv3(&obj[bot[b].babase].pos,&obj[bot[b].vion].pos, &v);
                 if (norme2(&v) < ECHELLE*ECHELLE*1.5) {
                     bot[b].gold += 300;
-                    playsound(VOICEEXTER, BRAVO, 1, &voices_in_my_head, true);
+                    playsound(VOICEEXTER, BRAVO, 1, &voices_in_my_head, true, false);
                 }
             }
         }
@@ -424,7 +424,7 @@ void control_plane(int b, float dt_sec) {
                     if (i != bot[b].vion) {
                         bot[b].vion = i;
                         armstate(b);
-                        playsound(VOICEEXTER, TARATATA, 1+(bot[b].navion-1)*.1, &voices_in_my_head, true);
+                        playsound(VOICEEXTER, TARATATA, 1+(bot[b].navion-1)*.1, &voices_in_my_head, true, false);
                     }
                 }
             }
@@ -461,22 +461,22 @@ void control_plane(int b, float dt_sec) {
     if (b == visubot && bot[b].thrust != soundthrust) {
         soundthrust = bot[b].thrust;
         float const pitch = 1. + 0.1 * (soundthrust - .8);
-        attachsound(VOICEMOTOR, soundthrust <= 0.18 ? LOW_SPEED : MOTOR,
-                pitch, &obj[bot[b].vion].pos, false);   // FIXME: the actual pos of the engine
+        playsound(VOICEMOTOR, soundthrust <= 0.18 ? LOW_SPEED : MOTOR,
+                pitch, &obj[bot[b].vion].pos, false, true);   // FIXME: the actual pos of the engine
     }
 
     // charnières des essieux
     if (bot[b].but.gear) {
         if (bot[b].but.gearup) {
             bot[b].but.gearup=0;
-            if (b == visubot) playsound(VOICEGEAR, GEAR_DN, 1, &obj[bot[b].vion].pos, false);   // FIXME: the pos of the gear
+            if (b == visubot) playsound(VOICEGEAR, GEAR_DN, 1, &obj[bot[b].vion].pos, false, false);   // FIXME: the pos of the gear
             for (j=0; j<(viondesc[bot[b].navion].retract3roues?3:2); j++) obj[bot[b].vion+viondesc[bot[b].navion].roue[j]].aff=1;
         }
 #       define GEAR_ROTATION_SPEED (.5 * M_PI / 1.5) // deployed in 1.5 seconds
         bot[b].anggear -= GEAR_ROTATION_SPEED * dt_sec;
         if (bot[b].anggear<0) bot[b].anggear=0;
     } else if (!bot[b].but.gearup) {
-        if (b == visubot && bot[b].anggear<.1) playsound(VOICEGEAR, GEAR_UP, 1., &obj[bot[b].vion].pos, false); // FIXME: the pos of the gear
+        if (b == visubot && bot[b].anggear<.1) playsound(VOICEGEAR, GEAR_UP, 1., &obj[bot[b].vion].pos, false, false); // FIXME: the pos of the gear
         bot[b].anggear += GEAR_ROTATION_SPEED * dt_sec;
         if (bot[b].anggear>1.5) {
             bot[b].anggear=1.5; bot[b].but.gearup=1;
@@ -525,7 +525,7 @@ void control_plane(int b, float dt_sec) {
             mulv(&v, 44);
             vector const *canon = &obj[ bot[b].vion + viondesc[bot[b].navion].firstcanon + bot[b].alterc ].pos;
             addv(&v, canon);
-            if (b == visubot) playsound(VOICESHOT, SHOT, 1+(drand48()-.5)*.08, &v, false);
+            if (b == visubot) playsound(VOICESHOT, SHOT, 1+(drand48()-.5)*.08, &v, false, false);
             else drand48();
             gunner[nbobj-debtir]=b;
             vieshot[nbobj-debtir]=80;
@@ -538,7 +538,7 @@ void control_plane(int b, float dt_sec) {
     if (bot[b].but.bomb) {
         for (i=bot[b].vion; i<bot[b].vion+nobjet[bot[b].navion].nbpieces && (obj[i].type!=BOMB || obj[i].objref!=bot[b].vion); i++);
         if (i<bot[b].vion+nobjet[bot[b].navion].nbpieces) {
-            if (b == visubot) playsound(VOICEGEAR, BIPBIP2, 1.1, &obj[i].pos, false);
+            if (b == visubot) playsound(VOICEGEAR, BIPBIP2, 1.1, &obj[i].pos, false, false);
             obj[i].objref=-1;
             for (j=0; j<bombidx && bombe[j].o!=-1; j++);
             if (j>=bombidx) bombidx=j+1;

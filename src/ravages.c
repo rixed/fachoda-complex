@@ -41,7 +41,7 @@ void explose(int oc, int i) {
     int cmoi=NBBOT;
     vector vit = vec_zero;
     for (j=0; j<NBBOT; j++) if ((bot[j].vion<=i && bot[j].vion+nobjet[bot[j].navion].nbpieces>i) || (i>=debtir && gunner[i-debtir]==j)) { cmoi=j; break; }
-    playsound(VOICEEXTER, EXPLOZ, 1+(drand48()-.5)*.1, &obj[oc].pos, false);
+    playsound(VOICEEXTER, EXPLOZ, 1+(drand48()-.5)*.1, &obj[oc].pos, false, false);
     switch (obj[oc].type) {
     case CIBGRAT:
         o1=oc;
@@ -61,9 +61,9 @@ void explose(int oc, int i) {
             if (v < NBBOT && bot[v].camp != bot[cmoi].camp) bot[cmoi].gold += 1000;
         }
         if (v == visubot) {
-            attachsound(VOICEMOTOR, FEU, 1., &obj[o1].pos, false);
+            playsound(VOICEMOTOR, FEU, 1., &obj[o1].pos, false, true);
         }
-        playsound(VOICEGEAR, DEATH, 1+(drand48()-.5)*.15, &obj[o1].pos, false);
+        playsound(VOICEGEAR, DEATH, 1+(drand48()-.5)*.15, &obj[o1].pos, false, false);
         break;
     case VEHIC:
         o1=oc;
@@ -188,14 +188,14 @@ bool hitgun(int oc, int i) {
                 vector r;
                 randomv(&r);    // FIXME: mul by size of obj?
                 addv(&r, &obj[o1].pos);
-                playsound(VOICEGEAR, HIT, 1+(drand48()-.5)*.1, &r, false);
+                playsound(VOICEGEAR, HIT, 1+(drand48()-.5)*.1, &r, false, false);
             //  printf("bot %d hit\n",j);
                 if (drand48()<.1) bot[j].fiulloss+=drand48()*100;
                 if (drand48()<.04) if ((bot[j].motorloss+=drand48()*10)<0) bot[j].motorloss=127;
                 if (drand48()<.05) if ((bot[j].aeroloss+=drand48()*10)<0) bot[j].aeroloss=127;
                 if (drand48()<.04) {
                     bot[j].bloodloss+=drand48()*100;
-                    playsound(VOICEGEAR, PAIN, 1+(drand48()-.2)*.1, &obj[o1].pos, false);
+                    playsound(VOICEGEAR, PAIN, 1+(drand48()-.2)*.1, &obj[o1].pos, false, false);
                 }
                 if (drand48()<bot[j].nbomb/1000. || drand48()<.05) {
                     bot[j].burning+=drand48()*1000;

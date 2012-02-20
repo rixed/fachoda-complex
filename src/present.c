@@ -138,7 +138,7 @@ void animpresent() {
     jloadpresent();
     MMXMemSetInt((int*)videobuffer,*(int*)(presentimg+IMGX+1),SX*SY);
 //  gettimeofday(&GTime,NULL);
-    playsound(VOICEEXTER, PRESENT, 1., &voices_in_my_head, true);
+    playsound(VOICEEXTER, PRESENT, 1., &voices_in_my_head, true, false);
     while (d) {
         affpresentanim(d);
         d--;

@@ -362,6 +362,7 @@ extern double loinvisu, visuteta, visuphi;
 extern uchar avancevisu,tournevisu,quitte,arme,AfficheHS;
 extern matrix mat_id;
 extern vector vac_diag, vec_zero, vec_g;
+extern matrix mat_id;
 extern modele *mod;
 extern objet *obj;
 extern int nbobj, debtir;

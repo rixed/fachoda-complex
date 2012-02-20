@@ -110,6 +110,7 @@ void manuel(int b) {
     if (kreset(gkeys[kc_externview].kc)) {
         mapmode = 0;
         view = next_external_view(view);
+        soundthrust=-1;
     }
     if (kreset(gkeys[kc_internview].kc)) {
         mapmode = 0;
@@ -117,6 +118,7 @@ void manuel(int b) {
             view = VIEW_DOGFIGHT;
         } else {
             view = VIEW_IN_PLANE;
+            soundthrust=-1;
         }
     }
     if (kreset(gkeys[kc_travelview].kc)) {
@@ -133,6 +135,7 @@ void manuel(int b) {
         addv(&obj[0].pos,&u);
         addv(&obj[0].pos,&obj[bot[visubot].vion].pos);
         if (obj[0].pos.z<(zs=z_ground(obj[0].pos.x,obj[0].pos.y, false)+100)) obj[0].pos.z=zs;
+        soundthrust=-1;
     }
     if (kreset(gkeys[kc_nextbot].kc)) {
         if (view == VIEW_ANYTHING_CHEAT) {
@@ -145,7 +148,7 @@ void manuel(int b) {
             } while (!ViewAll && bot[visubot].camp!=camp);  // pas bmanu.camp car peut etre tue
 //          printf("visubot=%d\n",visubot);
             soundthrust=-1;
-            if (bot[visubot].camp==-1) attachsound(VOICEMOTOR, FEU, 1., &voices_in_my_head, true);
+            if (bot[visubot].camp==-1) playsound(VOICEMOTOR, FEU, 1., &voices_in_my_head, true, true);
         }
     }
     if (kreset(gkeys[kc_prevbot].kc)) {
@@ -159,7 +162,7 @@ void manuel(int b) {
             } while (!ViewAll && bot[visubot].camp!=camp);
 //          printf("visubot=%d\n",visubot);
             soundthrust=-1;
-            if (bot[visubot].camp==-1) attachsound(VOICEMOTOR, FEU, 1., &voices_in_my_head, true);
+            if (bot[visubot].camp==-1) playsound(VOICEMOTOR, FEU, 1., &voices_in_my_head, true, true);
         }
     }
     if (kreset(gkeys[kc_mybot].kc)) {
@@ -229,13 +232,13 @@ void manuel(int b) {
     if (kreset(gkeys[kc_gear].kc)) bot[b].but.gear^=1;
     if (kreset(gkeys[kc_flaps].kc)) {
         bot[b].but.flap^=1;
-        playsound(VOICEGEAR, BIPBIP, 1., &obj[bot[b].vion].pos, false);
+        playsound(VOICEGEAR, BIPBIP, 1., &obj[bot[b].vion].pos, false, false);
     }
     bot[b].but.frein=kread(gkeys[kc_brakes].kc);
     if (kreset(gkeys[kc_business].kc)) bot[b].but.business = 1;
     if (kreset(gkeys[kc_autopilot].kc)) {
         autopilot^=1;
-        playsound(VOICEGEAR, BIPBIP, 1., &obj[bot[b].vion].pos, false);
+        playsound(VOICEGEAR, BIPBIP, 1., &obj[bot[b].vion].pos, false, false);
         if (autopilot) {
             bot[bmanu].target_speed = BEST_LIFT_SPEED;
             bot[bmanu].target_rel_alt = 100. * ONE_METER;
@@ -253,7 +256,7 @@ void manuel(int b) {
     }
     if (kreset(gkeys[kc_mapmode].kc)) {
         mapmode^=1;
-        playsound(VOICEGEAR, BIPBIP3, 1., &voices_in_my_head, true);
+        playsound(VOICEGEAR, BIPBIP3, 1., &voices_in_my_head, true, false);
     }
     if (kreset(gkeys[kc_suicide].kc) && bot[bmanu].camp!=-1) explose(bot[visubot].vion, 0);
     if (kreset(gkeys[kc_markpos].kc)) bot[b].but.repere=1;

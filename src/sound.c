@@ -37,8 +37,16 @@ static ALuint buffers[NB_SAMPLES];
 static bool buffer_looping[NB_SAMPLES]; // tells whether the sample is supposed to loop
 static float buffer_gain[NB_SAMPLES];
 static ALuint sources[NB_VOICES];
-static vector const *source_pos[NB_VOICES];
 static ALuint last_played[NB_VOICES];
+static vector listener_pos;
+static struct {
+    sample_e samp;  // or ~0 if unset
+    float pitch;
+    vector saved_pos;   // copy of given pos in case it was not an attach
+    vector const *pos;
+    bool relative;
+    bool anchored;
+} play[NB_VOICES];  // to store playing sounds until listener's position is known
 
 #define MAX_DIST (40. * ONE_METER)
 
@@ -96,6 +104,9 @@ int opensound(bool with_sound_)
     }
     for (unsigned s = 0; s < ARRAY_LEN(last_played); s++) {
         last_played[s] = ~0U;
+    }
+    for (unsigned v = 0; v < ARRAY_LEN(play); v++) {
+        play[v].samp = NB_SAMPLES;
     }
     alSpeedOfSound(34330.); // our unit of distance is approx the cm
 
@@ -278,61 +289,53 @@ exit0:
     return -1;
 }
 
-static vector listener_pos;
-void update_listener(vector const *pos, vector const *velocity, matrix const *rot)
+void playsound(enum voice voice, sample_e samp, float pitch, vector const *pos, bool relative, bool anchored)
 {
+    assert(voice < ARRAY_LEN(sources));
+    assert(samp < ARRAY_LEN(buffers));
+
     if (! with_sound) return;
-
-    ALenum err;
-
-#   ifdef PRINT_DEBUG
-    printf("update_listener(pos=%"PRIVECTOR", vel=%"PRIVECTOR")\n", PVECTOR(*pos), PVECTOR(*velocity));
-#   endif
-
-    listener_pos = *pos;
-
-    alListener3f(AL_POSITION, pos->x, pos->y, pos->z);
-    if ((err = alGetError()) != AL_NO_ERROR) fprintf(stderr, "Cannot set listener's position to %f,%f,%f: %s\n", pos->x, pos->y, pos->z, al_strerror(err));
-
-    alListener3f(AL_VELOCITY, velocity->x, velocity->y, velocity->z);
-    if ((err = alGetError()) != AL_NO_ERROR) fprintf(stderr, "Cannot set listener's velocity to %f,%f,%f: %s\n", velocity->x, velocity->y, velocity->z, al_strerror(err));
-
-    ALfloat at_up[6] = {
-        rot->z.x, rot->z.y, rot->z.z,   // "at" vector
-        rot->y.x, rot->y.y, rot->y.z,   // "up" vector
-    };
-    alListenerfv(AL_ORIENTATION, at_up);
-    if ((err = alGetError()) != AL_NO_ERROR) fprintf(stderr, "Cannot set listener's orientation to %f,%f,%f / %f,%f,%f: %s\n", at_up[0], at_up[1], at_up[2], at_up[3], at_up[4], at_up[5], al_strerror(err));
-
-    for (unsigned s = 0; s < ARRAY_LEN(sources); s++) {
-        if (! source_pos[s]) continue;
-        alSource3f(sources[s], AL_POSITION, source_pos[s]->x, source_pos[s]->y, source_pos[s]->z);
-        if ((err = alGetError()) != AL_NO_ERROR) fprintf(stderr, "Cannot set source position at %f,%f,%f: %s\n", source_pos[s]->x, source_pos[s]->y, source_pos[s]->z, al_strerror(err));
-    }
-}
-
-void playsound(enum voice voice, sample_e samp, float pitch, vector const *pos, bool relative)
-{
-    if (! with_sound) return;
-
-    ALenum err;
 
 #   ifdef PRINT_DEBUG
     printf("play_sound(voice=%d, sample=%d, pos=%"PRIVECTOR", %s)\n",
         voice, samp, PVECTOR(*pos), relative ? "relative":"absolute");
 #   endif
 
+    // Wait to know listener position before actually playing the sample
+    // TODO: store up to N sounds per voice and choose the closest ones in do_play ?
+    play[voice].samp = samp;
+    play[voice].pitch = pitch;
+    play[voice].relative = relative;
+    play[voice].anchored = anchored;
+    if (anchored) {
+        play[voice].pos = pos;
+    } else {
+        play[voice].saved_pos = *pos;
+        play[voice].pos = &play[voice].saved_pos;
+    }
+}
+
+static void do_play(enum voice voice)
+{
+    ALenum err;
+
+    sample_e const samp = play[voice].samp;
+    if (samp >= NB_SAMPLES) return;
+    float const pitch = play[voice].pitch;
+    vector const *pos = play[voice].pos;
+    bool const relative = play[voice].relative;
+#   ifdef PRINT_DEBUG
+    printf("actualy play sample %d, pos=%"PRIVECTOR", %s\n", samp, PVECTOR(*pos), relative ? "relative":"absolute");
+#   endif
+
     vector d = *pos;
     if (! relative) subv(&d, &listener_pos);
     if (norme2(&d) > MAX_DIST*MAX_DIST) {
 #       ifdef PRINT_DEBUG
-        printf("...too far!\n");
+        printf("...too far (dist=%f)!\n", norme(&d));
 #       endif
         return;
     }
-
-    assert(voice < ARRAY_LEN(sources));
-    assert(samp < ARRAY_LEN(buffers));
 
     bool const already_playing = buffer_looping[samp] && last_played[voice] == samp;
     alGetError();
@@ -366,22 +369,39 @@ void playsound(enum voice voice, sample_e samp, float pitch, vector const *pos, 
 
         last_played[voice] = samp;
     }
-
-    source_pos[voice] = NULL;
 }
 
-void attachsound(enum voice voice, sample_e samp, float pitch, vector const *pos, bool relative)
+void update_listener(vector const *pos, vector const *velocity, matrix const *rot)
 {
     if (! with_sound) return;
 
-#   ifdef PRINT_DEBUG
-    printf("attachsound(voice=%d, sample=%d, pos=%"PRIVECTOR", %s)\n",
-        voice, samp, PVECTOR(*pos), relative ? "relative":"absolute");
-#   endif
-    playsound(voice, samp, pitch, pos, relative);
+    ALenum err;
 
-    assert(voice < ARRAY_LEN(source_pos));
-    source_pos[voice] = pos;
+#   ifdef PRINT_DEBUG
+    printf("update_listener(pos=%"PRIVECTOR", vel=%"PRIVECTOR")\n", PVECTOR(*pos), PVECTOR(*velocity));
+#   endif
+
+    listener_pos = *pos;
+
+    alListener3f(AL_POSITION, pos->x, pos->y, pos->z);
+    if ((err = alGetError()) != AL_NO_ERROR) fprintf(stderr, "Cannot set listener's position to %f,%f,%f: %s\n", pos->x, pos->y, pos->z, al_strerror(err));
+
+    alListener3f(AL_VELOCITY, velocity->x, velocity->y, velocity->z);
+    if ((err = alGetError()) != AL_NO_ERROR) fprintf(stderr, "Cannot set listener's velocity to %f,%f,%f: %s\n", velocity->x, velocity->y, velocity->z, al_strerror(err));
+
+    ALfloat at_up[6] = {
+        rot->z.x, rot->z.y, rot->z.z,   // "at" vector
+        rot->y.x, rot->y.y, rot->y.z,   // "up" vector
+    };
+    alListenerfv(AL_ORIENTATION, at_up);
+    if ((err = alGetError()) != AL_NO_ERROR) fprintf(stderr, "Cannot set listener's orientation to %f,%f,%f / %f,%f,%f: %s\n", at_up[0], at_up[1], at_up[2], at_up[3], at_up[4], at_up[5], al_strerror(err));
+
+    // play new sounds
+    for (unsigned v = 0; v < ARRAY_LEN(play); v++) {
+        if (play[v].samp >= NB_SAMPLES) continue;
+        do_play(v);
+        if (! play[v].anchored) play[v].samp = ~0;
+    }
 }
 
 void exitsound(void)

@@ -210,6 +210,7 @@ static int agit=0;
 static void draw_page(int r, float rayon, float phase) {
     int b;
     int SS = MAX(_DX,_DY);
+    update_listener(&vec_zero, &vec_zero, &mat_id);
     affpresent(drand48()*(agit>>8),drand48()*(agit>>8));
     if (agit>256) agit=(agit*9)/10;
     for (b=0; b<Round[r].nbkases; b++) {    // compute buttons position
@@ -251,7 +252,7 @@ int jauge(int vi, int max) {
         xproceed();
         if (kread(0) || kread(1)) {
             if (kzc==0) {
-                playsound(VOICEMOTOR, BIPINTRO, 1+(drand48()-.5)*.05, &voices_in_my_head, true);
+                playsound(VOICEMOTOR, BIPINTRO, 1+(drand48()-.5)*.05, &voices_in_my_head, true, false);
                 agit=50*256;
                 return va;
             }
@@ -330,7 +331,7 @@ int present(void) {
         if (etap==0 && (kreset(0) || kreset(1))) {
             if (kzc!=-1) {
                 vector mousepos = { .x = (float)xmouse/SX, .y = (float)ymouse/SY, .z = 0. };
-                playsound(VOICEMOTOR, BIPINTRO, 1+(drand48()-.5)*.05, &mousepos, true);
+                playsound(VOICEMOTOR, BIPINTRO, 1+(drand48()-.5)*.05, &mousepos, true, false);
                 agit=20*256;
                 if (Round[curround].kase[kzc].nxtround>=0) {
                     oldcurround=curround;
