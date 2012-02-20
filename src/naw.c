@@ -706,7 +706,7 @@ parse_error:
 
     gtime_start();
     do {
-        if (accel) gtime_accel(100. * ONE_MILLISECOND);
+        if (accel) gtime_accel(MAX_DT >> 1);
         float const dt_sec = gtime_next_sec();
 //      printf("dt = %f\n", dt_sec);
 
