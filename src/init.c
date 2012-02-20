@@ -56,9 +56,12 @@ int randomvroute(vector *v) {
 int bossep(vector *p) { return bosse(akpos(p)); }
 void addbabase(int c) {
     int x,y;
-    int x1[4]={WMAP/5.,3.*WMAP/5.,WMAP/5.,3.*WMAP/5.};
-    int y1[4]={WMAP/5.,WMAP/5.,3.*WMAP/5.,3.*WMAP/5.};
-    int a[3]={0,0,0};
+    int x1[4] = { WMAP/5., 3.*WMAP/5., WMAP/5., 3.*WMAP/5. };
+    int y1[4] = { WMAP/5., WMAP/5., 3.*WMAP/5., 3.*WMAP/5. };
+    int a[3];
+    for (unsigned b=0; b < ARRAY_LEN(a); b++) {
+        a[b] = x1[c] + (y1[c]<NWMAP);   // set all bases at default location before searching better places
+    }
     matrix m;
     vector p,pp;
     for (y=y1[c]; y<y1[c]+3.*WMAP/10.; y+=5)
@@ -510,7 +513,7 @@ void initworld() {
         int c=i&3, b;
         if (i>=NbHosts) bot[i].camp=c;
         bot[i].babase=b=babaseo[0][(int)(drand48()*3)][(int)bot[i].camp];
-        if (!SpaceInvaders) {
+        if (! SpaceInvaders) {
             copyv(&p,&obj[b].pos);
             p.y+=i>=NbHosts?10:250;
             p.x+=300*(i>=NbHosts?(i>>2):i);
