@@ -739,10 +739,10 @@ parse_error:
             float n;
             if (
                 bot[bmanu].camp != -1 &&    // not dead
-                bot[bmanu].vionvit.z < -5.*ONE_METER && // and more than 1 m/s toward ground
-                (n=bot[bmanu].vionvit.z * 100 + bot[bmanu].zs) < 0  // will hit ground in less than 100s
+                bot[bmanu].vionvit.z < -.3*ONE_METER && // and fast toward the ground
+                (n=bot[bmanu].vionvit.z * 10 + bot[bmanu].zs) < 0  // will hit ground in less than 10s
             ) {
-                playsound(VOICEALERT, ALERT, 1-n*.0001, &voices_in_my_head, true, false);
+                playsound(VOICEALERT, ALERT, 1-n*.001, &voices_in_my_head, true, false);
             }
             // avance les shots
             for (i=debtir; i<nbobj; i++) {
