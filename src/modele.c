@@ -657,7 +657,7 @@ void loadmodele(int n, char *fn, char *fnlight, int type, int pere, int plat, in
     // load colors
     static pixel const black = { 0, 0, 0 };
     sprintf(fncol,"%s.col",fn);
-    in=file_open(fncol, DATADIR, "r");
+    in=file_open_try(fncol, DATADIR, "r");
     if (in) {
         for (i=0; i<mod[n].nbfaces[0]; i++) file_read(&mod[n].fac[0][i].color,sizeof(pixel), in);
         fclose(in);
@@ -704,7 +704,7 @@ void loadmodele(int n, char *fn, char *fnlight, int type, int pere, int plat, in
         fclose(in);
         // load les couleures
         sprintf(fncol,"%s.col",fnlight);
-        in=file_open(fncol, DATADIR, "r");
+        in=file_open_try(fncol, DATADIR, "r");
         if (in) {
             for (i=0; i<mod[n].nbfaces[1]; i++) file_read(&mod[n].fac[1][i].color, sizeof(pixel), in);
             fclose(in);

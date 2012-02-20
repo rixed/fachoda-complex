@@ -24,12 +24,17 @@
 #include <string.h>
 #include "file.h"
 
-FILE *file_open(char const *name, char const *dir, char const *mode)
+FILE *file_open_try(char const *name, char const *dir, char const *mode)
 {
     char path[2048];
     snprintf(path, sizeof(path), "%s/%s", dir ? dir:".", name);
 
-    FILE *f = fopen(path, mode);
+    return fopen(path, mode);
+}
+
+FILE *file_open(char const *name, char const *dir, char const *mode)
+{
+    FILE *f = file_open_try(name, dir, mode);
     if (! f) {
         fprintf(stderr, "Cannot open %s for %s: %s\n", name, mode, strerror(errno));
     }
