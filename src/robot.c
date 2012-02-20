@@ -26,6 +26,8 @@
 #include "robot.h"
 #include "map.h"
 
+//#define PRINT_DEBUG
+
 bot_s *bot;
 vehic_s *vehic;
 voiture_s *voiture;
@@ -613,7 +615,7 @@ void robot(int b)
                 case NAVIG:
                     robot_autopilot(b);
                     d = dist_from_navpoint(b, &u);
-                    if (d < 400. * ONE_METER) {
+                    if (d < 400. * ONE_METER && bot[b].cibt != -1) {
                         bot[b].target_rel_alt = 17. * ONE_METER;
                         bot[b].target_speed = 3.5 * ONE_METER;
                         bot[b].maneuver = HEDGEHOP;
