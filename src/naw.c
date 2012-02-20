@@ -31,6 +31,8 @@
 #include "robot.h"
 #include "file.h"
 
+//#define PRINT_DEBUG
+
 int const NbHosts = 1;
 int const MonoMode = 1;
 
@@ -1024,11 +1026,13 @@ parse_error:
                 }
                 if (view == VIEW_DOGFIGHT && bot[bmanu].camp!=-1) cercle(0,0,10,colcamp[(int)bot[bmanu].camp]);
                 plotmouse(_DX*bot[visubot].xctl,_DY*bot[visubot].yctl);
+#               ifdef PRINT_DEBUG
                 if (bot[visubot].aerobatic != MANEUVER) {
                     pstr(aerobatic_2_str(bot[visubot].aerobatic), 20, 0xFF8080);
                 } else {
                     pstr(maneuver_2_str(bot[visubot].maneuver), 20, 0x80FF80);
                 }
+#               endif
 /*
                 pnum(bot[visubot].vitlin,SX-50,30,0xFFFFFF,1);
                 pnum(norme(&bot[visubot].vionvit),SX-50,40,0xFFFF,1);

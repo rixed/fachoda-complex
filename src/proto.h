@@ -411,7 +411,7 @@ void calcposaind(int i);
 void calcposa(void);
 enum render_part { GROUND, CLOUDS, SKY, ALL };  // ALL = GROUND+SKY
 void renderer(int ak, enum render_part);
-#define VEC_DEBUG
+//#define VEC_DEBUG
 #ifdef VEC_DEBUG
 enum debug_vector {
     DBG_VEC_SPEED, DBG_VEC_GRAVITY, DBG_VEC_THRUST, DBG_VEC_DRAG, DBG_VEC_LIFT,
