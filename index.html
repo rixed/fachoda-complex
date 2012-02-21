@@ -291,6 +291,55 @@ repartition of light on this low-poly fuselage:</p>
 
 <img src="ingame4.png"/>
 
+<h2>Day 5</h2>
+
+<p>These &quot;days&quot; are getting as long as weeks by now.</p>
+
+<p>The second change in importance after the replacement of x86 assembly was
+expected to be the sound engine. The program used to control a Gravis Ultrasound
+via /dev/dsp ; This card was the only sound card a Linux gamer would own in
+those days (surely you remember your brave GUS, don't you?). The alternative for
+sound processing was using esound, and according to the comments it was not
+first class. Nothing else was available at this time that fits these requirements:</p>
+
+<ul>
+<li>can mix several voices,</li>
+<li>can play samples at various volume,</li>
+<li>panning,</li>
+<li>and pitch!</li>
+</ul>
+
+<p>This later one being the killer for most libraries, back then and still
+today.  Apparently, many people are happy with samples played always at the
+same frequency and thus sounding always exactly the same, although by varying
+slightly the pitch the experience is so much better! For instance in Fachoda
+when your plane is hit by a bullet you can ear a 'dong' like a rock hitting an
+old pot. So when you are under heavy fire you can either ear a boring
+repetition of the same 'dong' or, by an easy randomization of the pitch, a
+funny sequence of 'dings' and 'dongs' like you're actually ripping off an old
+pot under a machine gun.</p>
+
+<p>The only complying library that's also open-source and elegantly designed
+that I know of is OpenAL, so I settled for this. I remember having already
+looked at it in the past but having dismissed it because of it's poor
+performance, but time have passed and either better implementations are
+available now or maybe I just lowered my expectations.</p>
+
+<p>Anyway, retrofitting OpenAL into sound.c was much easier than expected, maybe because
+the game already had to cope with two sound engines so had to be cleaner for that matter.
+This left some time to implement a WAVE loader in addition to the raw sound loader,
+which then made replacing old sounds with newer ones much convenient.</p>
+
+<p>So I changed most of the sounds (which origin was uncertain or controversial
+and quality pretty low) with new, better ones, downloaded from
+<a href="http://www.freesound.org">FreeSound.org</a>. This site is very handy for
+finding good sounds for whatever use. Also, it has a nice feature: if you find
+a sound close to what you are looking for but not quite what you are looking
+for, the site can offer you a list of similar sounds. I never found the right
+sound using this feature, but it has always been both funny and intriguing to
+discover how two completely unrelated sound sources actually produce sounds that
+are close enough for a soul-less algorithm to find them similar. Go try it!</p>
+
     <h2>Download</h2>
     <p>
       You can download this project in either
