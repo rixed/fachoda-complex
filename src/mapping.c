@@ -33,8 +33,8 @@ void initmapping() {
     mapping=(int*)malloc(256*256*sizeof(int));
 }
 
-void polymap(vect2dm *p1, vect2dm *p2, vect2dm *p3) {
-    vect2dm *tmp, *pmax, *pmin;
+void polymap(struct vect2dm *p1, struct vect2dm *p2, struct vect2dm *p3) {
+    struct vect2dm *tmp, *pmax, *pmin;
     int xi, yi, lx, i, ilim;
     int q1, q2, q3=0, ql, qx, qxx, ql2;
     int ix, iy;
@@ -204,12 +204,12 @@ void polymap(vect2dm *p1, vect2dm *p2, vect2dm *p3) {
     }
 }
 
-void polyphong(vect2dlum *p1, vect2dlum *p2, vect2dlum *p3, pixel coul) {
-    vect2dlum *tmp;
+void polyphong(struct vect2dlum *p1, struct vect2dlum *p2, struct vect2dlum *p3, struct pixel coul) {
+    struct vect2dlum *tmp;
     int xi, yi, lx, dx, dy, i, j, jlim, yfin;
     int q1, q2, q3, ql, p1x, p1y, p2x, p2y, qx, qx2, ql2, px,py,px2,py2;
     int a, aa, k, x, y, atmp, l;
-    pixel32 *vid;
+    struct pixel32 *vid;
 
     if (p2->v.y<p1->v.y) { tmp=p1; p1=p2; p2=tmp; }
     if (p3->v.y<p1->v.y) { tmp=p1; p1=p3; p3=tmp; }

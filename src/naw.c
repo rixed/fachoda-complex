@@ -33,7 +33,7 @@
 
 //#define PRINT_DEBUG
 
-void MMXMemSetInt(int *deb, int coul, int n) {
+void memset32(int *deb, int coul, int n) {
     while (n--) *deb++ = coul;
 }
 
@@ -41,13 +41,13 @@ void MMXCopy(int *dst, int *src, int n) {   // by the time I suppose glibc becam
     memcpy(dst, src, n*4);
 }
 
-matrix mat_id={{1,0,0},{0,1,0},{0,0,1}};
-vector vac_diag={1,1,1}, vec_zero={0,0,0}, vec_g={0,0,-1};
+struct matrix mat_id={{1,0,0},{0,1,0},{0,0,1}};
+struct vector vac_diag={1,1,1}, vec_zero={0,0,0}, vec_g={0,0,-1};
 // 3DSTUDIO
 int NBBOT=30;
 int NBTANKBOTS=150;
-modele *mod;
-objet *obj;
+struct model *mod;
+struct object *obj;
 int nbobj, debtir, firstfumee, fumeedispo, DebMoulins, FinMoulins;
 float AngleMoulin=0;
 uchar *rayonfumee;
@@ -56,24 +56,24 @@ int fumeesource[NBFUMEESOURCE], fumeesourceintens[NBFUMEESOURCE];
 double focale;
 int camp=1, AllowResurrect=1, Easy=0, Gruge=0, ViewAll=0, SpaceInvaders=0, monvion=1, lang=1, Dark=-1, Fleuve=1, MouseCtl=1, Accident=1500, Smooth=7;
 float CtlSensitiv=0.08, CtlSensActu=0, CtlAmortis=.9, CtlYequ=.1;
-alienpos_s *alienpos;
+struct alienpos *alienpos;
 char myname[30];
-matrix LightSol={ {-.7,0,-.7},{0,1,0},{.7,0,-.7}};
-matrix Light;
-vector ExplozePos; int Exploze=0;
+struct matrix LightSol={ {-.7,0,-.7},{0,1,0},{.7,0,-.7}};
+struct matrix Light;
+struct vector ExplozePos; int Exploze=0;
 //
 int babaseo[2][3][4];   // o1, o2 // base 1, base 2, base 3 // camp A,B,C,D
 int gunner[NBMAXTIR]; short int vieshot[NBMAXTIR];
-bombe_s *bombe; int bombidx;
+struct bomb *bombe; int bombidx;
 char (*playbotname)[30];
-debris_s debris[NBGRAVMAX];
+struct debris debris[NBGRAVMAX];
 // options changeables à la ligne de com :
 char PHONG=1;
 float TROPLOIN=120.,TROPLOIN2;
 int _DX,_DY,SX=400,SY=250,SYTB,SXTB,SIZECERCLE,POLYMAX=25,TBY;
 int nbtir;
 // ajoute un objet dans le world
-void addobjet(int mo, vector *p, matrix *m, int or, uchar sol) {
+void addobjet(int mo, struct vector *p, struct matrix *m, int or, uchar sol) {
     int xk,yk,ak;
     obj[nbobj].model=mo;
     obj[nbobj].type=mod[mo].type;
@@ -95,7 +95,7 @@ void addobjet(int mo, vector *p, matrix *m, int or, uchar sol) {
 }
 void tournevion(int v, float d, float p, float g) {
     float ar, ap, ag, c1, c2, c3, s1, s2, s3;
-    matrix r;
+    struct matrix r;
     ar=d*2.; ap=p*.5; ag=g*.5;
     c1=cos(ar); s1=sin(ar); c2=cos(ap); s2=sin(ap); c3=cos(ag); s3=sin(ag);
 /*  r.x.x=c2;       r.y.x=0;        r.z.x=-s2;
@@ -131,7 +131,7 @@ void backgroundline(int *v,int sx,int dz,int z,int coul) {
             z+=dz;
         }
     } else {
-        MMXMemSetInt(v,coul,sx);
+        memset32(v,coul,sx);
     }
 }
 
@@ -201,9 +201,9 @@ static void background(void)
 
 void balanceX(int o, double s) {    // balance l'obj o poue lui mettre la tete en haut
     double d;
-    vector yp;
-    static vector ypt={0, -.099833416, .995004165};
-    matrix m;
+    struct vector yp;
+    static struct vector ypt={0, -.099833416, .995004165};
+    struct matrix m;
     mulmv(&obj[o].rot,&ypt,&yp);
     if (obj[o].rot.z.z>0) d = yp.z-obj[o].rot.z.z;
     else d = obj[o].rot.z.z-yp.z;
@@ -216,9 +216,9 @@ void balanceX(int o, double s) {    // balance l'obj o poue lui mettre la tete e
 }
 void balanceY(int o, double s) {    // balance l'obj o poue lui mettre la tete en haut
     double d;
-    vector yp;
-    static vector ypt={.099833416, 0, .995004165};
-    matrix m;
+    struct vector yp;
+    static struct vector ypt={.099833416, 0, .995004165};
+    struct matrix m;
     mulmv(&obj[o].rot,&ypt,&yp);
     if (obj[o].rot.z.z>0) d = yp.z-obj[o].rot.z.z;
     else d = obj[o].rot.z.z-yp.z;
@@ -230,7 +230,7 @@ void balanceY(int o, double s) {    // balance l'obj o poue lui mettre la tete e
     mulm(&obj[o].rot,&m);
 }
 void basculeY(int o, float a) {
-    matrix m;
+    struct matrix m;
     copym(&m,&mat_id);
     m.x.x=cos(a);
     m.x.z=-sin(a);
@@ -239,7 +239,7 @@ void basculeY(int o, float a) {
     mulm(&obj[o].rot,&m);
 }
 void basculeX(int o, float a) {
-    matrix m;
+    struct matrix m;
     copym(&m,&mat_id);
     m.y.y=cos(a);
     m.y.z=sin(a);
@@ -248,7 +248,7 @@ void basculeX(int o, float a) {
     mulm(&obj[o].rot,&m);
 }
 void basculeZ(int o, float a) {
-    matrix m;
+    struct matrix m;
     copym(&m,&mat_id);
     m.x.x=cos(a);
     m.x.y=sin(a);
@@ -258,7 +258,7 @@ void basculeZ(int o, float a) {
 }
 int visubot=0, visuobj=0;
 
-int akpos(vector *p) {
+int akpos(struct vector *p) {
     int x,y;
     x=p->x+((WMAP<<NECHELLE)>>1);
     y=p->y+((WMAP<<NECHELLE)>>1);
@@ -266,7 +266,7 @@ int akpos(vector *p) {
     y>>=NECHELLE;
     return x+(y<<NWMAP);
 }
-void akref(int ak,vector *r) {
+void akref(int ak,struct vector *r) {
     int x=(ak&(WMAP-1))-(WMAP>>1);
     int y=(ak>>NWMAP)-(WMAP>>1);
     r->x=(x<<NECHELLE);
@@ -275,17 +275,17 @@ void akref(int ak,vector *r) {
 }
 int resurrect(void) {   // jesus revient, jesus reviuent parmis les tiens...
     int j=NBBOT, jj, bestprix=0;
-    bot_s bottmp;
+    struct bot bottmp;
     for (jj=NbHosts; jj<NBBOT; jj++) {
-        if (bot[jj].camp==camp && viondesc[bot[jj].navion].prix<=viondesc[bot[bmanu].navion].prix && viondesc[bot[jj].navion].prix>bestprix) {
-            bestprix=viondesc[bot[jj].navion].prix;
+        if (bot[jj].camp==camp && plane_desc[bot[jj].navion].prix<=plane_desc[bot[bmanu].navion].prix && plane_desc[bot[jj].navion].prix>bestprix) {
+            bestprix=plane_desc[bot[jj].navion].prix;
             j=jj;
         }
     }
     if (j<NBBOT) {
-        memcpy(&bottmp,&bot[bmanu],sizeof(bot_s));
-        memcpy(&bot[bmanu],&bot[j],sizeof(bot_s));
-        memcpy(&bot[j],&bottmp,sizeof(bot_s));
+        memcpy(&bottmp,&bot[bmanu],sizeof(struct bot));
+        memcpy(&bot[bmanu],&bot[j],sizeof(struct bot));
+        memcpy(&bot[j],&bottmp,sizeof(struct bot));
         bot[bmanu].gold=55;
         playsound(VOICEEXTER, ALLELUIA, 1., &voices_in_my_head, true, false);
         soundthrust=-1;
@@ -307,8 +307,8 @@ static void setup_camera(float dt_sec)
 
     if (view == VIEW_ROTATING_BOMB) {
         if (!visubomb || obj[visubomb].objref!=-1) {
-            for (i=bot[visubot].vion; i<bot[visubot].vion+nobjet[bot[visubot].navion].nbpieces && (obj[i].objref!=-1 || obj[i].type!=BOMB); i++);
-            if (i<bot[visubot].vion+nobjet[bot[visubot].navion].nbpieces) {
+            for (i=bot[visubot].vion; i<bot[visubot].vion+n_object[bot[visubot].navion].nbpieces && (obj[i].objref!=-1 || obj[i].type!=BOMB); i++);
+            if (i<bot[visubot].vion+n_object[bot[visubot].navion].nbpieces) {
                 visubomb = i;
             } else {
                 visubomb = 0;
@@ -331,13 +331,13 @@ static void setup_camera(float dt_sec)
         }
     }
     if (view == VIEW_IN_PLANE || view == VIEW_DOGFIGHT) {   // afficher ou effacer la tete et la tab de bord
-        for (i=0; i<viondesc[bot[visubot].navion].nbpiecestete; i++)
-            obj[bot[visubot].vion+nobjet[bot[visubot].navion].nbpieces-2-i].aff=0;
-        obj[bot[visubot].vion+viondesc[bot[visubot].navion].tabbord].aff=1;
+        for (i=0; i<plane_desc[bot[visubot].navion].nbpiecestete; i++)
+            obj[bot[visubot].vion+n_object[bot[visubot].navion].nbpieces-2-i].aff=0;
+        obj[bot[visubot].vion+plane_desc[bot[visubot].navion].tabbord].aff=1;
     } else {
-        for (i=0; i<viondesc[bot[visubot].navion].nbpiecestete; i++)
-            obj[bot[visubot].vion+nobjet[bot[visubot].navion].nbpieces-2-i].aff=1;
-        obj[bot[visubot].vion+viondesc[bot[visubot].navion].tabbord].aff=0;
+        for (i=0; i<plane_desc[bot[visubot].navion].nbpiecestete; i++)
+            obj[bot[visubot].vion+n_object[bot[visubot].navion].nbpieces-2-i].aff=1;
+        obj[bot[visubot].vion+plane_desc[bot[visubot].navion].tabbord].aff=0;
     }
     switch (view) {
     case NB_VIEWS:
@@ -346,7 +346,7 @@ static void setup_camera(float dt_sec)
     case VIEW_IN_PLANE:
         // Compute static position of the head, relative to cockpit
         obj[0].pos = vec_zero;
-        matrix ct;
+        struct matrix ct;
         // Even in dogfight view we want to be able to focus on pannel or look toward predefined directions
         if (view == VIEW_IN_PLANE || avancevisu || tournevisu) {
             ct.x = obj[bot[visubot].vion].rot.y;
@@ -364,7 +364,7 @@ static void setup_camera(float dt_sec)
         }
         if (avancevisu) {
             // Go for the instrument pannel
-            vector v = ct.z;
+            struct vector v = ct.z;
             mulv(&v, 2.1);
             addv(&obj[0].pos, &v);
             v = ct.y;
@@ -372,7 +372,7 @@ static void setup_camera(float dt_sec)
             addv(&obj[0].pos, &v);
         } else {
             // Look in any direction (visuteta/phi)
-            matrix m;
+            struct matrix m;
             double ctt = cos(visuteta);
             double st = sin(visuteta);
             double cf = cos(visuphi);
@@ -394,8 +394,8 @@ static void setup_camera(float dt_sec)
          * Unfortunately, we do not know objs acceleration (nor velocity in the
          * general case), so we have to figure it out. */
         if (! accel) {
-            static vector prev_vit;
-            vector acc;
+            static struct vector prev_vit;
+            struct vector acc;
             subv3(&bot[visubot].vionvit, &prev_vit, &acc);
             mulv(&acc, .02/dt_sec);
             cap_dist(&acc, 3.);
@@ -404,15 +404,15 @@ static void setup_camera(float dt_sec)
         }
 
         /* Smooth this position with the previous one */
-        static vector prev_cam_pos = { .0, .0, .0 };
-        vector diff;
+        static struct vector prev_cam_pos = { .0, .0, .0 };
+        struct vector diff;
         subv3(&obj[0].pos, &prev_cam_pos, &diff);
         mulv(&diff, .2);
         addv3(&prev_cam_pos, &diff, &obj[0].pos);
         prev_cam_pos = obj[0].pos;
 
         /* Finally, add to this position the actual position of the cockpit */
-        addv(&obj[0].pos, &obj[bot[visubot].vion+nobjet[bot[visubot].navion].nbpieces-1].pos);
+        addv(&obj[0].pos, &obj[bot[visubot].vion+n_object[bot[visubot].navion].nbpieces-1].pos);
 
         break;
     case VIEW_ROTATING_PLANE:
@@ -453,7 +453,7 @@ static void setup_camera(float dt_sec)
         obj[0].rot.y = obj[bot[visubot].vion].rot.z;
         neg(&obj[0].rot.y);
         obj[0].rot.z = obj[bot[visubot].vion].rot.x;
-        vector p = obj[0].rot.z;
+        struct vector p = obj[0].rot.z;
         mulv(&p, -(loinvisu-80));
         addv(&obj[0].pos, &p);
         p = bot[visubot].vionvit;
@@ -480,11 +480,12 @@ int visubomb=0, mapmode=0, accel=0, autopilot=0, lapause=0, lepeintre=0, bmanu, 
 double loinvisu=110, visuteta=0,visuphi=0;
 uchar avancevisu=0, tournevisu=0, quitte=0, arme=0, AfficheHS=0;
 int main(int narg, char **arg) {
-    int i,j, dtradio=0, RedefineKeys=0; matrix m;
+    int i,j, dtradio=0, RedefineKeys=0;
+    struct matrix m;
     int caisse=0, dtcaisse=0, oldgold=0, caissetot=0, maxgold=0, initradio=0;
     char *userid;
     FILE *file;
-    HS_s highscore[] = {
+    struct high_score highscore[] = {
         { 4000, "George Brush"},
         { 3500, "Donald Ducksfield"},
         { 4000, "Ricardo Sandbag"},
@@ -586,7 +587,7 @@ parse_error:
     focale=_DX;
     // Read saved highscores (from home)
     if ((file = file_open_try(".fachoda-highscores", getenv("HOME"), "r")) != NULL) {
-        fread(&highscore, sizeof(HS_s), ARRAY_LEN(highscore), file);
+        fread(&highscore, sizeof(struct high_score), ARRAY_LEN(highscore), file);
         fclose(file);
     }
     /* autres inits */
@@ -605,8 +606,8 @@ parse_error:
     /*
         VIDEO
                */
-    videobuffer=(pixel32*)malloc(SX*SY*sizeof(pixel32));
-    BufVidOffset=SX*sizeof(pixel32);
+    videobuffer = malloc(SX*SY*sizeof(*videobuffer));
+    BufVidOffset = SX*sizeof(struct pixel32);
     initvideo(fullscreen);
     //  printf("Img bpp=%d\n",depth);
     drawtbback();
@@ -626,7 +627,7 @@ parse_error:
     }
     loadsample(BIPINTRO,"snd/bipintro.raw", false, 1.);
     if (present()==-1) goto fin;
-    //MMXMemSetInt((int*)videobuffer,BACKCOLOR,SX*SY);
+    //memset32((int*)videobuffer,BACKCOLOR,SX*SY);
     affpresent(0,0);
     pstr("LOADING and CREATING THE WORLD",_DY+(SY>>3)+10,0xE5D510);
     /* SOUND */
@@ -655,7 +656,7 @@ parse_error:
         contact le serveur
                            */
     NBBOT+=NbHosts;
-    playbotname=malloc(30*NbHosts);
+    playbotname = malloc(30*NbHosts);
     strcpy(&(playbotname[bmanu])[0],myname);
     if (Dark==-1) Dark=drand48()>.9;
     Fleuve=drand48()>.01;
@@ -681,7 +682,7 @@ parse_error:
     dtradio=0;
     debtir=nbobj;
     for (i=0; i<NBMAXTIR; i++) vieshot[i]=0;
-    if ((obj=realloc(obj, sizeof(objet)*(nbobj+NBMAXTIR+1)))==NULL) { perror("realloc bot"); exit(-1); }
+    if ((obj = realloc(obj, sizeof(*obj)*(nbobj+NBMAXTIR+1)))==NULL) { perror("realloc bot"); exit(-1); }
     for (i=0; i<NBGRAVMAX; i++) debris[i].o=-1;
     for (i=0; i<NBFUMEESOURCE; i++) fumeesourceintens[i]=0;
     copyv(&obj[0].pos,&obj[bot[bmanu].vion].pos);
@@ -690,10 +691,10 @@ parse_error:
     bombidx=0;
     // effacer les tableaux de bord, les poscams et les charnières
     for (i=0; i<NBBOT; i++) {
-        obj[bot[i].vion+viondesc[bot[i].navion].tabbord].aff=0;
-        obj[bot[i].vion+nobjet[bot[i].navion].nbpieces-1].aff=0;
-        for (j=0; j<viondesc[bot[i].navion].nbcharngearx+viondesc[bot[i].navion].nbcharngeary+3; j++)
-            obj[bot[i].vion+j+viondesc[bot[i].navion].nbmoyeux+1].aff=0;
+        obj[bot[i].vion+plane_desc[bot[i].navion].tabbord].aff=0;
+        obj[bot[i].vion+n_object[bot[i].navion].nbpieces-1].aff=0;
+        for (j=0; j<plane_desc[bot[i].navion].nbcharngearx+plane_desc[bot[i].navion].nbcharngeary+3; j++)
+            obj[bot[i].vion+j+plane_desc[bot[i].navion].nbmoyeux+1].aff=0;
     }
     // VISION
     playsound(VOICEEXTER, TARATATA, 1., &voices_in_my_head, true, false);
@@ -708,7 +709,7 @@ parse_error:
         float const dt_sec = gtime_next_sec();
 //      printf("dt = %f\n", dt_sec);
 
-        vector v,u;
+        struct vector v,u;
         Exploze=0;
         imgcount++;
 
@@ -792,7 +793,7 @@ parse_error:
                     controlepos(j);
                     // collision ?
                     for (oc=map[obj[j].ak].first_obj; oc!=-1; oc=obj[oc].next)
-                        if (obj[oc].type!=TIR && obj[oc].type!=CAMERA && obj[oc].type!=DECO && (oc<bot[bombe[i].b].vion || oc>=bot[bombe[i].b].vion+nobjet[bot[bombe[i].b].navion].nbpieces) && collision(j,oc)) {
+                        if (obj[oc].type!=TIR && obj[oc].type!=CAMERA && obj[oc].type!=DECO && (oc<bot[bombe[i].b].vion || oc>=bot[bombe[i].b].vion+n_object[bot[bombe[i].b].navion].nbpieces) && collision(j,oc)) {
                             explose(oc,j);
                             fg=1;
                             break;
@@ -962,7 +963,7 @@ parse_error:
             setup_camera(dt_sec);
 
             // Now that we know camera's position, play all sounds
-            vector velocity = { 0., 0., 0. };   // FIXME
+            struct vector velocity = { 0., 0., 0. };   // FIXME
             update_listener(&obj[0].pos, &velocity, &obj[0].rot);
 
             // Draw the frame
@@ -991,7 +992,7 @@ parse_error:
                     affsoleil(&Light.z);
                     mulmtv(&obj[bot[visubot].vion].rot,&Light.z,&v);
                     lx=-127*v.y; ly=-127*v.z; lz=50*v.x+77;
-                    if (viondesc[bot[visubot].navion].oldtb) tbback=tbback1;
+                    if (plane_desc[bot[visubot].navion].oldtb) tbback=tbback1;
                     else tbback=tbback2;
                     drawtbback();
                     drawtbcadrans(visubot);
@@ -1015,7 +1016,7 @@ parse_error:
                             draw_mark(bot[visubot].drop_mark, 0x400000);
                         }
                         if (bot[visubot].cibv != -1) draw_target(obj[bot[visubot].cibv].pos, 0xC08020);
-                        vector nav = bot[visubot].u;
+                        struct vector nav = bot[visubot].u;
                         nav.z += bot[visubot].target_rel_alt;
                         draw_target(nav, 0x20F830);
                     }
@@ -1065,7 +1066,7 @@ parse_error:
                 if (view == VIEW_DOGFIGHT && bot[DogBot].camp!=-1) {
                     char vn[100];
                     snprintf(vn, sizeof(vn), "%s%s%s%s",
-                        viondesc[bot[DogBot].navion].name,
+                        plane_desc[bot[DogBot].navion].name,
                         DogBot < NbHosts ? " (" : "",
                         DogBot < NbHosts ? playbotname[DogBot] : "",
                         DogBot < NbHosts ? ")" : "");
@@ -1078,7 +1079,7 @@ parse_error:
                     while (maxrank > 0 && highscore[maxrank-1].score < maxgold) {
                         maxrank--;
                         if (maxrank<ARRAY_LEN(highscore)-1) {
-                            memcpy(&highscore[maxrank+1], &highscore[maxrank], sizeof(HS_s));
+                            memcpy(&highscore[maxrank+1], &highscore[maxrank], sizeof(struct high_score));
                         }
                         highscore[maxrank].score = maxgold;
                         snprintf(highscore[maxrank].name, sizeof(highscore[maxrank].name), "%s", playbotname[bmanu]);
@@ -1135,8 +1136,8 @@ fin:
     exitsound();
     system("xset r on");    // pis aller
     // sauver les highscore
-    if (!Easy && !ViewAll && viondesc[monvion-1].prix<=viondesc[0].prix && (file=file_open(".fachoda-highscores", getenv("HOME"), "w+"))!=NULL) {
-        fwrite(&highscore, sizeof(HS_s), ARRAY_LEN(highscore), file);
+    if (!Easy && !ViewAll && plane_desc[monvion-1].prix<=plane_desc[0].prix && (file=file_open(".fachoda-highscores", getenv("HOME"), "w+"))!=NULL) {
+        fwrite(&highscore, sizeof(struct high_score), ARRAY_LEN(highscore), file);
         fclose(file);
     }
     {

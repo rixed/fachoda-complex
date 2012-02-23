@@ -25,7 +25,7 @@
 #define SunImgL 40
 #define SunNbRays 9
 
-static pixel32 SunMap[SunMapX * (SunMapY+1)];
+static struct pixel32 SunMap[SunMapX * (SunMapY+1)];
 static double SunPicPh[20], SunPicOmega[20];
 static int SunImgAdy[SunImgL*SunImgL];
 
@@ -71,9 +71,9 @@ void animsoleil(void) {
     }
 }
 
-void affsoleil(vector *L) {
-    vector soleil;
-    vector ac;
+void affsoleil(struct vector *L) {
+    struct vector soleil;
+    struct vector ac;
     if (Dark) for (unsigned i = 0; i < ARRAY_LEN(stars); i++) {
         // Compute star's position relative to camera (CamT*Start)
         float gh = obj[0].rot.z.x * obj[0].rot.z.y;

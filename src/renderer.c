@@ -24,12 +24,12 @@
 #include "map.h"
 
 #define cam obj[0]
-vect2dlum *pts2d;
-matrix *oL;
+struct vect2dlum *pts2d;
+struct matrix *oL;
 void initrender() {
-    pts2d=(vect2dlum*)malloc(3000*sizeof(vect2dlum));   // nbpts max par objets
+    pts2d = malloc(3000*sizeof(*pts2d));   // nbpts max par objets
 #define MAXNO 5000
-    oL=(matrix*)malloc(MAXNO*sizeof(matrix));   // nb objet max dans un ak
+    oL = malloc(MAXNO*sizeof(*oL));   // nb objet max dans un ak
 }
 void plot(int x, int y, int r)
 {
@@ -122,13 +122,13 @@ void cercle(int x, int y, int radius, int c) {
     } while (++xoff <= yoff);
 }
 
-extern inline int color_of_pixel(pixel c);
+extern inline int color_of_pixel(struct pixel c);
 
-bool polyflat(vect2d *p1, vect2d *p2, vect2d *p3, pixel coul) {
-    vect2d *tmp;
+bool polyflat(struct vect2d *p1, struct vect2d *p2, struct vect2d *p3, struct pixel coul) {
+    struct vect2d *tmp;
     int xi, yi, lx, i, j, jlim, yfin;
     int q1, q2, q3, ql, qx, qx2 = 0, ql2 = 0;
-    pixel32 *vid;
+    struct pixel32 *vid;
 
     if (p2->y<p1->y) { tmp=p1; p1=p2; p2=tmp; }
     if (p3->y<p1->y) { tmp=p1; p1=p3; p3=tmp; }
@@ -196,7 +196,7 @@ debtrace:
             if (j < 0) j = 0;
             if (jlim > SX) jlim = SX;
             if (j < jlim) {
-                MMXMemSetInt((int*)(vid+j), color_of_pixel(coul), jlim-j);
+                memset32((int*)(vid+j), color_of_pixel(coul), jlim-j);
             }
             xi += qx;
             yi++;
@@ -206,9 +206,9 @@ debtrace:
     }
     return true;
 }
-void drawline(vect2d const *restrict p1, vect2d const *restrict p2, int col) {
+void drawline(struct vect2d const *restrict p1, struct vect2d const *restrict p2, int col) {
     int s, x,y,xi, dy;
-    vect2d const *tmp;
+    struct vect2d const *tmp;
     int q;
     if (p1->x > p2->x) { tmp=p1; p1=p2; p2=tmp; }
     if ((dy = p2->y - p1->y) > 0) {
@@ -230,19 +230,19 @@ void drawline(vect2d const *restrict p1, vect2d const *restrict p2, int col) {
     }
 }
 
-void draw_rectangle(vect2d const *restrict min, vect2d const *restrict max, int col)
+void draw_rectangle(struct vect2d const *restrict min, struct vect2d const *restrict max, int col)
 {
-    vect2d const p1 = { .x = min->x, .y = max->y };
-    vect2d const p2 = { .x = max->x, .y = min->y };
+    struct vect2d const p1 = { .x = min->x, .y = max->y };
+    struct vect2d const p2 = { .x = max->x, .y = min->y };
     drawline(min, &p1, col);
     drawline(min, &p2, col);
     drawline(max, &p1, col);
     drawline(max, &p2, col);
 }
 
-void drawline2(vect2d *p1, vect2d *p2, int col) {
+void drawline2(struct vect2d *p1, struct vect2d *p2, int col) {
     int s, x,y,xi, dy;
-    vect2d *tmp;
+    struct vect2d *tmp;
     int q;
     if (p1->x>p2->x) { tmp=p1; p1=p2; p2=tmp; }
     if ((dy=(p2->y-p1->y))>0) {
@@ -264,9 +264,9 @@ void drawline2(vect2d *p1, vect2d *p2, int col) {
         x+=q;
     }
 }
-void drawlinetb(vect2d *p1, vect2d *p2, int col) {
+void drawlinetb(struct vect2d *p1, struct vect2d *p2, int col) {
     int s, x,y,xi, dy;
-    vect2d *tmp;
+    struct vect2d *tmp;
     int q;
     if (p1->x>p2->x) { tmp=p1; p1=p2; p2=tmp; }
     if ((dy=(p2->y-p1->y))>0) {
@@ -289,7 +289,7 @@ void calcposrigide(int o) {
     copym(&obj[o].rot,&obj[obj[o].objref].rot);
     controlepos(o);
 }
-void calcposarti(int o, matrix *m) {
+void calcposarti(int o, struct matrix *m) {
     mulmv(&obj[obj[o].objref].rot,&mod[obj[o].model].offset,&obj[o].pos);
     addv(&obj[o].pos,&obj[obj[o].objref].pos);
     mulm3(&obj[o].rot,&obj[obj[o].objref].rot,m);
@@ -331,7 +331,7 @@ void calcposa() {
             if (mod[obj[i].model].fixe==1) copym(&obj[i].rota,&obj[obj[i].objref].rota);    // rigide?
             else mulm3(&obj[i].rota,&obj[obj[i].objref].rota,&obj[i].rot);  // articulé
         } else {
-        //  memcpy(&obj[i].posa,&obj[i].pos,sizeof(vector)+sizeof(matrix));
+        //  memcpy(&obj[i].posa,&obj[i].pos,sizeof(struct vector)+sizeof(struct matrix));
         }*/
         if (mod[obj[i].model].fixe!=-1) {   // immobile ?
             xk=(int)floor(obj[i].pos.x/ECHELLE)+(WMAP>>1);
@@ -489,10 +489,10 @@ static void darken(uchar *b)
 
 void renderer(int ak, enum render_part fast) {
     int o, p, no;
-    vector c,t,pts3d;
+    struct vector c,t,pts3d;
     double rayonapparent=0;
-    matrix co;
-    vect2d e;
+    struct matrix co;
+    struct vect2d e;
     //cam=light
     if (map[ak].first_obj==-1) return;
     // boucler sur tous les objets
@@ -559,7 +559,7 @@ void renderer(int ak, enum render_part fast) {
                                 &pts2d[mod[obj[o].model].fac[1][p].p[0]].v,
                                 &pts2d[mod[obj[o].model].fac[1][p].p[1]].v,
                                 &pts2d[mod[obj[o].model].fac[1][p].p[2]].v,
-                                (pixel){ .r = 0, .g = 0, .b = 0});
+                                (struct pixel){ .r = 0, .g = 0, .b = 0});
                 }
             }
         }
@@ -629,7 +629,7 @@ void renderer(int ak, enum render_part fast) {
                                                     pts2d[mod[obj[o].model].fac[mo][p].p[1]].v.x != MAXINT &&
                                                     pts2d[mod[obj[o].model].fac[mo][p].p[2]].v.x != MAXINT) {
                                                 if (obj[o].type==TABBORD && p>=mod[obj[o].model].nbfaces[mo]-2) {
-                                                    vect2dm pt[3];
+                                                    struct vect2dm pt[3];
                                                     int i;
                                                     for (i=0; i<3; i++) {
                                                         pt[i].v.x=pts2d[mod[obj[o].model].fac[mo][p].p[i]].v.x;
@@ -652,7 +652,7 @@ void renderer(int ak, enum render_part fast) {
                                                     }
                                                     polymap(&pt[0],&pt[1],&pt[2]);
                                                 } else {
-                                                    pixel coul = mod[obj[o].model].fac[mo][p].color;
+                                                    struct pixel coul = mod[obj[o].model].fac[mo][p].color;
                                                     if (Dark) {
                                                         if (obj[o].type != TABBORD) {
                                                             darken(&coul.r);
@@ -690,10 +690,10 @@ void renderer(int ak, enum render_part fast) {
     } while (o!=-1);
 }
 
-static bool to_camera(vector const *v3d, vect2d *v2d)
+static bool to_camera(struct vector const *v3d, struct vect2d *v2d)
 {
-    vector vc = *v3d;
-    vector vc_c;
+    struct vector vc = *v3d;
+    struct vector vc_c;
     subv(&vc, &cam.pos);
     mulmtv(&cam.rot, &vc, &vc_c);
     if (vc_c.z > 0.) {
@@ -704,7 +704,7 @@ static bool to_camera(vector const *v3d, vect2d *v2d)
 }
 
 #ifdef VEC_DEBUG
-vector debug_vector[NB_DBG_VECS][2];
+struct vector debug_vector[NB_DBG_VECS][2];
 void draw_debug(void)
 {
     static int debug_vector_color[] = {
@@ -713,7 +713,7 @@ void draw_debug(void)
     };
 
     for (unsigned v = 0; v < ARRAY_LEN(debug_vector); v++) {
-        vect2d pts2d[2];
+        struct vect2d pts2d[2];
         if (to_camera(debug_vector[v]+0, pts2d+0) && to_camera(debug_vector[v]+1, pts2d+1)) {
             drawline(pts2d+0, pts2d+1, debug_vector_color[v % ARRAY_LEN(debug_vector_color)]);
         }
@@ -721,16 +721,16 @@ void draw_debug(void)
 }
 #endif
 
-void draw_target(vector p, int c)
+void draw_target(struct vector p, int c)
 {
-    vect2d p2d;
+    struct vect2d p2d;
     if (! to_camera(&p, &p2d)) return;
-    vect2d const min = { .x = p2d.x - 10, .y = p2d.y - 10 };
-    vect2d const max = { .x = p2d.x + 10, .y = p2d.y + 10 };
+    struct vect2d const min = { .x = p2d.x - 10, .y = p2d.y - 10 };
+    struct vect2d const max = { .x = p2d.x + 10, .y = p2d.y + 10 };
     draw_rectangle(&min, &max, c);
 }
 
-void draw_mark(vector p, int c)
+void draw_mark(struct vector p, int c)
 {
     // TODO: a cross on the floor
     draw_target(p, c);

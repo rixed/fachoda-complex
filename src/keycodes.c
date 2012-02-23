@@ -25,7 +25,7 @@
 #include "proto.h"
 #include "file.h"
 
-kc_s gkeys[NBKEYS] = {
+struct kc gkeys[NBKEYS] = {
     {9,"Quit"},
     {29,"Yes"},
     {57,"No"},

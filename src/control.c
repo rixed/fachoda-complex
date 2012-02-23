@@ -55,8 +55,8 @@ void controlepos(int i) {
 void control_plane(int b, float dt_sec) {
     int i, j;
     int o1 = bot[b].vion;
-    int o2 = o1+nobjet[bot[b].navion].nbpieces;
-    vector u, v; matrix m;
+    int o2 = o1+n_object[bot[b].navion].nbpieces;
+    struct vector u, v; struct matrix m;
     double rt;
 
     // FIXME: use: mulmtv(&obj[bot[b].vion].rot, &bot[b].vionvit, &v);
@@ -90,7 +90,7 @@ void control_plane(int b, float dt_sec) {
     if (bot[b].xctl>1) bot[b].xctl=1;
     if (bot[b].yctl<-1) bot[b].yctl=-1;
     if (bot[b].yctl>1) bot[b].yctl=1;
-    if (viondesc[bot[b].navion].nbcharngearx==0 && viondesc[bot[b].navion].nbcharngeary==0) bot[b].but.gear=1;
+    if (plane_desc[bot[b].navion].nbcharngearx==0 && plane_desc[bot[b].navion].nbcharngeary==0) bot[b].but.gear=1;
 
     // Fiul
 #   define FIUL_CONSUMPTION_SPEED .01   // 0.01 unit of fiul per second at full thrust
@@ -115,7 +115,7 @@ void control_plane(int b, float dt_sec) {
     float const alt_factor = 1 - r;
 
     // Acceleration
-    vector a = {
+    struct vector a = {
         0., 0.,
 #       ifndef NGRAVITY
         -G
@@ -137,7 +137,7 @@ void control_plane(int b, float dt_sec) {
 #   ifndef NTHRUST
 #   define THRUST_ACC (.7 * G)  // at full thrust, with motorpower=1, fail to compensate gravity
     {   // Thrust
-        double k = THRUST_ACC * bot[b].thrust * alt_factor * (1-bot[b].motorloss/128.) * viondesc[bot[b].navion].motorpower;
+        double k = THRUST_ACC * bot[b].thrust * alt_factor * (1-bot[b].motorloss/128.) * plane_desc[bot[b].navion].motorpower;
         v = obj[bot[b].vion].rot.x;
         mulv(&v, k);
         addv(&a, &v);
@@ -156,7 +156,7 @@ void control_plane(int b, float dt_sec) {
 
 #   ifndef NDRAG
     {   // Drag
-        double k = viondesc[bot[b].navion].drag + .02 * bot[b].nbomb;
+        double k = plane_desc[bot[b].navion].drag + .02 * bot[b].nbomb;
         if (!bot[b].but.gearup) k += .07;
         if (bot[b].but.flap) k += .03;
         k *= alt_factor;
@@ -197,7 +197,7 @@ void control_plane(int b, float dt_sec) {
             0. : MIN(.00005*(vx-MIN_SPEED_FOR_LIFT)*(vx-MIN_SPEED_FOR_LIFT), 1.2*exp(-.001*vx));
         // kx max is aprox 1., when vx is around 250 (BEST_LIFT_SPEED!)
         // TODO: add lift with a-o-a?
-        float lift = viondesc[bot[b].navion].lift;
+        float lift = plane_desc[bot[b].navion].lift;
         if (bot[b].but.flap) lift *= 1.2;
         if (zs < 5. * ONE_METER) lift *= 1.1;   // more lift when close to the ground
         lift *= alt_factor; // less lift with altitude
@@ -222,7 +222,7 @@ void control_plane(int b, float dt_sec) {
     unsigned touchdown_mask = 0;
     for (rt=0, i=0; i<3; i++) {
         // zr : altitude of this wheel, relative to the ground, at t + dt
-        vector const *wheel_pos = &obj[bot[b].vion+viondesc[bot[b].navion].roue[i]].pos;
+        struct vector const *wheel_pos = &obj[bot[b].vion+plane_desc[bot[b].navion].roue[i]].pos;
         float zr = (wheel_pos->z - zs) + bot[b].vionvit.z * dt_sec;
         if (zr < 0) {
             touchdown_mask |= 1<<i;
@@ -337,10 +337,10 @@ void control_plane(int b, float dt_sec) {
 
         float const fix_orient = rt * 1. * dt_sec;
         if (touchdown_mask&3  && !(touchdown_mask&4)) { // either right or left wheel but not front/rear -> noise down/up
-            if (viondesc[bot[b].navion].avant) basculeY(bot[b].vion, -fix_orient);
+            if (plane_desc[bot[b].navion].avant) basculeY(bot[b].vion, -fix_orient);
             else basculeY(bot[b].vion, fix_orient);
         } else if (!(touchdown_mask&3) && touchdown_mask&4) {   // front/read but neither left nor right -> noise up/down
-            if (viondesc[bot[b].navion].avant) basculeY(bot[b].vion, fix_orient);
+            if (plane_desc[bot[b].navion].avant) basculeY(bot[b].vion, fix_orient);
             else basculeY(bot[b].vion, -fix_orient);
         }
         if (touchdown_mask&1 && !(touchdown_mask&2)) {  // right but not left
@@ -357,16 +357,16 @@ void control_plane(int b, float dt_sec) {
             if (norme2(&v) < ECHELLE*ECHELLE*.1) {
                 int prix, amo;
                 amo = bot[b].gold;
-                if (amo+bot[b].bullets > viondesc[bot[b].navion].bulletsmax) {
-                    amo = viondesc[bot[b].navion].bulletsmax - bot[b].bullets;
+                if (amo+bot[b].bullets > plane_desc[bot[b].navion].bulletsmax) {
+                    amo = plane_desc[bot[b].navion].bulletsmax - bot[b].bullets;
                 }
                 if (amo) {
                     bot[b].gold -= amo;
                     bot[b].bullets += amo;
                 }
                 amo = bot[b].gold*1000;
-                if (amo+bot[b].fiul > viondesc[bot[b].navion].fiulmax) {
-                    amo = viondesc[bot[b].navion].fiulmax - bot[b].fiul;
+                if (amo+bot[b].fiul > plane_desc[bot[b].navion].fiulmax) {
+                    amo = plane_desc[bot[b].navion].fiulmax - bot[b].fiul;
                 }
                 if (amo >= 1000) {
                     bot[b].gold -= amo/1000;
@@ -382,7 +382,7 @@ void control_plane(int b, float dt_sec) {
                         obj[i].type=mod[obj[i].model].type;
                         copym(&obj[i].rot,&mat_id);
                         copyv(&obj[i].pos,&mod[mo].offset);
-                        bot[b].fiul=viondesc[bot[b].navion].fiulmax;
+                        bot[b].fiul=plane_desc[bot[b].navion].fiulmax;
                         armstate(b);
                     }
                 }
@@ -410,13 +410,13 @@ void control_plane(int b, float dt_sec) {
                     i = bot[b].vion;
                     do {
                         int v;
-                        bot[b].gold += viondesc[bot[b].navion].prix;
+                        bot[b].gold += plane_desc[bot[b].navion].prix;
                         do {
                             i=obj[i].next;
                             if (i==-1) i=map[obj[bot[b].vion].ak].first_obj;
                         } while (obj[i].type!=AVION || mod[obj[i].model].fixe!=0);
-                        bot[b].navion = mod[obj[i].model].nobjet;
-                        bot[b].gold -= viondesc[bot[b].navion].prix;
+                        bot[b].navion = mod[obj[i].model].n_object;
+                        bot[b].gold -= plane_desc[bot[b].navion].prix;
                         for (j=v=0; v<NBBOT; v++) {
                             if (v!=b && bot[v].vion==i) { j=1; break; }
                         }
@@ -447,7 +447,7 @@ void control_plane(int b, float dt_sec) {
 
     // And the attached parts follow
     // Moyeux d'hélice
-    for (i=1; i<viondesc[bot[b].navion].nbmoyeux+1; i++) {
+    for (i=1; i<plane_desc[bot[b].navion].nbmoyeux+1; i++) {
         m.x.x=1; m.x.y=0; m.x.z=0;
         m.y.x=0; m.y.y=cos(bot[b].anghel); m.y.z=sin(bot[b].anghel);
         m.z.x=0; m.z.y=-sin(bot[b].anghel); m.z.z=cos(bot[b].anghel);
@@ -470,7 +470,7 @@ void control_plane(int b, float dt_sec) {
         if (bot[b].but.gearup) {
             bot[b].but.gearup=0;
             if (b == visubot) playsound(VOICEGEAR, GEAR_DN, 1, &obj[bot[b].vion].pos, false, false);   // FIXME: the pos of the gear
-            for (j=0; j<(viondesc[bot[b].navion].retract3roues?3:2); j++) obj[bot[b].vion+viondesc[bot[b].navion].roue[j]].aff=1;
+            for (j=0; j<(plane_desc[bot[b].navion].retract3roues?3:2); j++) obj[bot[b].vion+plane_desc[bot[b].navion].roue[j]].aff=1;
         }
 #       define GEAR_ROTATION_SPEED (.5 * M_PI / 1.5) // deployed in 1.5 seconds
         bot[b].anggear -= GEAR_ROTATION_SPEED * dt_sec;
@@ -480,10 +480,10 @@ void control_plane(int b, float dt_sec) {
         bot[b].anggear += GEAR_ROTATION_SPEED * dt_sec;
         if (bot[b].anggear>1.5) {
             bot[b].anggear=1.5; bot[b].but.gearup=1;
-            for (j=0; j<(viondesc[bot[b].navion].retract3roues?3:2); j++) obj[bot[b].vion+viondesc[bot[b].navion].roue[j]].aff=0;
+            for (j=0; j<(plane_desc[bot[b].navion].retract3roues?3:2); j++) obj[bot[b].vion+plane_desc[bot[b].navion].roue[j]].aff=0;
         }
     }
-    for (j=i; j<viondesc[bot[b].navion].nbcharngearx+i; j++) {
+    for (j=i; j<plane_desc[bot[b].navion].nbcharngearx+i; j++) {
         m.y.y=cos(bot[b].anggear);
         m.y.z=((j-i)&1?-1:1)*sin(bot[b].anggear);
         m.z.y=((j-i)&1?1:-1)*sin(bot[b].anggear);
@@ -492,7 +492,7 @@ void control_plane(int b, float dt_sec) {
     }
     m.y.x=0; m.y.y=1; m.y.z=0;
     m.z.y=0;
-    for (i=j; i<j+viondesc[bot[b].navion].nbcharngeary; i++) {
+    for (i=j; i<j+plane_desc[bot[b].navion].nbcharngeary; i++) {
         m.x.x=cos(bot[b].anggear); m.x.z=((i-j)&1?1:-1)*sin(bot[b].anggear);
         m.z.x=((i-j)&1?-1:1)*sin(bot[b].anggear); m.z.z=cos(bot[b].anggear);
         calcposarti(bot[b].vion+i,&m);
@@ -512,18 +512,18 @@ void control_plane(int b, float dt_sec) {
     m.x.z=-m.x.z;
     m.z.x=-m.z.x;
     calcposarti(bot[b].vion+i+2,&m);
-    for (i+=3; i<nobjet[mod[obj[bot[b].vion].model].nobjet].nbpieces; i++) {
+    for (i+=3; i<n_object[mod[obj[bot[b].vion].model].n_object].nbpieces; i++) {
         if (obj[bot[b].vion+i].objref!=-1) calcposrigide(bot[b].vion+i);
     }
     // tirs ?
     // the shot frequency is given by the number of canons
-    gtime const min_shot_period = SHOT_PERIOD / viondesc[bot[b].navion].nbcanon;
+    gtime const min_shot_period = SHOT_PERIOD / plane_desc[bot[b].navion].nbcanon;
     if (bot[b].but.canon && nbtir<NBMAXTIR && bot[b].bullets>0 && gtime_age(bot[b].last_shot) > min_shot_period) {
         if (++bot[b].alterc>=4) bot[b].alterc=0;
-        if (bot[b].alterc<viondesc[bot[b].navion].nbcanon) {
+        if (bot[b].alterc<plane_desc[bot[b].navion].nbcanon) {
             copyv(&v, &obj[bot[b].vion].rot.x);
             mulv(&v, 44);
-            vector const *canon = &obj[ bot[b].vion + viondesc[bot[b].navion].firstcanon + bot[b].alterc ].pos;
+            struct vector const *canon = &obj[ bot[b].vion + plane_desc[bot[b].navion].firstcanon + bot[b].alterc ].pos;
             addv(&v, canon);
             if (b == visubot) playsound(VOICESHOT, SHOT, 1+(drand48()-.5)*.08, &v, false, false);
             else drand48();
@@ -536,8 +536,8 @@ void control_plane(int b, float dt_sec) {
         }
     }
     if (bot[b].but.bomb) {
-        for (i=bot[b].vion; i<bot[b].vion+nobjet[bot[b].navion].nbpieces && (obj[i].type!=BOMB || obj[i].objref!=bot[b].vion); i++);
-        if (i<bot[b].vion+nobjet[bot[b].navion].nbpieces) {
+        for (i=bot[b].vion; i<bot[b].vion+n_object[bot[b].navion].nbpieces && (obj[i].type!=BOMB || obj[i].objref!=bot[b].vion); i++);
+        if (i<bot[b].vion+n_object[bot[b].navion].nbpieces) {
             if (b == visubot) playsound(VOICEGEAR, BIPBIP2, 1.1, &obj[i].pos, false, false);
             obj[i].objref=-1;
             for (j=0; j<bombidx && bombe[j].o!=-1; j++);
@@ -556,9 +556,9 @@ void control_plane(int b, float dt_sec) {
 }
 
 void control_vehic(int v, float dt_sec) {
-    vector p,u;
+    struct vector p,u;
     int o=vehic[v].o1, i;
-    matrix m;
+    struct matrix m;
     double c,s;
     if (vehic[v].camp==-1) return;
     c=cos(vehic[v].ang0);
@@ -603,9 +603,9 @@ void control_vehic(int v, float dt_sec) {
     }
 }
 
-void tiradonf(int z, vector *c, int i) {
-    vector p;
-    matrix m;
+void tiradonf(int z, struct vector *c, int i) {
+    struct vector p;
+    struct matrix m;
     float s;
     gtime const min_shot_period = SHOT_PERIOD / 6; // 6 cannons per Zeppelin
     if (nbtir < NBMAXTIR && gtime_age(zep[z].last_shot) > min_shot_period) {
@@ -631,8 +631,8 @@ void tiradonf(int z, vector *c, int i) {
 
 void control_zep(int z, float dt_sec) { // fait office de routine robot sur les commandes aussi
     int i;
-    vector v;
-    matrix m;
+    struct vector v;
+    struct matrix m;
     float dir;
     float cx,cy,cz,sx,sy,sz, zs, angcap=0, angprof=0;
     static float phazx=0, phazy=0, phazz=0, balot=0;
@@ -738,6 +738,6 @@ void control_zep(int z, float dt_sec) { // fait office de routine robot sur les 
     }
 
     // Everything else
-    for (i=5; i<nobjet[mod[obj[zep[z].o].model].nobjet].nbpieces; i++) calcposrigide(zep[z].o+i);
+    for (i=5; i<n_object[mod[obj[zep[z].o].model].n_object].nbpieces; i++) calcposrigide(zep[z].o+i);
 }
 

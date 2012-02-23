@@ -24,7 +24,7 @@
 #include "robot.h"
 
 #define NBMAXROUTE 5000 /* <=65534 ! */
-route_s *route;
+struct road *route;
 int routeidx=0;
 int NbElmLim;
 int EndRus=-1, EndMotorways=-1, EndRoads=-1;
@@ -71,7 +71,7 @@ void hashroute() {
 
 void initroute() {
     int i,j;
-    route=(route_s*)malloc(NBMAXROUTE*sizeof(route_s));
+    route=(struct road*)malloc(NBMAXROUTE*sizeof(struct road));
     map2route=malloc((1<<NHASH)*NBREPHASH*sizeof(short));
     for (i=0; i<(1<<NHASH); i++)
         for (j=0; j<NBREPHASH; j++)
@@ -79,12 +79,12 @@ void initroute() {
 
 }
 void endinitroute() {
-    route=(route_s*)realloc(route,routeidx*sizeof(route_s));
+    route=(struct road*)realloc(route,routeidx*sizeof(struct road));
 }
 float oldcap,curcap,bestcap;
-float note(vector *a, vector *f, vector *i) {
+float note(struct vector *a, struct vector *f, struct vector *i) {
     float n,dist,zs;
-    vector v;
+    struct vector v;
     if ((zs=z_ground(a->x,a->y, false))<3000 || zs>11500) n=MAXFLOAT;
     else {
         copyv(&v,a);
@@ -111,13 +111,13 @@ float note(vector *a, vector *f, vector *i) {
     }
     return n;
 }
-void nxtrt(vector i, vector *f, int lastd) {
+void nxtrt(struct vector i, struct vector *f, int lastd) {
     // routeidx pointe sur une route dont l'origine est mise, mais
     // pointant sur rien
     int d, bestd=0, intens;
     float bestnote=MAXFLOAT, notecur, dist, s;
-    pixel coul;
-    vector r,besta,u;
+    struct pixel coul;
+    struct vector r,besta,u;
     float tmp;
     copyv(&r,f);
     subv(&r,&i);
@@ -137,7 +137,7 @@ void nxtrt(vector i, vector *f, int lastd) {
         if (d==(lastd^2)) continue;
         for (s=ECHELLE/5; s<ECHELLE*4/5; s+=ECHELLE/10) {
             float ll=d>1?ECHELLE:0;
-            vector a;
+            struct vector a;
             a.x=(d&1?ll:s)+r.x;
             a.y=(d&1?s:ll)+r.y;
             a.z=z_ground(a.x,a.y, false);
@@ -205,7 +205,7 @@ void nxtrt(vector i, vector *f, int lastd) {
     nxtrt(besta,f,bestd);
 }
 
-void traceroute(vector *i, vector *f) {
+void traceroute(struct vector *i, struct vector *f) {
     if (routeidx>=NBMAXROUTE-1) return;
     route[routeidx].ak=akpos(i);
     copyv(&route[routeidx].i,i);
@@ -214,11 +214,11 @@ void traceroute(vector *i, vector *f) {
     nxtrt(*i,f,-1);
 }
 
-void prospectroute(vector *i, vector *f) {
+void prospectroute(struct vector *i, struct vector *f) {
     int deb=routeidx, bestfin=MAXINT;
     int j,k;
     int nbelmlim;   // nb d'element au dela duquel ca vaut pas le coup
-    vector p1,p2, bestp1, bestp2, v;
+    struct vector p1,p2, bestp1, bestp2, v;
     copyv(&p1,i);
     copyv(&p2,f);
     copyv(&v,f);

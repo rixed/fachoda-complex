@@ -25,20 +25,38 @@
 int opensound(bool with_sound);
 void exitsound(void);
 
-int loadsample(sample_e samp, char const *filename, bool loop, float gain);
+enum snd_sample {
+    PRESENT, BIPINTRO, SHOT,
+    GEAR_DN, GEAR_UP, SCREETCH,
+    LOW_SPEED, MOTOR, HIT,
+    MESSAGE, EXPLOZ, BOMB_BLAST,
+    TOLE, BIPBIP, BIPBIP2, BIPBIP3,
+    FEU, TARATATA, ALLELUIA,
+    ALERT, DEATH, PAIN, BRAVO,
+    NB_SAMPLES
+};
+
+enum snd_voice {
+    VOICEGEAR, VOICESHOT,
+    VOICEMOTOR, VOICEEXTER,
+    VOICEEXTER2, VOICEALERT,
+    NB_VOICES
+};
+
+int loadsample(enum snd_sample samp, char const *filename, bool loop, float gain);
 
 // Load a wave file. Supported format include mono/stereo 8 or 16 bits/sample
-int load_wave(sample_e samp, char const *fn, bool loop, float gain);
+int load_wave(enum snd_sample samp, char const *fn, bool loop, float gain);
 
 // Set listener position (will also update all attached sound sources)
-void update_listener(vector const *pos, vector const *velocity, matrix const *rot);
+void update_listener(struct vector const *pos, struct vector const *velocity, struct matrix const *rot);
 
 // Play a sound
 // relative -> position is relative to the listener
 // anchored -> position will be updated from frame to frame from given pos
-void playsound(enum voice, sample_e, float freq, vector const *pos, bool relative, bool anchored);
+void playsound(enum snd_voice, enum snd_sample, float freq, struct vector const *pos, bool relative, bool anchored);
 
 // A predefined position located in the head of the listener (relative pos of course)
-vector voices_in_my_head;
+struct vector voices_in_my_head;
 
 #endif

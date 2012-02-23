@@ -25,7 +25,7 @@ int ncolors;
 SDL_Color *colors;
 
 int bank, size, width, BufVidOffset, yview=0, depth, XCONVERT=0;
-pixel32 *videobuffer;
+struct pixel32 *videobuffer;
 char *video;
 
 void initvideo(bool fullscreen) {

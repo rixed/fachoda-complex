@@ -24,13 +24,13 @@
 
 short int sxtbtile, sytbtile;
 int xsoute,ysoute,xthrust,ythrust,rthrust,xspeed,yspeed,rspeed,xassi,yassi,rassi,xinclin,yinclin,hinclin,dxinclin,xgear,ygear,rgear,xflap,yflap,rflap,xvert,yvert,rvert,xalti,yalti,ralti,xbous,ybous,hbous,dxbous,rbous,xfrein,yfrein,rfrein,xauto,yauto,rauto;
-pixel32 *tbtile, *tbback, *tbback1, *tbback2;
+struct pixel32 *tbtile, *tbback, *tbback1, *tbback2;
 uchar *tbz;
 int *tbwidth;
 int *boussole;
 void rectangle(int *v, int rx, int ry, int c) {
     while (ry>0) {
-        MMXMemSetInt(v,c,rx);
+        memset32(v,c,rx);
         v+=256;
         ry--;
     }
@@ -48,14 +48,14 @@ void disque(int *v, int r, int c) {
         }
     } while (++xoff <= yoff);
 }
-void rectangletb(pixel32 *v, int rx, int ry, int c) {
+void rectangletb(struct pixel32 *v, int rx, int ry, int c) {
     while (ry>0) {
-        MMXMemSetInt((int*)v,c,rx);
+        memset32((int*)v,c,rx);
         v+=SXTB;
         ry--;
     }
 }
-void disquetb(pixel32 *v, int r, int c) {
+void disquetb(struct pixel32 *v, int r, int c) {
     int balance=-r, xoff=0, yoff=r;
     do {
         rectangletb(v-xoff+SXTB*(yoff), xoff+xoff, 1, c);
@@ -86,7 +86,7 @@ void cercletb(int x, int y, int r, int c) {
     } while (++xoff <= yoff);
 }
 void gradutb(int x, int y, double a, int r1, int r2, int c) {
-    vect2d p1,p2;
+    struct vect2d p1,p2;
     p1.x=x+r1*cos(a);
     p1.y=y-r1*sin(a);
     p2.x=x+r2*cos(a);
@@ -122,7 +122,7 @@ void disqueZ(int x, int y, int r, int c) {
 void loadtbtile(char *fn) {
     FILE *f;
     int x,y;
-    pixel32 *vid;
+    struct pixel32 *vid;
     float delta, a;
     if ((f=file_open(fn, DATADIR, "r"))==NULL) {
         exit(-1);
@@ -130,18 +130,18 @@ void loadtbtile(char *fn) {
     fseek(f,12,SEEK_SET);
     fread(&sxtbtile,2,1,f);
     fread(&sytbtile,2,1,f);
-    fseek(f,-sxtbtile*sytbtile*sizeof(pixel),SEEK_END);
-    tbtile=(pixel32*)malloc(sxtbtile*sytbtile*sizeof(pixel32));
+    fseek(f,-sxtbtile*sytbtile*sizeof(struct pixel),SEEK_END);
+    tbtile = malloc(sxtbtile*sytbtile*sizeof(*tbtile));
     for (y=0; y<sytbtile; y++) for (x=0; x<sxtbtile; x++) {
-            pixel p;
-            fread(&p,sizeof(pixel),1,f);
+            struct pixel p;
+            fread(&p, sizeof(p), 1, f);
             tbtile[x+y*sxtbtile].r=p.r;
             tbtile[x+y*sxtbtile].g=p.g;
             tbtile[x+y*sxtbtile].b=p.b;
     }
     fclose(f);
     tbz=(uchar*)malloc(SXTB*SYTB*sizeof(uchar));
-    tbback=(pixel32*)malloc(SXTB*SYTB*sizeof(pixel32));
+    tbback = malloc(SXTB*SYTB*sizeof(*tbback));
     vid=tbback;
     for (y=0; y<SYTB; y++) {
         for (x=0; x<SXTB-sxtbtile; x+=sxtbtile) MMXCopy((int*)vid+x,(int*)tbtile+(y%sytbtile)*sxtbtile,sxtbtile);
@@ -294,7 +294,7 @@ void disqueL(int x, int y, int r) {
     } while (++xoff <= yoff);
 }
 void drawtbcadrans(int b) {
-    vect2d p1,p2;
+    struct vect2d p1,p2;
     double a, ai, aj, ak;
     int i;
     // Cargo
@@ -314,7 +314,7 @@ void drawtbcadrans(int b) {
     // Fiul
     p2.x=xthrust;
     p2.y=ythrust;
-    a=(M_PI-.2)*bot[b].fiul/viondesc[bot[b].navion].fiulmax+.1;
+    a=(M_PI-.2)*bot[b].fiul/plane_desc[bot[b].navion].fiulmax+.1;
     p2.x+=rthrust*cos(a);
     p2.y+=rthrust*sin(a);
     drawline2(&p1,&p2,0x707070);
@@ -380,7 +380,7 @@ void drawtbcadrans(int b) {
     i=(hinclin>>1)*(1.+a/amax);
     if (i<0) i=0;
     for (; i<hinclin; i++)
-        MMXMemSetInt((int*)mapping+MARGE+xinclin+((MARGE+yinclin+i)<<8),0xB04242,dxinclin);
+        memset32((int*)mapping+MARGE+xinclin+((MARGE+yinclin+i)<<8),0xB04242,dxinclin);
     lumdec=7;
     rectangleL(xinclin,yinclin,dxinclin,hinclin);
     // Gear

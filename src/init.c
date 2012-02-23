@@ -28,7 +28,7 @@ int bosse(int a) {
     if (a) return abs((int)map[a].z-map[a+1].z)+abs((int)map[a].z-map[a+WMAP].z)+abs((int)map[a].z-map[a+1+WMAP].z);
     else return MAXINT;
 }
-void randomhm(matrix *m) {
+void randomhm(struct matrix *m) {
     float a=drand48()*M_PI*2;
     copym(m,&mat_id);
     m->x.x=cos(a);
@@ -36,7 +36,7 @@ void randomhm(matrix *m) {
     m->y.x=-m->x.y;
     m->y.y=m->x.x;
 }
-void posem(matrix *m, vector *p) {  // tourne légèrement la matrice pour la "poser" sur le sol
+void posem(struct matrix *m, struct vector *p) {  // tourne légèrement la matrice pour la "poser" sur le sol
     m->x.z=z_ground(p->x+m->x.x,p->y+m->x.y, true)-z_ground(p->x,p->y, true);
     renorme(&m->x);
     m->y.x=-m->x.y;
@@ -45,7 +45,7 @@ void posem(matrix *m, vector *p) {  // tourne légèrement la matrice pour la "pos
     renorme(&m->y);
     prodvect(&m->x,&m->y,&m->z);
 }
-int randomvroute(vector *v) {
+int randomvroute(struct vector *v) {
     int i;
     do i=2+drand48()*(routeidx-4); while(route[i+1].ak==-1 || route[i].ak==-1);
     v->x=route[i].i.x;
@@ -53,14 +53,14 @@ int randomvroute(vector *v) {
     v->z=route[i].i.z;
     return i;
 }
-int bossep(vector *p) { return bosse(akpos(p)); }
+int bossep(struct vector *p) { return bosse(akpos(p)); }
 void addbabase(int c) {
     int x,y;
     int x1[4] = { WMAP/5., 3.*WMAP/5., WMAP/5., 3.*WMAP/5. };
     int y1[4] = { WMAP/5., WMAP/5., 3.*WMAP/5., 3.*WMAP/5. };
     int a[3] = { 0, 0, 0 };
-    matrix m;
-    vector p,pp;
+    struct matrix m;
+    struct vector p,pp;
     for (y=y1[c]; y<y1[c]+3.*WMAP/10.; y+=5)
         for (x=x1[c]; x<x1[c]+3.*WMAP/10.; x+=5) {
             int aa=x+(y<<NWMAP);
@@ -131,7 +131,7 @@ void addbabase(int c) {
         }
         babaseo[1][x][c]=nbobj;
         for (y=0; y<NBNAVIONS; y++) {
-            matrix mp = {
+            struct matrix mp = {
                 { cos(.3), 0, sin(.3) },
                 { 0,1,0 },
                 { -sin(.3),0,cos(.3) }
@@ -145,7 +145,7 @@ void addbabase(int c) {
     //  printf("Add Babase #%d, C#%d, at %f,%f\n",x,c,p.x,p.y);
     }
 }
-void randomvferme(vector *p) {
+void randomvferme(struct vector *p) {
     int c,i,ok;
     do {
         ok=1;
@@ -153,15 +153,15 @@ void randomvferme(vector *p) {
         mulv(p,ECHELLE*(WMAP-WMAP/4));
         p->z=z_ground(p->x,p->y, true);
         for (c=0; c<4; c++) for (i=0; i<3; i++) {
-            vector pp;
+            struct vector pp;
             copyv(&pp,&obj[babaseo[0][i][c]].pos);
             subv(&pp,p);
             if (norme(&pp)<ECHELLE*10) ok=0;
         }
     } while (map[akpos(p)].z<80 || map[akpos(p)].z>150 || !ok);
 }
-int collisionpoint(vector *pp, int k, int mo) {
-    vector u;
+int collisionpoint(struct vector *pp, int k, int mo) {
+    struct vector u;
     subv3(pp,&obj[k].pos,&u);
     return norme(&u)<=mod[mo].rayoncollision+mod[obj[k].model].rayoncollision;
 }
@@ -183,11 +183,14 @@ void affjauge(float j) {
 }
 
 void initworld() {
-    int i,j,k; vector p; matrix m;
-    bombe=(bombe_s*)malloc(NBBOT*4*sizeof(bombe_s));    // FIXME: most bots have 2 or 4 bombs, but spitflame has 7!
-    vehic=(vehic_s*)malloc(NBTANKBOTS*sizeof(vehic_s));
+    int i,j,k;
+    struct vector p;
+    struct matrix m;
+   
+    bombe = malloc(NBBOT*4*sizeof(*bombe));    // FIXME: most bots have 2 or 4 bombs, but spitflame has 7!
+    vehic = malloc(NBTANKBOTS*sizeof(*vehic));
     initmap();
-    obj=(objet*)malloc(sizeof(objet)*50000);
+    obj = malloc(sizeof(*obj)*50000);
     // caméra
     obj[0].objref=-1;
     obj[0].type=CAMERA;
@@ -200,7 +203,7 @@ void initworld() {
     printf("Adding airfields...\n");
     for (j=0; j<4; j++) addbabase(j);
     // zeppelins
-    if ((zep=malloc(sizeof(zep_s)*NBZEPS))==NULL) {
+    if ((zep = malloc(sizeof(*zep)*NBZEPS))==NULL) {
         perror("malloc zep"); exit(-1);
     }
     for (i=0; i<NBZEPS; i++) {
@@ -218,7 +221,7 @@ void initworld() {
     for (i=0; i<NBVILLAGES; i++) {
         int nbm=drand48()*20+5;
         int ok,k;
-        vector pp;
+        struct vector pp;
         int a;
         do {
             int bos = MAXINT;
@@ -254,7 +257,7 @@ void initworld() {
         pp.z=40;
         addnobjet(NBNAVIONS+NBBASES+1, &pp, &mat_id, 1);
         for (j=0; j<nbm; j++) { // des maisons
-            matrix m;
+            struct matrix m;
             randomhm(&m);
             do {
                 ok=1;
@@ -270,7 +273,7 @@ void initworld() {
         village[i].o2=nbobj;
         village[i].nom=nomvillage[i];
         for (j=0; j<nbm>>1; j++) {  // des reverberes
-            matrix m;
+            struct matrix m;
             randomhm(&m);
             do {
                 ok=1;
@@ -290,7 +293,7 @@ void initworld() {
     for (i=0; i<NBVILLAGES-1; i++) for (j=i+1; j<NBVILLAGES; j++) {
         int k;
         float cp;
-        vector v;
+        struct vector v;
         copyv(&v,&village[i].p);
         subv(&v,&village[j].p);
         if (norme(&v)<ECHELLE*5) continue;
@@ -318,7 +321,7 @@ void initworld() {
         int nbr=drand48()*5+5;  // prop à la taille de la ville
         int r;
         for (r=0; r<nbr; r++) {
-            vector dest;
+            struct vector dest;
             randomv(&dest);
             mulv(&dest,ECHELLE*(5+10*drand48()));   // prop à la taille de la ville
             addv(&dest,&village[i].p);
@@ -331,7 +334,7 @@ void initworld() {
     printf("Adding footpaths...\n");
     for (i=0; i<150; i++) {
         int ri=EndMotorways+drand48()*(routeidx-EndMotorways-1);
-        vector dest,v;
+        struct vector dest,v;
         if (route[ri].ak!=-1 && route[ri+1].ak!=-1) {
             copyv(&v,&route[ri+1].i);
             subv(&v,&route[ri].i);
@@ -349,7 +352,7 @@ void initworld() {
         affjauge(.75/(3.*150.));
     }
 /*  {
-        vector u,v;
+        struct vector u,v;
         u.x=-10*ECHELLE+2345; u.y=10*ECHELLE+1234; u.z=z_ground(u.x,u.y, true);
         v.x=10*ECHELLE-2345; v.y=10*ECHELLE+1234; v.z=z_ground(v.x,v.y, true);
         traceroute(&u,&v);
@@ -359,9 +362,9 @@ void initworld() {
     printf("Adding villages...\n");
     // des fermes et des usines
     for (i=0; i<(NBVILLAGES*10); i++) {
-        vector pp;
+        struct vector pp;
         int ri;
-        matrix m;
+        struct matrix m;
         do ri=EndRoads+drand48()*(routeidx-EndRoads-1);
         while (route[ri].ak!=-1 && route[ri+1].ak!=-1);
         copyv(&p,&route[ri].i);
@@ -381,9 +384,9 @@ void initworld() {
     printf("Adding farms...\n");
     // des maisons au bord des routes
     for (i=0; i<200; i++) {
-        vector pp;
+        struct vector pp;
         int ri;
-        matrix m;
+        struct matrix m;
         do ri=EndRoads+drand48()*(routeidx-EndRoads-1);
         while (route[ri].ak!=-1 && route[ri+1].ak!=-1);
         copyv(&p,&route[ri].i);
@@ -399,9 +402,9 @@ void initworld() {
     // des moulins
     DebMoulins=nbobj;
     for (i=0; i<NBVILLAGES*2; i++) {
-        vector pp;
+        struct vector pp;
         int ri;
-        matrix m;
+        struct matrix m;
         do ri=EndRoads+drand48()*(routeidx-EndRoads-1);
         while (route[ri].ak!=-1 && route[ri+1].ak!=-1);
         copyv(&p,&route[ri].i);
@@ -420,14 +423,14 @@ void initworld() {
         int nbn=drand48()*5+2;
         copyv(&p,&village[i%NBVILLAGES].p);
         for (k=0; k<2; k++) {
-            vector pt;
+            struct vector pt;
             randomv(&pt);
             mulv(&pt,ECHELLE*6);
             addv(&pt,&p);
             pt.z=0;
             for (j=0; j<nbn; j++) {
-                vector pp;
-                matrix m;
+                struct vector pp;
+                struct matrix m;
                 randomhm(&m);
                 randomv(&pp);
                 mulv(&pp,ECHELLE*.5*pow(nbn,.1));
@@ -440,7 +443,7 @@ void initworld() {
     }
     printf("Adding vehicules...\n");
     // des véhicules en décors
-    voiture=(voiture_s*)malloc((NBVOITURES+1)*sizeof(voiture_s));
+    voiture = malloc((NBVOITURES+1)*sizeof(*voiture));
     for (i=0; i<NBVOITURES/4; i++) {
         voiture[i].r=randomvroute(&p);
         voiture[i].sens=1;
@@ -477,7 +480,7 @@ void initworld() {
     printf("Adding tractors...\n");
     // des tracteurs dans les champs
     for (i=0; i<50; i++) {
-        matrix m;
+        struct matrix m;
         randomhm(&m);
         randomvferme(&p);
         posem(&m,&p);
@@ -487,7 +490,7 @@ void initworld() {
     printf("Adding trees...\n");
     // et des arbres
     for (i=0; i<150; i++) {
-        matrix m;
+        struct matrix m;
         randomhm(&m);
         randomvferme(&p);
         posem(&m,&p);
@@ -495,7 +498,7 @@ void initworld() {
         addnobjet(NBNAVIONS+NBBASES+NBMAISONS+NBVEHICS+3, &p, &m, 1);
     }
 /*  for (i=0; i<1; i++) {
-        matrix m;
+        struct matrix m;
         randomhm(&m);
         randomvferme(&p);
         p.z=20;
@@ -508,7 +511,7 @@ void initworld() {
     bot[bmanu].navion=monvion-1;
     //if (NetCamp()==-1) {printf("Net Error\n"); exit(-1); }
     printf("Playing with %d planes & %d tanks\nPlayers :\n",NBBOT,NBTANKBOTS);
-    for (i=0; i<NbHosts; i++) printf("%s, camp %d, in a %s\n",playbotname[i],bot[i].camp+1, viondesc[bot[i].navion].name);
+    for (i=0; i<NbHosts; i++) printf("%s, camp %d, in a %s\n",playbotname[i],bot[i].camp+1, plane_desc[bot[i].navion].name);
     for (i=0; i<NBBOT; i++) {
         int c=i&3, b;
         if (i>=NbHosts) bot[i].camp=c;
@@ -555,8 +558,8 @@ void initworld() {
         bot[i].aerobatic = MANEUVER;
         bot[i].gunned = -1;
         bot[i].fiulloss = bot[i].bloodloss = bot[i].motorloss = bot[i].aeroloss = 0;
-        bot[i].fiul = viondesc[bot[i].navion].fiulmax;
-        bot[i].bullets = viondesc[bot[i].navion].bulletsmax;
+        bot[i].fiul = plane_desc[bot[i].navion].fiulmax;
+        bot[i].bullets = plane_desc[bot[i].navion].bulletsmax;
         bot[i].cibv = bot[i].cibt = -1;
         bot[i].gold = i > NbHosts ? 30000:2000;
         bot[i].is_flying = SpaceInvaders;
@@ -605,7 +608,7 @@ void initworld() {
         mulv(&p,ECHELLE*(WMAP-5));
         p.z=drand48()*5000+20000;
         for (j=0; j<nbn; j++) {
-            vector pp;
+            struct vector pp;
             randomv(&pp);
             mulv(&pp,ECHELLE*pow(nbn,.3));
             pp.z/=2.;

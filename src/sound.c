@@ -39,19 +39,19 @@ static bool buffer_looping[NB_SAMPLES]; // tells whether the sample is supposed 
 static float buffer_gain[NB_SAMPLES];
 static ALuint sources[NB_VOICES];
 static ALuint last_played[NB_VOICES];
-static vector listener_pos;
+static struct vector listener_pos;
 static struct {
-    sample_e samp;  // or ~0 if unset
+    enum snd_sample samp;  // or ~0 if unset
     float pitch;
-    vector saved_pos;   // copy of given pos in case it was not an attach
-    vector const *pos;
+    struct vector saved_pos;   // copy of given pos in case it was not an attach
+    struct vector const *pos;
     bool relative;
     bool anchored;
 } play[NB_VOICES];  // to store playing sounds until listener's position is known
 
 #define MAX_DIST (40. * ONE_METER)
 
-vector voices_in_my_head = { 0., 1., 0. };  // upstairs...
+struct vector voices_in_my_head = { 0., 1., 0. };  // upstairs...
 
 static char const *al_strerror(ALenum err)
 {
@@ -180,7 +180,7 @@ static ALenum al_format(unsigned nb_channels, unsigned bits_per_sample)
     assert(!"Unsuported wave format");
 }
 
-int load_wave(sample_e samp, char const *fn, bool loop, float gain)
+int load_wave(enum snd_sample samp, char const *fn, bool loop, float gain)
 {
     if (! with_sound) return 0;
 
@@ -258,7 +258,7 @@ exit0:
     return -1;
 }
 
-int loadsample(sample_e samp, char const *fn, bool loop, float gain)
+int loadsample(enum snd_sample samp, char const *fn, bool loop, float gain)
 {
     if (! with_sound) return 0;
 
@@ -289,7 +289,7 @@ exit0:
     return -1;
 }
 
-void playsound(enum voice voice, sample_e samp, float pitch, vector const *pos, bool relative, bool anchored)
+void playsound(enum snd_voice voice, enum snd_sample samp, float pitch, struct vector const *pos, bool relative, bool anchored)
 {
     assert(voice < ARRAY_LEN(sources));
     assert(samp < ARRAY_LEN(buffers));
@@ -315,20 +315,20 @@ void playsound(enum voice voice, sample_e samp, float pitch, vector const *pos, 
     }
 }
 
-static void do_play(enum voice voice)
+static void do_play(enum snd_voice voice)
 {
     ALenum err;
 
-    sample_e const samp = play[voice].samp;
+    enum snd_sample const samp = play[voice].samp;
     if (samp >= NB_SAMPLES) return;
     float const pitch = play[voice].pitch;
-    vector const *pos = play[voice].pos;
+    struct vector const *pos = play[voice].pos;
     bool const relative = play[voice].relative;
 #   ifdef PRINT_DEBUG
     printf("actualy play sample %d, pos=%"PRIVECTOR", %s\n", samp, PVECTOR(*pos), relative ? "relative":"absolute");
 #   endif
 
-    vector d = *pos;
+    struct vector d = *pos;
     if (! relative) subv(&d, &listener_pos);
     if (norme2(&d) > MAX_DIST*MAX_DIST) {
 #       ifdef PRINT_DEBUG
@@ -371,7 +371,7 @@ static void do_play(enum voice voice)
     }
 }
 
-void update_listener(vector const *pos, vector const *velocity, matrix const *rot)
+void update_listener(struct vector const *pos, struct vector const *velocity, struct matrix const *rot)
 {
     if (! with_sound) return;
 

@@ -70,7 +70,7 @@ extern inline int submap_get(int k);
  * So this array gives the color of any altitude.
  * It's also used to draw the ingame map.
  */
-pixel zcol[256];
+struct pixel zcol[256];
 
 /*
  * Map Generation
@@ -173,7 +173,7 @@ static void dig(int dy) {
 
 void initmap(void) {
     int x,y,i;
-    pixel colterrain[4] = {
+    struct pixel colterrain[4] = {
         { 150,150,20 }, // glouglou
         { 111,180,215 },    // désert
         { 40, 140, 70 },    // prairie
@@ -290,7 +290,7 @@ static int some_poly_were_visible;
 
 // Clip segment p1-p2 by the frustum zmin plan (p1->z is below FRUSTUM_ZMIN)
 #define FRUSTUM_ZMIN (32<<8)
-static void do_clip(vecic *p1, vecic *p2, vecic *pr) {
+static void do_clip(struct vecic *p1, struct vecic *p2, struct vecic *pr) {
     int const dz1 = FRUSTUM_ZMIN - p1->v.z;
     int const dz2 = p2->v.z - p1->v.z;
     pr->v.x = p1->v.x + ((dz1 * (((p2->v.x-p1->v.x)<<8)/dz2))>>8);
@@ -301,15 +301,15 @@ static void do_clip(vecic *p1, vecic *p2, vecic *pr) {
     pr->c.b = p1->c.b + ((dz1 * ((((int)p2->c.b-p1->c.b)<<8)/dz2))>>8);
 }
 
-static void poly(vecic *p1, vecic *p2, vecic *p3) {
-    vect2dc l1,l2,l3;
+static void poly(struct vecic *p1, struct vecic *p2, struct vecic *p3) {
+    struct vect2dc l1,l2,l3;
     proji(&l1.v, &p1->v);   // FIXME: should not project the same pt several times!
     l1.c = p1->c;
     proji(&l2.v, &p2->v);
     l2.c = p2->c;
     proji(&l3.v, &p3->v);
     l3.c = p3->c;
-    pixel mix = {
+    struct pixel mix = {
         .r = (l1.c.r + l2.c.r + l3.c.r) / 3,
         .g = (l1.c.g + l2.c.g + l3.c.g) / 3,
         .b = (l1.c.b + l2.c.b + l3.c.b) / 3,
@@ -321,9 +321,9 @@ static void poly(vecic *p1, vecic *p2, vecic *p3) {
     }
 }
 
-void polyclip(vecic *p1, vecic *p2, vecic *p3) {
+void polyclip(struct vecic *p1, struct vecic *p2, struct vecic *p3) {
     int i;
-    vecic pp1, pp2;
+    struct vecic pp1, pp2;
     i  =  p1->v.z < FRUSTUM_ZMIN;
     i += (p2->v.z < FRUSTUM_ZMIN)<<1;
     i += (p3->v.z < FRUSTUM_ZMIN)<<2;
@@ -523,7 +523,7 @@ static void render_map(
 }
 
 // These are inited by draw_ground_and_objects() and used also by it's callbacks
-static veci mx, my, mz; // World map base relative to camera, in 24:8 fixed prec.
+static struct veci mx, my, mz; // World map base relative to camera, in 24:8 fixed prec.
 static int camera_x, camera_y;  // location of the camera in map[]
 static int defered_tiles[9], nb_defered_tiles;  // some tiles which objects we want to draw last
 
@@ -580,19 +580,19 @@ static void get_map_z(int x, int y, int *params)
 static void draw_tile(int *sw, int *nw, int *se, int *ne, int xo, int ro)
 {
     // Draw a mere tile, without submap
-    vecic p1 = {
+    struct vecic p1 = {
         .v = { .x=sw[xo], .y=sw[xo+1], .z=sw[xo+2] },
         .c = { .r=sw[ro]>>8, .g=sw[ro+1]>>8, .b=sw[ro+2]>>8 }
     };
-    vecic p2 = {
+    struct vecic p2 = {
         .v = { .x=nw[xo], .y=nw[xo+1], .z=nw[xo+2] },
         .c = { .r=nw[ro]>>8, .g=nw[ro+1]>>8, .b=nw[ro+2]>>8 }
     };
-    vecic p3 = {
+    struct vecic p3 = {
         .v = { .x=se[xo], .y=se[xo+1], .z=se[xo+2] },
         .c = { .r=se[ro]>>8, .g=se[ro+1]>>8, .b=se[ro+2]>>8 }
     };
-    vecic p4 = {
+    struct vecic p4 = {
         .v = { .x=ne[xo], .y=ne[xo+1], .z=ne[xo+2] },
         .c = { .r=ne[ro]>>8, .g=ne[ro+1]>>8, .b=ne[ro+2]>>8 }
     };
@@ -664,7 +664,7 @@ static void render_map_tile(int x, int y, struct orient_param const *orient, int
 // Return the coordinates of map[x,y] relative to camera
 static void cam_to_tile(int *v, int x, int y)
 {
-    vector v_ = { (x-WMAP/2)<<NECHELLE, (y-WMAP/2)<<NECHELLE, 0. };
+    struct vector v_ = { (x-WMAP/2)<<NECHELLE, (y-WMAP/2)<<NECHELLE, 0. };
     subv(&v_, &obj[0].pos);
     mulmtv(&obj[0].rot, &v_, &v_);
     v[0] = v_.x*256.;
@@ -792,8 +792,8 @@ void gouraud_section(void) {
     }
 }
 
-bool poly_gouraud(vect2dc *p1, vect2dc *p2, vect2dc *p3) {
-    vect2dc *tmp, *p_maxx, *p_minx;
+bool poly_gouraud(struct vect2dc *p1, struct vect2dc *p2, struct vect2dc *p3) {
+    struct vect2dc *tmp, *p_maxx, *p_minx;
     int q1, q2, q3=0, qxx, ql2;
     int qr1, qr2, qr3=0, qg1, qg2, qg3=0, qb1, qb2, qb3=0, qrr, qgg, qbb;
     // order points in ascending Y

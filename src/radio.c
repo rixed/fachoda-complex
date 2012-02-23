@@ -171,12 +171,12 @@ void newprime() {
             do {k++; j=NBBOT*drand48();} while (k<10 && bot[j].camp==-1);
             if (k<10) {
                 if (j<NbHosts) {
-                    strcpy(botname,viondesc[bot[j].navion].name);
+                    strcpy(botname,plane_desc[bot[j].navion].name);
                     strcat(botname," (");
                     strcat(botname,&(playbotname[j])[0]);
                     strcat(botname,")");
                 }
-                sprintf(msgactu,botavionmsg[bot[j].camp==campactu][(int)(drand48()*NBMSG)][campactu][lang],j<NbHosts?botname:viondesc[bot[j].navion].name,obj[bot[j].vion].pos.x,obj[bot[j].vion].pos.y);
+                sprintf(msgactu,botavionmsg[bot[j].camp==campactu][(int)(drand48()*NBMSG)][campactu][lang],j<NbHosts?botname:plane_desc[bot[j].navion].name,obj[bot[j].vion].pos.x,obj[bot[j].vion].pos.y);
                 prime[i].camp=campactu;
                 prime[i].reward=1000*drand48()+(bot[j].camp==campactu?4000:2000);
                 prime[i].no=bot[j].vion;

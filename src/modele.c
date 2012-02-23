@@ -26,7 +26,7 @@
 #include "file.h"
 
 //    NOM,                      NOM LIGHT,    PERE,PLAT,BOMB,MOBIL,PLATLIGHT
-piece_s zeppelin[] = {
+struct part zeppelin[] = {
     { "zeppelin/Ballon",        "zeppelin/Ballon",  0,0,0,0,0 },
     { "zeppelin/MoyG",      NULL,                       0,0,0,2,0 },
     { "zeppelin/MoyD",      NULL,                       0,0,0,2,0 },
@@ -56,7 +56,7 @@ piece_s zeppelin[] = {
     { "zeppelin/Tige",      NULL,                       0,0,0,1,0 }
 };
 
-piece_s snophill[] = {
+struct part snophill[] = {
     { "snophill/Cabine",        "snoplight/Cabine", 0,0,0,0,0 },
     { "snophill/Moyeux",        NULL,   0,0,0,2,0 },
     { "snophill/CharnProf", NULL,   0,0,0,2,0 },
@@ -103,7 +103,7 @@ piece_s snophill[] = {
     { "snophill/LunD",      NULL, 0,0,0,1,0 },
     { "snophill/PosCam",        NULL,   0,0,0,1,0 }
 };
-piece_s spitflame[] = {
+struct part spitflame[] = {
     { "spitflame/Cabine",       "spitflamelight/Cabine",    0,0,0,0,0 },
     { "spitflame/Moyeux",       NULL,   0,0,0,2,0 },
     { "spitflame/CharnProf",    NULL,   0,0,0,2,0 },
@@ -153,7 +153,7 @@ piece_s spitflame[] = {
     { "spitflame/PosCam",       NULL, 0,0,0,1,0 }
 };
 
-piece_s piecenaviontoy[] = {
+struct part piecenaviontoy[] = {
     { "toyvion/Cabine",     "toyvionlight/Cabine",  0,0,0,0,0 },
     { "toyvion/Moyeux",     "toyvionlight/Moyeux",  0,0,0,2,0 },
     { "toyvion/CharnProf",  NULL,   0,0,0,2,0 },
@@ -201,7 +201,7 @@ piece_s piecenaviontoy[] = {
     { "toyvion/Verierre",   "toyvionlight/Verierre",    0,0,0,1,0 },
     { "toyvion/PosCam",     NULL,   0,0,0,1,0 }
 };
-piece_s piecenavion3[] = {
+struct part piecenavion3[] = {
     { "corsair/Cabine",               "corsairlight/Cabine",                     0,0,0,0,0 },
     { "corsair/MoyeuPale",            "corsairlight/MoyeuPale",                  0,0,0,2,0 },
     { "corsair/CharniereGauche",      "corsairlight/CharniereGauche",            0,0,0,2,0 },
@@ -264,7 +264,7 @@ piece_s piecenavion3[] = {
     { "corsair/Verriere","corsairlight/Verriere", 0,0,0,1,0 },
     { "corsair/PosCam",NULL, 0,0,0,1,0 },
 };
-piece_s piecenavion2[] = {
+struct part piecenavion2[] = {
     { "d501/Cockpit",           "d501light/Cockpit",                 0,0,0,0,0 },
     { "d501/Moyeu",         "d501light/Moyeu",                   0,0,0,2,0 },
     { "d501/CharnVProf",        NULL,            0,0,0,2,0 },
@@ -332,7 +332,7 @@ piece_s piecenavion2[] = {
     { "d501/PosCam",            NULL,                    0,0,0,1,0 },
 };
 
-piece_s piecenavion4[] = {
+struct part piecenavion4[] = {
     { "moshito/Cabine",             "moshitolight/Cabine",                   0,0,0,0,0 },
     { "moshito/MoyeuG",             "moshitolight/MoyeuG",                   0,0,0,2,0 },
     { "moshito/MoyeuD",             "moshitolight/MoyeuD",                   0,0,0,2,0 },
@@ -405,7 +405,7 @@ piece_s piecenavion4[] = {
     { "moshito/PosCam",             NULL,                                0,0,0,1,0 },
 };
 
-piece_s piecepiste[] = {
+struct part piecepiste[] = {
     { "base1/Mark1",                NULL,                    0,0,0,-1,0 },
     { "base1/Mark2",                NULL,                    0,0,0,-1,0 },
     { "base1/Mark3",                NULL,                    0,0,0,-1,0 },
@@ -443,11 +443,11 @@ piece_s piecepiste[] = {
     { "base1/Light13",          "base1/Light13",                0,0,2,-1,0 },
     { "base1/Light14",          "base1/Light14",                0,0,2,-1,0 },
 };
-piece_s piecetour[] = {
+struct part piecetour[] = {
     { "base1/Tour1",    "base1/Tour1",  0,0,3,-1,0 },
     { "base1/Tour2",    "base1/Tour2",  0,0,0,-1,0 }
 };
-piece_s piecemaison0[] = {
+struct part piecemaison0[] = {
     { "maison/Murs",                "maison/Murs",   0,0,3,-1,0 },
     { "maison/Toit",                "maison/Toit",   0,0,3,-1,0 },
     { "maison/Cheminee2",       NULL,                0,0,0,-1,0 },
@@ -457,11 +457,11 @@ piece_s piecemaison0[] = {
     { "maison/Porte",               NULL,                0,0,3,-1,0 },
     { "maison/Rebord",          NULL,                0,0,3,-1,0 }
 };
-piece_s reverbere[] = {
+struct part reverbere[] = {
     {"reverbere/Pied",          "reverbere/Pied",   0,0,3,-1,0 },
     {"reverbere/Tete",          "reverbere/Tete",   0,0,2,-1,0 }
 };
-piece_s pieceeglise[] = {
+struct part pieceeglise[] = {
     { "eglise/Nef2",            "egliselight/Nef",          0,0,3,-1,0 },
     { "eglise/Nef1",            NULL,                               0,0,3,-1,0 },
     { "eglise/Nef3",            NULL,                               0,0,3,-1,0 },
@@ -478,7 +478,7 @@ piece_s pieceeglise[] = {
     { "eglise/ContreFort7", "egliselight/ContreFort7",  0,0,3,-1,1 },
     { "eglise/ContreFort8", "egliselight/ContreFort8",  0,0,3,-1,1 }
 };
-piece_s pieceferme[] = {
+struct part pieceferme[] = {
     { "ferme/Hab1",         "ferme/Hab1",                   0,0,3,-1,0 },
     { "ferme/Hab2",         "ferme/Hab2",                   0,0,3,-1,0 },
     { "ferme/Toit1",            "ferme/Toit1",                  0,0,3,-1,0 },
@@ -493,11 +493,11 @@ piece_s pieceferme[] = {
     { "ferme/Poteau2",      "ferme/Poteau2",                0,0,3,-1,0 },
     { "ferme/Poteau3",      "ferme/Poteau3",                0,0,3,-1,0 }
 };
-piece_s pieceusine[] = {
+struct part pieceusine[] = {
     { "usine/Usine",    "usine/Usine",  0,0,3,-1,0 },
     { "usine/Cheminee", "usine/Cheminee",   0,0,3,-1,0 }
 };
-piece_s moulin[] = {
+struct part moulin[] = {
     { "moulin/Moulin",  "moulin/Moulin",    0,0,3,-1,0 },
     { "moulin/Moyeu",       "moulin/Moyeu", 0,0,3,2,0 },    // doit etre bombardable sinon c'est DECO
     { "moulin/Pale1",       "moulin/Pale1", 1,1,0,1,1 },
@@ -509,7 +509,7 @@ piece_s moulin[] = {
     { "moulin/Sac3",        "moulin/Sac3",      0,0,0,-1,0 },
     { "moulin/Sac4",        "moulin/Sac4",      0,0,0,-1,0 }
 };
-piece_s piecevehic0[] = {
+struct part piecevehic0[] = {
     { "tank/Carlingue",         "tanklight/Carlingue",      0,0,3,0,0 },
     { "tank/Tourelle",          "tanklight/Tourelle",       0,0,0,2,0 },
     { "tank/Rotor",             NULL,                               1,0,0,2,0 },
@@ -520,19 +520,19 @@ piece_s piecevehic0[] = {
     { "tank/ChenilleG",         "tanklight/ChenilleG",      0,0,0,1,0 },
     { "tank/ChenilleD",         "tanklight/ChenilleD",      0,0,0,1,0 },
 };
-piece_s piecevehic1[] = {
+struct part piecevehic1[] = {
     { "vehic/Camion","vehic/Camion",        0,0,3,0,0 },
     { "vehic/Roues","vehic/Roues",      0,1,3,1,0 },
     { "vehic/Phare1",NULL,                  0,0,2,1,0 },
     { "vehic/Phare2",NULL,                  0,0,2,1,0 }
 };
-piece_s piecevehic2[] = {
+struct part piecevehic2[] = {
     { "vehic/Camionnette","vehic/Camionnette",0,0,3,0,0 },
     { "vehic/Rouesnette","vehic/Rouesnette",0,1,3,1,0 },
     { "vehic/Pharenette1",NULL,             0,0,2,1,0 },
     { "vehic/Pharenette2",NULL,             0,0,2,1,0 }
 };
-piece_s tracteur[] = {
+struct part tracteur[] = {
     { "tracteur/Corp",      NULL,                       0,0,3,0,0 },
     { "tracteur/Capot",     "tracteur/Capot",       0,0,3,1,0 },
     { "tracteur/RoueArD",   NULL,                       0,0,3,1,0 },
@@ -547,23 +547,23 @@ piece_s tracteur[] = {
     { "tracteur/PhareG",        NULL,                       0,0,2,1,0 },
     { "tracteur/Volant",        NULL,                       0,0,0,1,0 }
 };
-piece_s van[] = {
+struct part van[] = {
     { "van/Van",    "van/VanLight", 0,0,3,0,0 },
     { "van/RouesAr",    NULL,   0,0,3,1,0 },
     { "van/RouesAv",    NULL,   0,0,3,1,0 },
     { "van/PhareD", NULL,   0,0,2,1,0 },
     { "van/PhareG", NULL,   0,0,2,1,0 }
 };
-piece_s piecedeco0[] = {
+struct part piecedeco0[] = {
     { "sol/Cratere0","sol/Cratere0", 0,0,0,-1,0 }
 };
-piece_s piecedeco1[] = {
+struct part piecedeco1[] = {
     { "sol/Tronc0","sol/Tronc0", 0,0,3,-1,0 },
     { "sol/Branche01","sol/Branche01", 0,0,0,-1,0 },
     { "sol/Branche02","sol/Branche02", 0,0,0,-1,0 },
     { "sol/Branche03","sol/Branche03", 0,0,0,-1,0 }
 };
-piece_s piecearbre2[] = {
+struct part piecearbre2[] = {
     { "arbre2/Tronc",           "arbre2/Tronc",      0,0,3,-1,0 },
     { "arbre2/Branche1",        "arbre2/Branche1",   0,0,0,-1,0 },
     { "arbre2/Branche2",        "arbre2/Branche2",   0,0,0,-1,0 },
@@ -573,7 +573,7 @@ piece_s piecearbre2[] = {
     { "arbre2/Feuille3",        "arbre2/Feuille3",   0,0,0,-1,0 },
     { "arbre2/Feuille4",        "arbre2/Feuille4",   0,0,0,-1,0 }
 };
-piece_s piecedeco2[] = {
+struct part piecedeco2[] = {
     { "bovide/Bidoche",     "bovide/Bidoche",                    0,0,3,-1,0 },
     { "bovide/Lait",            "bovide/Lait",                       0,0,0,-1,0 },
     { "bovide/OreilleG",        NULL,                    0,1,0,-1,0 },
@@ -588,16 +588,16 @@ piece_s piecedeco2[] = {
     { "bovide/CorneG",      NULL,                    0,1,0,-1,0 },
     { "bovide/CorneD",      NULL,                    0,1,0,-1,0 }
 };
-piece_s piecenuage[] = {
+struct part piecenuage[] = {
     { "sol/Nuage",NULL, 0,1,0,-1,0 }
 };
-piece_s piecefumee[] = {
+struct part piecefumee[] = {
     { "sol/Nuage",NULL, 0,1,0,0,0 }
 };
-piece_s piecegrav0[] = {
+struct part piecegrav0[] = {
     { "sol/Debris0","sol/Debris0", 0,1,0,0,1 }
 };
-viondesc_s viondesc[NBNAVIONS] = {
+struct plane_desc plane_desc[NBNAVIONS] = {
     //                                    motor,lift,drag
     {"dewoitine",5,1000,1,0,0,50,55,2,0,0,1,0.85,1.2,1.1, 600,200000, { 7, 8, 9}},
     {"corsair",  0,5000,1,2,0,49,50,4,0,0,0,1.07,1.0,1.0, 800,500000, {24,25,23}},
@@ -606,7 +606,7 @@ viondesc_s viondesc[NBNAVIONS] = {
     {"spitflame",0,4000,1,0,0,29,30,4,0,0,0,1.00,1.1,1.0,1300,430000, {24,25,26}},
     {"snophill", 3, 800,1,0,0,31,32,1,0,0,1,0.78,1.4,1.5, 500,170000, {26,27,28}}
 };
-nobjet_s nobjet[] = {
+struct n_object n_object[] = {
     { 65, piecenavion2,0 }, { 61, piecenavion3,0}, { 70, piecenavion4,0 }, {46, piecenaviontoy,0 }, {47,spitflame,0 }, {45, snophill,0 },
     { 22+14, piecepiste ,0 }, { 2, piecetour ,0 },
     { 8, piecemaison0 ,0 }, { 15, pieceeglise ,0 }, { 13, pieceferme ,0 }, { 2, pieceusine ,0 }, {10, moulin ,0 }, {2, reverbere ,0 },
@@ -619,18 +619,18 @@ nobjet_s nobjet[] = {
 void loadmodele(int n, char *fn, char *fnlight, int type, int pere, int plat, int plat2, int no, int fixe) {
     FILE *in;
     int i, j;
-    facelight ftmp;
-    vector u,v;
+    struct face_light ftmp;
+    struct vector u,v;
     char fncol[200];
     in = file_open(fn, DATADIR, "r");
-    file_read(&mod[n].offset, sizeof(vector), in);
+    file_read(&mod[n].offset, sizeof(struct vector), in);
     file_read(&mod[n].nbpts[0], sizeof(int), in);
     file_read(&mod[n].nbfaces[0], sizeof(int), in);
-    mod[n].pts[0]=malloc(mod[n].nbpts[0]*sizeof(vector));
-    mod[n].fac[0]=malloc(mod[n].nbfaces[0]*sizeof(face));
-    file_read(mod[n].pts[0], sizeof(vector) * mod[n].nbpts[0], in);
+    mod[n].pts[0]=malloc(mod[n].nbpts[0]*sizeof(struct vector));
+    mod[n].fac[0]=malloc(mod[n].nbfaces[0]*sizeof(struct face));
+    file_read(mod[n].pts[0], sizeof(struct vector) * mod[n].nbpts[0], in);
     for (i=0; i<mod[n].nbfaces[0]; i++) {
-        file_read(&ftmp, sizeof(facelight), in);
+        file_read(&ftmp, sizeof(ftmp), in);
         for (j=0; j<3; j++) mod[n].fac[0][i].p[j]=ftmp.p[j];
         // normale à la face
         if (plat)
@@ -643,7 +643,7 @@ void loadmodele(int n, char *fn, char *fnlight, int type, int pere, int plat, in
         }
     }
     // normales aux points
-    mod[n].norm[0]=malloc(mod[n].nbpts[0]*sizeof(vector));
+    mod[n].norm[0]=malloc(mod[n].nbpts[0]*sizeof(struct vector));
     for (i=0; i<mod[n].nbpts[0]; i++) {
         copyv(&u,&vec_zero);
         for (j=0; j<mod[n].nbfaces[0]; j++) {
@@ -655,11 +655,11 @@ void loadmodele(int n, char *fn, char *fnlight, int type, int pere, int plat, in
     }
     fclose(in);
     // load colors
-    static pixel const black = { 0, 0, 0 };
+    static struct pixel const black = { 0, 0, 0 };
     sprintf(fncol,"%s.col",fn);
     in=file_open_try(fncol, DATADIR, "r");
     if (in) {
-        for (i=0; i<mod[n].nbfaces[0]; i++) file_read(&mod[n].fac[0][i].color,sizeof(pixel), in);
+        for (i=0; i<mod[n].nbfaces[0]; i++) file_read(&mod[n].fac[0][i].color,sizeof(struct pixel), in);
         fclose(in);
     } else {
         for (i=0; i<mod[n].nbfaces[0]; i++) mod[n].fac[0][i].color = black;
@@ -673,14 +673,14 @@ void loadmodele(int n, char *fn, char *fnlight, int type, int pere, int plat, in
         mod[n].nbfaces[1]=0;
     } else {
         in = file_open(fnlight, DATADIR, "r");
-        file_read(&u, sizeof(vector), in);
+        file_read(&u, sizeof(struct vector), in);
         file_read(&mod[n].nbpts[1], sizeof(int), in);
         file_read(&mod[n].nbfaces[1], sizeof(int), in);
-        mod[n].pts[1]=malloc(mod[n].nbpts[1]*sizeof(vector));
-        mod[n].fac[1]=malloc(mod[n].nbfaces[1]*sizeof(face));
-        file_read(mod[n].pts[1], sizeof(vector) * mod[n].nbpts[1], in);
+        mod[n].pts[1]=malloc(mod[n].nbpts[1]*sizeof(struct vector));
+        mod[n].fac[1]=malloc(mod[n].nbfaces[1]*sizeof(struct face));
+        file_read(mod[n].pts[1], sizeof(struct vector) * mod[n].nbpts[1], in);
         for (i=0; i<mod[n].nbfaces[1]; i++) {
-            file_read(&ftmp, sizeof(facelight), in);
+            file_read(&ftmp, sizeof(ftmp), in);
             for (j=0; j<3; j++) mod[n].fac[1][i].p[j]=ftmp.p[j];
             if (plat2) copyv(&mod[n].fac[1][i].norm,&vec_zero);
             else {
@@ -691,7 +691,7 @@ void loadmodele(int n, char *fn, char *fnlight, int type, int pere, int plat, in
             }
         }
         // normales aux points
-        mod[n].norm[1]=malloc(mod[n].nbpts[1]*sizeof(vector));
+        mod[n].norm[1]=malloc(mod[n].nbpts[1]*sizeof(struct vector));
         for (i=0; i<mod[n].nbpts[1]; i++) {
             copyv(&u,&vec_zero);
             for (j=0; j<mod[n].nbfaces[1]; j++) {
@@ -706,7 +706,7 @@ void loadmodele(int n, char *fn, char *fnlight, int type, int pere, int plat, in
         sprintf(fncol,"%s.col",fnlight);
         in=file_open_try(fncol, DATADIR, "r");
         if (in) {
-            for (i=0; i<mod[n].nbfaces[1]; i++) file_read(&mod[n].fac[1][i].color, sizeof(pixel), in);
+            for (i=0; i<mod[n].nbfaces[1]; i++) file_read(&mod[n].fac[1][i].color, sizeof(struct pixel), in);
             fclose(in);
         } else {
             // use detailed model colors
@@ -719,7 +719,7 @@ void loadmodele(int n, char *fn, char *fnlight, int type, int pere, int plat, in
     }
     mod[n].type=type;
     mod[n].pere=pere;
-    mod[n].nobjet=no;
+    mod[n].n_object=no;
     mod[n].fixe=fixe;
     mod[n].rayon=0;
     for (i=0; i<mod[n].nbpts[0]; i++) if (norme(&mod[n].pts[0][i])>mod[n].rayon) mod[n].rayon=norme(&mod[n].pts[0][i]);
@@ -733,12 +733,12 @@ void loadmodele(int n, char *fn, char *fnlight, int type, int pere, int plat, in
 void LoadModeles() {
     int i, s, nbmod=0, n;
 //  printf("Loading objects...\n");
-    for (i=0; i<NBNAVIONS+NBBASES+NBMAISONS+NBVEHICS+NBDECOS+NBZEPPELINS; i++) nbmod+=nobjet[i].nbpieces;
-    mod=(modele*)malloc((1+nbmod+1)*sizeof(modele));
+    for (i=0; i<NBNAVIONS+NBBASES+NBMAISONS+NBVEHICS+NBDECOS+NBZEPPELINS; i++) nbmod+=n_object[i].nbpieces;
+    mod = malloc((1+nbmod+1)*sizeof(*mod));
     // MODELE 0 : TIR
     copyv(&mod[0].offset,&vec_zero);
     for (i=0; i<NBNIVOLISS; i++) {
-        static vector ptstir[]={{-40,0,0},{40,0,0}};
+        static struct vector ptstir[]={{-40,0,0},{40,0,0}};
         mod[0].nbpts[i]=2; mod[0].nbfaces[i]=0;
         mod[0].pts[i]=mod[0].norm[i]=ptstir;
         mod[0].fac[i]=NULL;
@@ -748,88 +748,88 @@ void LoadModeles() {
     s=1;
     // LOAD NAVIONS
     for (n=0; n<NBNAVIONS; n++) {
-        nobjet[n].firstpiece=s;
-        for (i=0; i<nobjet[n].nbpieces; i++) {
+        n_object[n].firstpiece=s;
+        for (i=0; i<n_object[n].nbpieces; i++) {
             int t=AVION;
-            if (nobjet[n].piece[i].bomb==1) t=BOMB;
-            else if (nobjet[n].piece[i].bomb==2) t=PHARE;
-            else if (i==viondesc[n].tabbord) t=TABBORD;
-            loadmodele(s++, nobjet[n].piece[i].fn,nobjet[n].piece[i].fnlight, t, nobjet[n].firstpiece+nobjet[n].piece[i].pere, nobjet[n].piece[i].plat,nobjet[n].piece[i].platlight,n,nobjet[n].piece[i].mobil);
+            if (n_object[n].piece[i].bomb==1) t=BOMB;
+            else if (n_object[n].piece[i].bomb==2) t=PHARE;
+            else if (i==plane_desc[n].tabbord) t=TABBORD;
+            loadmodele(s++, n_object[n].piece[i].fn,n_object[n].piece[i].fnlight, t, n_object[n].firstpiece+n_object[n].piece[i].pere, n_object[n].piece[i].plat,n_object[n].piece[i].platlight,n,n_object[n].piece[i].mobil);
             affjauge(.25/nbmod);
         }
     }
     // LOAD BABASES
     for (; n<NBNAVIONS+NBBASES; n++) {
-        nobjet[n].firstpiece=s;
-        for (i=0; i<nobjet[n].nbpieces; i++) {
+        n_object[n].firstpiece=s;
+        for (i=0; i<n_object[n].nbpieces; i++) {
             int t=DECO;
-            if (nobjet[n].piece[i].bomb==2) t=PHARE;
-            else if (nobjet[n].piece[i].bomb==3) t=CIBGRAT;
-            loadmodele(s++, nobjet[n].piece[i].fn,nobjet[n].piece[i].fnlight, t, nobjet[n].firstpiece+nobjet[n].piece[i].pere, nobjet[n].piece[i].plat,nobjet[n].piece[i].platlight,n,nobjet[n].piece[i].mobil);
+            if (n_object[n].piece[i].bomb==2) t=PHARE;
+            else if (n_object[n].piece[i].bomb==3) t=CIBGRAT;
+            loadmodele(s++, n_object[n].piece[i].fn,n_object[n].piece[i].fnlight, t, n_object[n].firstpiece+n_object[n].piece[i].pere, n_object[n].piece[i].plat,n_object[n].piece[i].platlight,n,n_object[n].piece[i].mobil);
             affjauge(.25/nbmod);
         }
     }
     // LOAD MAISONS
     for (; n<NBNAVIONS+NBBASES+NBMAISONS; n++) {
-        nobjet[n].firstpiece=s;
-        for (i=0; i<nobjet[n].nbpieces; i++) {
+        n_object[n].firstpiece=s;
+        for (i=0; i<n_object[n].nbpieces; i++) {
             int t=DECO;
-            if (nobjet[n].piece[i].bomb==2) t=PHARE;
-            else if (nobjet[n].piece[i].bomb==3) t=CIBGRAT;
-            loadmodele(s++, nobjet[n].piece[i].fn,nobjet[n].piece[i].fnlight, t, nobjet[n].firstpiece+nobjet[n].piece[i].pere, nobjet[n].piece[i].plat,nobjet[n].piece[i].platlight,n,nobjet[n].piece[i].mobil);
+            if (n_object[n].piece[i].bomb==2) t=PHARE;
+            else if (n_object[n].piece[i].bomb==3) t=CIBGRAT;
+            loadmodele(s++, n_object[n].piece[i].fn,n_object[n].piece[i].fnlight, t, n_object[n].firstpiece+n_object[n].piece[i].pere, n_object[n].piece[i].plat,n_object[n].piece[i].platlight,n,n_object[n].piece[i].mobil);
             affjauge(.25/nbmod);
         }
     }
     // LOAD VEHICS
     for (; n<NBNAVIONS+NBBASES+NBMAISONS+NBVEHICS; n++) {
-        nobjet[n].firstpiece=s;
-        for (i=0; i<nobjet[n].nbpieces; i++) {
+        n_object[n].firstpiece=s;
+        for (i=0; i<n_object[n].nbpieces; i++) {
             int t=VEHIC;
-            if (nobjet[n].piece[i].bomb==2) t=PHARE;
-            loadmodele(s++, nobjet[n].piece[i].fn,nobjet[n].piece[i].fnlight, t, nobjet[n].firstpiece+nobjet[n].piece[i].pere, nobjet[n].piece[i].plat,nobjet[n].piece[i].platlight,n,nobjet[n].piece[i].mobil);
+            if (n_object[n].piece[i].bomb==2) t=PHARE;
+            loadmodele(s++, n_object[n].piece[i].fn,n_object[n].piece[i].fnlight, t, n_object[n].firstpiece+n_object[n].piece[i].pere, n_object[n].piece[i].plat,n_object[n].piece[i].platlight,n,n_object[n].piece[i].mobil);
             affjauge(.25/nbmod);
         }
     }
     // LOAD DECOS
     for (; n<NBNAVIONS+NBBASES+NBMAISONS+NBVEHICS+NBDECOS; n++) {
-        nobjet[n].firstpiece=s;
-        for (i=0; i<nobjet[n].nbpieces; i++) {
+        n_object[n].firstpiece=s;
+        for (i=0; i<n_object[n].nbpieces; i++) {
             int t;
             if (n==NBNAVIONS+NBBASES+NBMAISONS+NBVEHICS) t=NUAGE;
             else if (n==NBNAVIONS+NBBASES+NBMAISONS+NBVEHICS+1) t=FUMEE;
             else t=DECO;
-            loadmodele(s++, nobjet[n].piece[i].fn,nobjet[n].piece[i].fnlight, t, nobjet[n].firstpiece+nobjet[n].piece[i].pere, nobjet[n].piece[i].plat,nobjet[n].piece[i].platlight,n,nobjet[n].piece[i].mobil);
+            loadmodele(s++, n_object[n].piece[i].fn,n_object[n].piece[i].fnlight, t, n_object[n].firstpiece+n_object[n].piece[i].pere, n_object[n].piece[i].plat,n_object[n].piece[i].platlight,n,n_object[n].piece[i].mobil);
             affjauge(.25/nbmod);
         }
     }
     // LOAD ZEPPELINS
     for (; n<NBNAVIONS+NBBASES+NBMAISONS+NBVEHICS+NBDECOS+NBZEPPELINS; n++) {
-        nobjet[n].firstpiece=s;
-        for (i=0; i<nobjet[n].nbpieces; i++) {
-            loadmodele(s++, nobjet[n].piece[i].fn,nobjet[n].piece[i].fnlight, ZEPPELIN, nobjet[n].firstpiece+nobjet[n].piece[i].pere, nobjet[n].piece[i].plat,nobjet[n].piece[i].platlight,n,nobjet[n].piece[i].mobil);
+        n_object[n].firstpiece=s;
+        for (i=0; i<n_object[n].nbpieces; i++) {
+            loadmodele(s++, n_object[n].piece[i].fn,n_object[n].piece[i].fnlight, ZEPPELIN, n_object[n].firstpiece+n_object[n].piece[i].pere, n_object[n].piece[i].plat,n_object[n].piece[i].platlight,n,n_object[n].piece[i].mobil);
             affjauge(.25/nbmod);
         }
     }
 /*  // LOAD GRAVS
     for (; n<NBNAVIONS+NBBASES+NBMAISONS+NBVEHICS+NBDECOS+NBGRAVS; n++) {
-        nobjet[n].firstpiece=s;
-        for (i=0; i<nobjet[n].nbpieces; i++) {
-            loadmodele(s++, nobjet[n].piece[i].fn,nobjet[n].piece[i].fnlight, GRAV, nobjet[n].firstpiece+nobjet[n].piece[i].pere, nobjet[n].piece[i].plat,nobjet[n].piece[i].platlight,n,nobjet[n].piece[i].mobil);
+        n_object[n].firstpiece=s;
+        for (i=0; i<n_object[n].nbpieces; i++) {
+            loadmodele(s++, n_object[n].piece[i].fn,n_object[n].piece[i].fnlight, GRAV, n_object[n].firstpiece+n_object[n].piece[i].pere, n_object[n].piece[i].plat,n_object[n].piece[i].platlight,n,n_object[n].piece[i].mobil);
         }
     }*/
     for (s--; s>=0; s--) subv(&mod[s].offset,&mod[mod[s].pere].offset);
 }
-int addnobjet(int na, vector *p, matrix *m, uchar sol) {
+int addnobjet(int na, struct vector *p, struct matrix *m, uchar sol) {
     int i;
     int firstobj=nbobj;
-    for (i=nobjet[na].firstpiece; i<nobjet[na].firstpiece+nobjet[na].nbpieces; i++) {
-        vector pp;
+    for (i=n_object[na].firstpiece; i<n_object[na].firstpiece+n_object[na].nbpieces; i++) {
+        struct vector pp;
         if (mod[i].pere==i)
             addobjet(i, p, m, -1, sol);
         else {
             mulmv(m,&mod[i].offset,&pp);
-            addv(&pp,&obj[firstobj+mod[i].pere-nobjet[na].firstpiece].pos);
-            addobjet(i, &pp, m, mod[i].fixe<1?-1:firstobj+mod[i].pere-nobjet[na].firstpiece, 0);
+            addv(&pp,&obj[firstobj+mod[i].pere-n_object[na].firstpiece].pos);
+            addobjet(i, &pp, m, mod[i].fixe<1?-1:firstobj+mod[i].pere-n_object[na].firstpiece, 0);
         }
     }
     if (na<NBNAVIONS) { // ne pas afficher les poscam

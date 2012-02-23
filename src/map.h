@@ -33,7 +33,7 @@ struct tile {
 
 extern struct tile *map;
 
-extern pixel zcol[256];
+extern struct pixel zcol[256];
 
 /* Given a tile index k, return its submap number */
 static inline int submap_get(int k)
@@ -55,6 +55,6 @@ void draw_ground_and_objects(void);
 
 /* Draw a single Gouraud shaded triangle.
  * @return true if the triangle was actually visible. */
-bool poly_gouraud(vect2dc *p1, vect2dc *p2, vect2dc *p3);
+bool poly_gouraud(struct vect2dc *p1, struct vect2dc *p2, struct vect2dc *p3);
 
 #endif

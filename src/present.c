@@ -27,7 +27,7 @@
 #include "sound.h"
 #include "file.h"
 
-pixel32 *presentimg;
+struct pixel32 *presentimg;
 
 int IMGX, IMGY;
 
@@ -48,8 +48,8 @@ void jloadpresent() {
     jpeg_start_decompress(&cinfo);
     IMGX=cinfo.output_width;
     IMGY=cinfo.output_height;
-    if ((presentimg=(pixel32*)malloc((IMGX+1)*(IMGY+1)*sizeof(pixel32)))==NULL) {
-        perror("malloc presentimg"); exit(-1);
+    if ((presentimg = malloc((IMGX+1)*(IMGY+1)*sizeof(*presentimg)))==NULL) {
+        exit(-1);
     }
     imgtmp=(JSAMPROW)malloc(cinfo.output_width*3);
     while (cinfo.output_scanline < cinfo.output_height) {
@@ -66,23 +66,13 @@ void jloadpresent() {
     jpeg_destroy_decompress(&cinfo);
     fclose(input_file);
 }
-/*
-void darkpresent() {
-    int x,y;
-    for (y=0; y<IMGY; y++) {
-        for (x=0; x<IMGX; x++) {
-            if (x==IMGX-1) presentimg[y*IMGX+x].r=presentimg[y*IMGX+x].g=presentimg[y*IMGX+x].b=128;
-            else presentimg[y*IMGX+x].r=presentimg[y*IMGX+x].g=presentimg[y*IMGX+x].b=(((presentimg[y*IMGX+x].r+presentimg[y*IMGX+x].g+presentimg[y*IMGX+x].b)-(presentimg[y*IMGX+x+1].r+presentimg[y*IMGX+x+1].g+presentimg[y*IMGX+x+1].b))>>2)+128;
-        }
-    }
-}
-*/
+
 void affpresent(int dx,int dy) {
     int y;
     int xb=((SX-IMGX)>>1)+dx, yb=((SY-IMGY)>>1)+dy, clipx1=0, clipx2=0;
     if (xb+IMGX>SX) clipx2=xb+IMGX-SX;
     if (xb<0) { clipx1=-xb; xb=0; }
-    MMXMemSetInt((int*)videobuffer,BACKCOLOR,SX*SY);
+    memset32((int*)videobuffer,BACKCOLOR,SX*SY);
     for (y=0; y<IMGY && y+yb<SY; y++)
         if (y+yb>=0)
             MMXCopy((int*)videobuffer+(y+yb)*SX+xb,(int*)presentimg+y*IMGX+clipx1,IMGX-clipx1-clipx2);
@@ -136,7 +126,7 @@ void animpresent() {
     TextClipX2=(SX-IMGX)/2+250;
     TextColfont=0xD0D0D0;
     jloadpresent();
-    MMXMemSetInt((int*)videobuffer,*(int*)(presentimg+IMGX+1),SX*SY);
+    memset32((int*)videobuffer,*(int*)(presentimg+IMGX+1),SX*SY);
 //  gettimeofday(&GTime,NULL);
     playsound(VOICEEXTER, PRESENT, 1., &voices_in_my_head, true, false);
     while (d) {

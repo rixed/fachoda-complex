@@ -22,14 +22,14 @@
 #include <assert.h>
 #include "map.h"
 
-void drawroadline(int x1, int y1, int x2, int y2, int l, pixel c1, pixel c2) {
+void drawroadline(int x1, int y1, int x2, int y2, int l, struct pixel c1, struct pixel c2) {
     // trace la route (r,r+1) en ligne, vect2dc étant calculé
     int s,ss,ssi,ssf,medline, x,y,xi, dy, cr,cg,cb, qdizor;
     int q, qcr,qcb,qcg;
     if (x1>x2) {
         int tmp = x1; x1 = x2; x2 = tmp;
         tmp = y1; y1 = y2; y2 = tmp;
-        pixel tmpp = c1; c1 = c2; c2 = tmpp;
+        struct pixel tmpp = c1; c1 = c2; c2 = tmpp;
     }
     if (x2<0 || x1>=SX) return;
     // clip...
@@ -122,9 +122,9 @@ void drawroadline(int x1, int y1, int x2, int y2, int l, pixel c1, pixel c2) {
     }
 }
 
-void couperoute(vect2dc *e, vector *v1,vector *v2) {
-#define H (32<<3)
-    vector p;
+void couperoute(struct vect2dc *e, struct vector *v1, struct vector *v2) {
+#   define H (32<<3)
+    struct vector p;
     p.x=((v2->x-v1->x)*(H-v1->z))/(v2->z-v1->z)+v1->x;
     p.y=((v2->y-v1->y)*(H-v1->z))/(v2->z-v1->z)+v1->y;
     p.z=H;
@@ -134,8 +134,8 @@ void couperoute(vect2dc *e, vector *v1,vector *v2) {
 void drawroute(int k) {
     int nk, hi, r;
     int j,i, typ, larg;
-    vector pt3d[4], v,u;
-    vecic pt[4];
+    struct vector pt3d[4], v,u;
+    struct vecic pt[4];
     assert(map[k].has_road);
     nk = map[k].submap;
     hi=(k&(3<<NWMAP))>>(NWMAP-2);

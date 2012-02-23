@@ -27,7 +27,7 @@
 #include "robot.h"
 
 int DogBot=0;
-vector DogBotDir;
+struct vector DogBotDir;
 float DogBotDist;
 
 void NextDogBot() {
@@ -66,7 +66,7 @@ enum view_type next_external_view(enum view_type v)
 
 void manuel(int b) {
     int i;
-    vector u;
+    struct vector u;
     xproceed();
     // BOUTON GAUCHE
     if (!mapmode) switch (arme) {
@@ -185,7 +185,7 @@ void manuel(int b) {
             DogBot=DBm; DogBotDist=d;
         }
     }
-    if (kreset(gkeys[kc_nextbomb].kc)) { for (i=bot[visubot].vion; i<bot[visubot].vion+nobjet[bot[visubot].navion].nbpieces && (obj[i].objref!=-1 || (obj[i].type!=BOMB)); i++); if (i<bot[visubot].vion+nobjet[bot[visubot].navion].nbpieces) visubomb=i; else visubomb=0; }
+    if (kreset(gkeys[kc_nextbomb].kc)) { for (i=bot[visubot].vion; i<bot[visubot].vion+n_object[bot[visubot].navion].nbpieces && (obj[i].objref!=-1 || (obj[i].type!=BOMB)); i++); if (i<bot[visubot].vion+n_object[bot[visubot].navion].nbpieces) visubomb=i; else visubomb=0; }
     if (!accel || imgcount>64) {
             if (kread(gkeys[kc_zoomout].kc)) {
             if (!mapmode) loinvisu+=10;

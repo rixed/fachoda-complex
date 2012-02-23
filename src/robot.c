@@ -28,10 +28,10 @@
 
 //#define PRINT_DEBUG
 
-bot_s *bot;
-vehic_s *vehic;
-voiture_s *voiture;
-zep_s *zep;
+struct bot *bot;
+struct tank *vehic;
+struct car *voiture;
+struct zeppelin *zep;
 
 char const *aerobatic_2_str(enum aerobatic aerobatic)
 {
@@ -65,7 +65,7 @@ char const *maneuver_2_str(enum maneuver maneuver)
     return "INVALID";
 }
 
-static double tirz(vector const *v0, double d)
+static double tirz(struct vector const *v0, double d)
 {
     double const h_speed = SHOT_SPEED * sqrt(v0->x*v0->x + v0->y*v0->y);
     if (h_speed == 0) return 0;
@@ -73,38 +73,17 @@ static double tirz(vector const *v0, double d)
     return .05 /* from naw.c */ * .5 * SQUARE(t) + SHOT_SPEED * v0->z * t;
 }
 
-/*
-static double tircoli(vector v, vector u)
-{
-    // V est unitaire. Les tirs ont une vitesse CST
-    vector g, l;
-    double dd=MAXDOUBLE,d;
-    copyv(&g,&vec_g);
-    mulv(&g,.005);
-    do {
-        d=dd;
-        copyv(&l,&v);
-        mulv(&l,100);
-        subv(&u,&l);
-        addv(&v,&g);
-        renorme(&v);
-        dd=norme2(&u);
-    } while (dd<d);
-    return d;
-}
-*/
-
 // FIXME: same function to actually move the bombs!
 double fall_min_dist2(int b)
 {
-    vector pos = obj[bot[b].vion].pos;
-    vector velocity = bot[b].vionvit;
+    struct vector pos = obj[bot[b].vion].pos;
+    struct vector velocity = bot[b].vionvit;
     double d = DBL_MAX, min_d;
     do {    // Note: using distance to target avoids computing zground at each step
         min_d = d;
         velocity.z -= G * MAX_DT_SEC;
         mulv(&velocity, pow(.9, MAX_DT_SEC));
-        vector v = velocity;
+        struct vector v = velocity;
         mulv(&v, MAX_DT_SEC);
         addv(&pos, &v);
         subv3(&obj[bot[b].cibt].pos, &pos, &v);
@@ -117,7 +96,7 @@ double fall_min_dist2(int b)
 // Look for a flying target for tank v
 static int vehic_new_flying_target(int v)
 {
-    vector p;
+    struct vector p;
     int cib = drand48()*NBBOT;
     if (bot[cib].camp != -1 && bot[cib].camp != vehic[v].camp) {
         subv3(&obj[bot[cib].vion].pos, &obj[vehic[v].o1].pos, &p);
@@ -157,7 +136,7 @@ static int vehic_new_ground_target(int v)
 
 void robotvehic(int v)
 {
-    vector p, u;
+    struct vector p, u;
     double xx, yy, n;
 
     if (vehic[v].camp == -1) return;
@@ -232,7 +211,7 @@ void armstate(int b)
 {
     int i;
     bot[b].nbomb=0;
-    for (i=bot[b].vion; i<bot[b].vion+nobjet[bot[b].navion].nbpieces; i++) {
+    for (i=bot[b].vion; i<bot[b].vion+n_object[bot[b].navion].nbpieces; i++) {
         if (obj[i].objref==bot[b].vion && obj[i].type==BOMB) bot[b].nbomb++;
     }
 }
@@ -259,7 +238,7 @@ void newnav(int b)
         bot[b].maneuver = NAVIG;
         return;
     }
-    if (bot[b].cibt != -1 && bot[b].nbomb && bot[b].fiul > viondesc[bot[b].navion].fiulmax/2) {
+    if (bot[b].cibt != -1 && bot[b].nbomb && bot[b].fiul > plane_desc[bot[b].navion].fiulmax/2) {
         bot[b].u = obj[bot[b].cibt].pos;
         bot[b].target_speed = 3.5 * ONE_METER;
         bot[b].target_rel_alt = 100. * ONE_METER;
@@ -315,7 +294,7 @@ double cap(double x, double y)
 // FIXME: use control.c to predict the vert speed from the slope and target the correct slope
 static void adjust_slope(int b, float diff_alt)
 {
-    vector speed = bot[b].vionvit;
+    struct vector speed = bot[b].vionvit;
     renorme(&speed);
 
     // First we choose the target slope (ie. rot.x.z), then we change actual one with yctl
@@ -385,7 +364,7 @@ static void adjust_throttle(int b, float speed)
     }
 }
 
-static double adjust_direction_rel(int b, vector const *dir)
+static double adjust_direction_rel(int b, struct vector const *dir)
 {
     // First of all, do not allow the plane to get upside down
     if (obj[bot[b].vion].rot.z.z < 0) {
@@ -414,9 +393,9 @@ static double adjust_direction_rel(int b, vector const *dir)
     return dc;
 }
 
-static double adjust_direction(int b, vector const *pos)
+static double adjust_direction(int b, struct vector const *pos)
 {
-    vector rel;
+    struct vector rel;
     subv3(pos, &obj[bot[b].vion].pos, &rel);
     return adjust_direction_rel(b, &rel);
 }
@@ -466,7 +445,7 @@ void robot_safe(int b, float min_alt)
 }
 
 // Returns the horizontal distance from bot b to its navpoint.
-static float dist_from_navpoint(int b, vector *v)
+static float dist_from_navpoint(int b, struct vector *v)
 {
     v->x = bot[b].u.x - obj[bot[b].vion].pos.x;
     v->y = bot[b].u.y - obj[bot[b].vion].pos.y;
@@ -478,7 +457,7 @@ static float dist_from_navpoint(int b, vector *v)
 void robot_autopilot(int b)
 {
     float low_alt = SAFE_LOW_ALT;
-    vector v;
+    struct vector v;
     float d = dist_from_navpoint(b, &v);
     if (d < 80. * ONE_METER) {  // only allow low altitudes when close from destination
         low_alt = MIN(LOW_ALT, bot[b].target_rel_alt);
@@ -503,7 +482,7 @@ void robot_autopilot(int b)
 void robot(int b)
 {
     float vit,dist,disth;
-    vector u,v;
+    struct vector u,v;
     int o=bot[b].vion;
     if (bot[b].camp==-1) return;
 //  printf("bot %d man %d ",b,bot[b].maneuver);
@@ -648,7 +627,7 @@ void robot(int b)
                         } else {
                             bot[b].cibt_drop_dist2 = df;
                         }
-                        vector c;
+                        struct vector c;
                         subv3(&obj[bot[b].cibt].pos, &obj[bot[b].vion].pos, &c);
                         float cx = scalaire(&c, &obj[bot[b].vion].rot.x);
                         if (cx < 0.) bot[b].maneuver = NOSE_UP;
@@ -781,7 +760,7 @@ void robot(int b)
                     }
                 }
                 // try to copy opponent's speed
-                vector rel_speed;
+                struct vector rel_speed;
                 subv3(&bot[bot[b].gunned].vionvit, &bot[b].vionvit, &rel_speed);
                 float const away_speed = scalaire(&rel_speed, &v);
 #               define BEST_TAIL_DIST (7. * ONE_METER)

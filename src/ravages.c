@@ -24,7 +24,7 @@
 #include "sound.h"
 
 int collision(int p, int o){    // l'obj p est-il rentré dans l'obj o ?
-    vector u;
+    struct vector u;
     if (obj[o].type==NUAGE || obj[o].type==FUMEE || p==o || obj[p].ak!=obj[o].ak) return 0;
     subv3(&obj[p].pos,&obj[o].pos,&u);
     return norme(&u)<=mod[obj[o].model].rayoncollision+mod[obj[p].model].rayoncollision;
@@ -39,20 +39,20 @@ int kelkan(int o) {
 void explose(int oc, int i) {
     int o1,o2=0,j,v=0,jk;
     int cmoi=NBBOT;
-    vector vit = vec_zero;
-    for (j=0; j<NBBOT; j++) if ((bot[j].vion<=i && bot[j].vion+nobjet[bot[j].navion].nbpieces>i) || (i>=debtir && gunner[i-debtir]==j)) { cmoi=j; break; }
+    struct vector vit = vec_zero;
+    for (j=0; j<NBBOT; j++) if ((bot[j].vion<=i && bot[j].vion+n_object[bot[j].navion].nbpieces>i) || (i>=debtir && gunner[i-debtir]==j)) { cmoi=j; break; }
     playsound(VOICEEXTER, EXPLOZ, 1+(drand48()-.5)*.1, &obj[oc].pos, false, false);
     switch (obj[oc].type) {
     case CIBGRAT:
         o1=oc;
         while (mod[obj[o1].model].pere!=obj[o1].model) o1+=mod[obj[o1].model].pere-obj[o1].model;
-        o2=o1+nobjet[mod[obj[o1].model].nobjet].nbpieces;
+        o2=o1+n_object[mod[obj[o1].model].n_object].nbpieces;
         if (cmoi<NBBOT && kelkan(o1)!=bot[cmoi].camp) bot[cmoi].gold+=900*drand48()*(o1==oc?3:1);   // les églises valent plus cher !
         break;
     case AVION:
         o1=oc;
         while (obj[o1].objref!=-1) o1=obj[o1].objref;
-        o2=o1+nobjet[mod[obj[o1].model].nobjet].nbpieces;
+        o2=o1+n_object[mod[obj[o1].model].n_object].nbpieces;
         for (v=0; v<NBBOT; v++) if (bot[v].vion==o1) {
             copyv(&vit, &bot[v].vionvit);
             break;
@@ -68,7 +68,7 @@ void explose(int oc, int i) {
     case VEHIC:
         o1=oc;
         while (obj[o1].objref!=-1) o1=obj[o1].objref;
-        o2=o1+nobjet[mod[obj[o1].model].nobjet].nbpieces;
+        o2=o1+n_object[mod[obj[o1].model].n_object].nbpieces;
         for (v=0; v<NBTANKBOTS; v++) if (vehic[v].o1==o1) break;
         if (cmoi<NBBOT) {
             if (v<NBTANKBOTS && vehic[v].camp!=bot[cmoi].camp) bot[cmoi].gold+=900;
@@ -99,7 +99,7 @@ void explose(int oc, int i) {
         copyv(&ExplozePos,&obj[i].pos);
         Exploze=1;
         if (obj[o1].pos.z<z_ground(obj[o1].pos.x,obj[o1].pos.y, true)+50) {
-            obj[o1].model=nobjet[NBNAVIONS+NBBASES+NBMAISONS+NBVEHICS+2].firstpiece;    // CRATERE
+            obj[o1].model=n_object[NBNAVIONS+NBBASES+NBMAISONS+NBVEHICS+2].firstpiece;    // CRATERE
             obj[o1].type=DECO;
             obj[o1].pos.z=5+z_ground(obj[o1].pos.x,obj[o1].pos.y, true);
             obj[o1].objref=-1;
@@ -107,7 +107,7 @@ void explose(int oc, int i) {
             jk=o1+1;
         } else jk=o1;
         for (j=jk; j<o2; j++) {
-    //      obj[j].model=nobjet[NBNAVIONS+NBBASES+NBMAISONS+NBVEHICS+6].firstpiece;
+    //      obj[j].model=n_object[NBNAVIONS+NBBASES+NBMAISONS+NBVEHICS+6].firstpiece;
         //  copyv(&obj[j].pos,&obj[o1].pos);
             obj[j].objref=-1;
             obj[j].type=DECO;
@@ -185,7 +185,7 @@ bool hitgun(int oc, int i) {
                 }
                 tarif=-(bot[j].fiulloss/4+bot[j].motorloss*8+bot[j].aeroloss*8+bot[j].bloodloss*2);
                 if (j==bmanu) accel=0;
-                vector r;
+                struct vector r;
                 randomv(&r);    // FIXME: mul by size of obj?
                 addv(&r, &obj[o1].pos);
                 playsound(VOICEGEAR, HIT, 1+(drand48()-.5)*.1, &r, false, false);

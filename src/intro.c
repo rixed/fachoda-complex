@@ -173,7 +173,7 @@ void drawseg(int x1, int x2, int y, int c) {
     if (x1<0) x1=0;
     if (x2>SX-1) x2=SX-1;
     if (y>=0 && y<SY && x1<SX && x2>=0)
-        MMXMemSetInt((int*)videobuffer+x1+y*SX,c,x2-x1+1);
+        memset32((int*)videobuffer+x1+y*SX,c,x2-x1+1);
 }
 void disqueintro(int x, int y, int r, int c) {
     int balance=-r, xoff=0, yoff=r, newyoff=1;
@@ -245,7 +245,7 @@ int jauge(int vi, int max) {
         draw_page(14, .45 + .2*sin(phaz*.61), .5*M_PI + .2*sin(phaz));
         phaz += 2.1*dt_sec;
         for (y=SY/3-(SY>>3); y<SY/3+(SY>>3); y++)
-            MMXMemSetInt((int*)videobuffer+y*SX+10,0x3060A0,jx);
+            memset32((int*)videobuffer+y*SX+10,0x3060A0,jx);
         pbignum(va,_DX,SY/3-SizeBigCharY/2,2,1,0);
         plotcursor(xmouse,ymouse);
         buffer2video();
@@ -330,7 +330,7 @@ int present(void) {
 
         if (etap==0 && (kreset(0) || kreset(1))) {
             if (kzc!=-1) {
-                vector mousepos = { .x = (float)xmouse/SX, .y = (float)ymouse/SY, .z = 0. };
+                struct vector mousepos = { .x = (float)xmouse/SX, .y = (float)ymouse/SY, .z = 0. };
                 playsound(VOICEMOTOR, BIPINTRO, 1+(drand48()-.5)*.05, &mousepos, true, false);
                 agit=20*256;
                 if (Round[curround].kase[kzc].nxtround>=0) {
