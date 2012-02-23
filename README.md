@@ -4,6 +4,13 @@ Fachoda Complex
 Fachoda Complex is a lightweight airplane arcade simulator, free to
 use/copy/modify under the terms of the GPLv3.
 
+Build
+-----
+
+cd src && make
+
+should do it, provided you have SDL, libjpeg and openAL installed (on
+Debian distributions, I mean the `-dev` packages).
 
 Objective
 ---------
