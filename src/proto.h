@@ -183,18 +183,21 @@ typedef struct {
     piece_s *piece;
     int firstpiece;
 } nobjet_s;
-typedef struct {
+
+struct prime {
     int reward;
     int dt;
     char *endmsg;
     int no;
     char camp;
-} prime_s;
-typedef struct {
+};
+
+struct village {
     int o1, o2;
     char *nom;
     vector p;
-} village_s;
+};
+
 typedef struct {
     short int navion,babase;    // Numéro de type d'avion, de base
     int vion;   // numéro de l'objet principal de l'avion
@@ -324,7 +327,7 @@ typedef struct {
 } voiture_s;
 
 // naw.c
-extern int const NbHosts, MonoMode;
+#define NbHosts 1   // Later, will be the number of opened slots
 extern vector ExplozePos; extern int Exploze;
 extern int DebMoulins, FinMoulins;
 void akref(int ak,vector *r);
@@ -444,9 +447,8 @@ extern nobjet_s nobjet[];
 void LoadModeles(void);
 int addnobjet(int na, vector *p, matrix *m, uchar);
 // radio.c
-extern prime_s prime[];
-extern village_s village[];
-void clearprime(void);
+extern struct prime prime[];
+extern struct village village[];
 void newprime(void);
 extern char *nomvillage[];
 extern char msgactu[1000];

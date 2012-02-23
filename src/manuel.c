@@ -245,12 +245,12 @@ void manuel(int b) {
         }
     }
     // Control du jeu
-    if (MonoMode && kreset(gkeys[kc_pause].kc)) {
+    if (kreset(gkeys[kc_pause].kc)) {
         gtime_toggle();
         lapause ^= 1;
     }
     AfficheHS=kread(gkeys[kc_highscores].kc);
-    if (kreset(gkeys[kc_accelmode].kc) && MonoMode) { accel^=1; imgcount&=63; }
+    if (kreset(gkeys[kc_accelmode].kc)) { accel^=1; imgcount&=63; }
     if (kreset(gkeys[kc_basenav].kc)) {
         bot[b].u = obj[bot[b].babase].pos;
     }

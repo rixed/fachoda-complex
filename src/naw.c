@@ -33,9 +33,6 @@
 
 //#define PRINT_DEBUG
 
-int const NbHosts = 1;
-int const MonoMode = 1;
-
 void MMXMemSetInt(int *deb, int coul, int n) {
     while (n--) *deb++ = coul;
 }
@@ -685,7 +682,6 @@ parse_error:
     debtir=nbobj;
     for (i=0; i<NBMAXTIR; i++) vieshot[i]=0;
     if ((obj=realloc(obj, sizeof(objet)*(nbobj+NBMAXTIR+1)))==NULL) { perror("realloc bot"); exit(-1); }
-    clearprime();
     for (i=0; i<NBGRAVMAX; i++) debris[i].o=-1;
     for (i=0; i<NBFUMEESOURCE; i++) fumeesourceintens[i]=0;
     copyv(&obj[0].pos,&obj[bot[bmanu].vion].pos);

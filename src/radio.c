@@ -21,16 +21,10 @@
 #include <string.h>
 #include <math.h>
 #include "proto.h"
-prime_s prime[NBPRIMES];
 
-village_s village[NBVILLAGES];
+struct prime prime[NBPRIMES];
+struct village village[NBVILLAGES];
 
-void clearprime() {
-    int i;
-    for (i=0; i<NBPRIMES; i++) {
-        prime[i].reward=0;
-    }
-}
 #define NBRADIO 1
 char *nomvillage[NBVILLAGES] = { "Mokolo", "Badagadir", "Mokassaville", "Miditana", "Zawabi", "Bogomips", "Osk", "Homene", "Joytown", "Peacetown" };
 char msgactu[1000];
