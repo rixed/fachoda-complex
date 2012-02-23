@@ -57,7 +57,7 @@ void file_read(void *ptr, size_t size, FILE *f)
     size_t ret = fread(ptr, size, 1, f);
     if (ret != 1) {
         if (feof(f)) {
-            fprintf(stderr, "Cannot read %zu bytes: End Of File\n", size);
+            //fprintf(stderr, "Cannot read %zu bytes: End Of File\n", size);
             memset(ptr, 0, size);   // FIXME: store data in a sane format that does no rely on this behavior!
         } else {
             fprintf(stderr, "Cannot read %zu bytes: %s\n", size, strerror(errno));
