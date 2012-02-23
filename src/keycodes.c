@@ -80,7 +80,7 @@ kc_s gkeys[NBKEYS] = {
 
 static FILE *keyfile_open(char const *perms)
 {
-    return file_open(".fachoda-keys", getenv("HOME"), perms);
+    return file_open_try(".fachoda-keys", getenv("HOME"), perms);
 }
 
 void keys_save(void)

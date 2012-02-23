@@ -588,7 +588,7 @@ parse_error:
     SXTB=SYTB*2; //SX>>1;
     focale=_DX;
     // Read saved highscores (from home)
-    if ((file = file_open(".fachoda-highscores", getenv("HOME"), "r")) != NULL) {
+    if ((file = file_open_try(".fachoda-highscores", getenv("HOME"), "r")) != NULL) {
         fread(&highscore, sizeof(HS_s), ARRAY_LEN(highscore), file);
         fclose(file);
     }
