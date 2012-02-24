@@ -7,10 +7,16 @@ use/copy/modify under the terms of the GPLv3.
 Build
 -----
 
-cd src && make
+To compile fachoda from source, run:
+
+    cd src && make
 
 should do it, provided you have SDL, libjpeg and openAL installed (on
 Debian distributions, I mean the `-dev` packages).
+
+For better performances you can try:
+
+    cd src && CFLAGS=-O4 make -j6
 
 Objective
 ---------
