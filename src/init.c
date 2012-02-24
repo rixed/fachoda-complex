@@ -449,7 +449,7 @@ void initworld() {
         p.z=15;
         car[i].o=addnobjet(NBNAVIONS+NBBASES+NBMAISONS+1, &p, &mat_id, 1);
         car[i].dist=-1;
-        car[i].vit=5+15*drand48();
+        car[i].vit=80+240*drand48();
     }
     for (; i<NBVOITURES/2; i++) {
         car[i].r=randomvroute(&p);
@@ -457,7 +457,7 @@ void initworld() {
         p.z=15;
         car[i].o=addnobjet(NBNAVIONS+NBBASES+NBMAISONS+4, &p, &mat_id, 1);
         car[i].dist=-1;
-        car[i].vit=5+15*drand48();
+        car[i].vit=80+240*drand48();
     }
     for (; i<NBVOITURES*8/10; i++) {
         car[i].r=randomvroute(&p);
@@ -465,7 +465,7 @@ void initworld() {
         p.z=15;
         car[i].o=addnobjet(NBNAVIONS+NBBASES+NBMAISONS+2, &p, &mat_id, 1);
         car[i].dist=-1;
-        car[i].vit=10+10*drand48();
+        car[i].vit=160+160*drand48();
     }
     for (; i<NBVOITURES; i++) {
         car[i].r=randomvroute(&p);
@@ -473,7 +473,7 @@ void initworld() {
         p.z=30;
         car[i].o=addnobjet(NBNAVIONS+NBBASES+NBMAISONS+3, &p, &mat_id, 1);
         car[i].dist=-1;
-        car[i].vit=5+5*drand48();
+        car[i].vit=80+80*drand48();
     }
     car[i].o=nbobj;
     printf("Adding tractors...\n");
