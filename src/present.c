@@ -73,9 +73,11 @@ void affpresent(int dx,int dy) {
     if (xb+IMGX>SX) clipx2=xb+IMGX-SX;
     if (xb<0) { clipx1=-xb; xb=0; }
     memset32((int*)videobuffer,BACKCOLOR,SX*SY);
-    for (y=0; y<IMGY && y+yb<SY; y++)
-        if (y+yb>=0)
-            MMXCopy((int*)videobuffer+(y+yb)*SX+xb,(int*)presentimg+y*IMGX+clipx1,IMGX-clipx1-clipx2);
+    for (y=0; y<IMGY && y+yb<SY; y++) {
+        if (y+yb>=0) {
+            memcpy(videobuffer+(y+yb)*SX+xb, presentimg+y*IMGX+clipx1, (IMGX-clipx1-clipx2)*sizeof(*videobuffer));
+        }
+    }
 }
 void affpresentanim(int d) {
     int y;
@@ -90,7 +92,7 @@ void affpresentanim(int d) {
             yd=y-d*drand48();
             if (yd<1) yd=1;
         }
-        MMXCopy((int*)videobuffer+(y+yb)*SX+xb,(int*)presentimg+yd*IMGX+clipx,IMGX-clipx-clipx);
+        memcpy(videobuffer+(y+yb)*SX+xb, presentimg+yd*IMGX+clipx, (IMGX-clipx-clipx)*sizeof(*videobuffer));
     }
 }
 
@@ -128,7 +130,7 @@ void animpresent() {
     jloadpresent();
     memset32((int*)videobuffer,*(int*)(presentimg+IMGX+1),SX*SY);
 //  gettimeofday(&GTime,NULL);
-    playsound(VOICEEXTER, PRESENT, 1., &voices_in_my_head, true, false);
+    playsound(VOICE_EXTER, SAMPLE_PRESENT, 1., &voices_in_my_head, true, false);
     while (d) {
         affpresentanim(d);
         d--;
@@ -153,7 +155,7 @@ char *scenar[4][4][2] = {
     }, {
         {"Jamais le marche du petrole de la Republique des Trois Villages Unifies ne furent renegocies depuis que le despotte Mokassa fut mis au pouvoir par la France. En retour, le tyran attribue le monopole de l'exploitation du petrole de la Republique des Trois Villages Unifies aux thrusts petroliers Francais. Cette terrible dictature insupportable, vis à vis des droits de l'homme, doit cesser ! Maintenant que suite a la fin de la guerre froide le risque de destabilisation est enraye, il faut renverser le dictateur sanguinaire pour le remplacer par le president democratiquement elu de notre choix.",
          "The petrol market in the Republique des Trois Villages Unifies has never been negotiate since president-despot Mokassa was given power by France. The tyrant alloted the whole extraction of Republic des Trois Villages' petrol to the French fiul trust. This unbearable dictatorship must cease for human rights's sake ! Now that the cold war and the risk of destabilization by the russians are over, we must overthrow the bloodthirsty dictator and replace him by the democraticaly elected president of our choice." },
-        {"Une guerilla dont les chefs sont acquis a la cause de Washington puisque le CIA les forme, les arme et finance leurs ecoles religieuses, va bientot se deverser, depuis le Bas-Wanana sur la Republique des Trois Villages Unifies, et balayer le regime tyranique de Mokassa qui ne tient que grace au soutient militaire de la France. L'heure est venue de lancer l'offensive afin de renegocier le marche des droits de l'hommes dans la region !",
+        {"Une guerilla dont les chefs sont acquis a la cause de Washington puisque le CIA les forme, les selected_weapon et finance leurs ecoles religieuses, va bientot se deverser, depuis le Bas-Wanana sur la Republique des Trois Villages Unifies, et balayer le regime tyranique de Mokassa qui ne tient que grace au soutient militaire de la France. L'heure est venue de lancer l'offensive afin de renegocier le marche des droits de l'hommes dans la region !",
         "The guerilla of the Bamatsees, which chiefs are gained to Washington's cause because CIA train, fund, and supply them with weapons and religious schools, is going to pour into the Republique des Trois Villages Unifies from the Low-Wanana land. It will for sure sweep away the tyranic rule of Mokassa, that is only supported by the French army and by no way by the people. Time is come to launch our rebels so that we can renegociate the human rights's market in this country !"},
         {"Vous etes Jim Parano, officier de la Protect & Defend the Innocents, Inc., une officine militaire privee a caractere humanitaire. Vous avez ete envoye au Bas-Whanana dans le cadre de l'operation 'Thank-you Bill' pour participer aux manoeuvres de guerrilla deguise en guerrier tribal bamatsi.",
         "You are Jim Parano, an officer of the Protect & Defend the Innocents, Inc., a private military unit concerned by humanitary considerations. You have been sent to Low-Wanana in the setting of operation 'Thank-you Bill' to take part to the guerilla's drill, disguised like a tribal bamatsee warior."},

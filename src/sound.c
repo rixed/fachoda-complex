@@ -66,64 +66,6 @@ static char const *al_strerror(ALenum err)
     return "Unknown Error";
 }
 
-int opensound(bool with_sound_)
-{
-    ALenum err;
-
-    with_sound = with_sound_;
-    if (! with_sound) return 0;
-
-    dev = alcOpenDevice(NULL);
-    if (! dev) {
-        fprintf(stderr, "Cannot aclOpenDevice()\n");
-        goto exit0;
-    }
-
-    static ALCint attrs[] = {
-        ALC_MONO_SOURCES, ARRAY_LEN(sources),
-        ALC_STEREO_SOURCES, 0,
-        0, 0
-    };
-    ctx = alcCreateContext(dev, attrs);
-    if (! ctx) {
-        fprintf(stderr, "Cannot alcCreateContext()\n");
-        goto exit1;
-    }
-
-    alcMakeContextCurrent(ctx);
-
-    alGetError();
-    alGenBuffers(ARRAY_LEN(buffers), buffers);
-    alGenSources(ARRAY_LEN(sources), sources);
-    if ((err = alGetError()) != AL_NO_ERROR) {
-        fprintf(stderr, "Cannot genBuffers(): %s\n", al_strerror(err));
-        goto exit2;
-    }
-    for (unsigned s = 0; s < ARRAY_LEN(sources); s++) {
-        alSourcef(sources[s], AL_MAX_DISTANCE, MAX_DIST);
-        alSourcef(sources[s], AL_REFERENCE_DISTANCE, 2. * ONE_METER);
-    }
-    for (unsigned s = 0; s < ARRAY_LEN(last_played); s++) {
-        last_played[s] = ~0U;
-    }
-    for (unsigned v = 0; v < ARRAY_LEN(play); v++) {
-        play[v].samp = NB_SAMPLES;
-    }
-    alSpeedOfSound(34330.); // our unit of distance is approx the cm
-
-    printf("Sound OK\n");
-    return 0;
-
-exit2:
-    alcMakeContextCurrent(NULL);
-    alcDestroyContext(ctx);
-exit1:
-    alcCloseDevice(dev);
-exit0:
-    with_sound = false;
-    return -1;
-}
-
 static void *load_file(char const *fn, size_t *size)
 {
     FILE *in = file_open(fn, DATADIR, "r");
@@ -404,7 +346,69 @@ void update_listener(struct vector const *pos, struct vector const *velocity, st
     }
 }
 
-void exitsound(void)
+/*
+ * Init
+ */
+
+int sound_init(bool with_sound_)
+{
+    ALenum err;
+
+    with_sound = with_sound_;
+    if (! with_sound) return 0;
+
+    dev = alcOpenDevice(NULL);
+    if (! dev) {
+        fprintf(stderr, "Cannot aclOpenDevice()\n");
+        goto exit0;
+    }
+
+    static ALCint attrs[] = {
+        ALC_MONO_SOURCES, ARRAY_LEN(sources),
+        ALC_STEREO_SOURCES, 0,
+        0, 0
+    };
+    ctx = alcCreateContext(dev, attrs);
+    if (! ctx) {
+        fprintf(stderr, "Cannot alcCreateContext()\n");
+        goto exit1;
+    }
+
+    alcMakeContextCurrent(ctx);
+
+    alGetError();
+    alGenBuffers(ARRAY_LEN(buffers), buffers);
+    alGenSources(ARRAY_LEN(sources), sources);
+    if ((err = alGetError()) != AL_NO_ERROR) {
+        fprintf(stderr, "Cannot genBuffers(): %s\n", al_strerror(err));
+        goto exit2;
+    }
+    for (unsigned s = 0; s < ARRAY_LEN(sources); s++) {
+        alSourcef(sources[s], AL_MAX_DISTANCE, MAX_DIST);
+        alSourcef(sources[s], AL_REFERENCE_DISTANCE, 2. * ONE_METER);
+    }
+    for (unsigned s = 0; s < ARRAY_LEN(last_played); s++) {
+        last_played[s] = ~0U;
+    }
+    for (unsigned v = 0; v < ARRAY_LEN(play); v++) {
+        play[v].samp = NB_SAMPLES;
+    }
+    alSpeedOfSound(34330.); // our unit of distance is approx the cm
+
+    printf("Sound OK\n");
+    return 0;
+
+exit2:
+    alcMakeContextCurrent(NULL);
+    alcDestroyContext(ctx);
+exit1:
+    alcCloseDevice(dev);
+exit0:
+    with_sound = false;
+    return -1;
+}
+
+void sound_fini(void)
 {
     if (! with_sound) return;
 

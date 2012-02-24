@@ -252,7 +252,7 @@ int jauge(int vi, int max) {
         xproceed();
         if (kread(0) || kread(1)) {
             if (kzc==0) {
-                playsound(VOICEMOTOR, BIPINTRO, 1+(drand48()-.5)*.05, &voices_in_my_head, true, false);
+                playsound(VOICE_MOTOR, SAMPLE_BIPINTRO, 1+(drand48()-.5)*.05, &voices_in_my_head, true, false);
                 agit=50*256;
                 return va;
             }
@@ -331,7 +331,7 @@ int present(void) {
         if (etap==0 && (kreset(0) || kreset(1))) {
             if (kzc!=-1) {
                 struct vector mousepos = { .x = (float)xmouse/SX, .y = (float)ymouse/SY, .z = 0. };
-                playsound(VOICEMOTOR, BIPINTRO, 1+(drand48()-.5)*.05, &mousepos, true, false);
+                playsound(VOICE_MOTOR, SAMPLE_BIPINTRO, 1+(drand48()-.5)*.05, &mousepos, true, false);
                 agit=20*256;
                 if (Round[curround].kase[kzc].nxtround>=0) {
                     oldcurround=curround;

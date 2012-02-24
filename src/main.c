@@ -24,7 +24,8 @@
 #include <unistd.h>
 #include <values.h>
 #include <assert.h>
-#include "map.h"
+#include <stdbool.h>
+#include "heightfield.h"
 #include "sound.h"
 #include "gtime.h"
 #include "keycodesdef.h"
@@ -37,18 +38,15 @@ void memset32(int *deb, int coul, int n) {
     while (n--) *deb++ = coul;
 }
 
-void MMXCopy(int *dst, int *src, int n) {   // by the time I suppose glibc became quite good at this :-)
-    memcpy(dst, src, n*4);
-}
-
 struct matrix mat_id={{1,0,0},{0,1,0},{0,0,1}};
 struct vector vac_diag={1,1,1}, vec_zero={0,0,0}, vec_g={0,0,-1};
-// 3DSTUDIO
+
 int NBBOT=30;
 int NBTANKBOTS=150;
 struct model *mod;
-struct object *obj;
-int nbobj, debtir, firstfumee, fumeedispo, DebMoulins, FinMoulins;
+struct object obj[50000];   // All nbobj objects
+int nbobj;
+int debtir, firstfumee, fumeedispo, DebMoulins, FinMoulins;
 float AngleMoulin=0;
 uchar *rayonfumee;
 uchar *typefumee;
@@ -56,25 +54,28 @@ int fumeesource[NBFUMEESOURCE], fumeesourceintens[NBFUMEESOURCE];
 double focale;
 int camp=1, AllowResurrect=1, Easy=0, Gruge=0, ViewAll=0, SpaceInvaders=0, monvion=1, lang=1, Dark=-1, Fleuve=1, MouseCtl=1, Accident=1500, Smooth=7;
 float CtlSensitiv=0.08, CtlSensActu=0, CtlAmortis=.9, CtlYequ=.1;
-struct alienpos *alienpos;
 char myname[30];
 struct matrix LightSol={ {-.7,0,-.7},{0,1,0},{.7,0,-.7}};
 struct matrix Light;
-struct vector ExplozePos; int Exploze=0;
+struct vector explosion_pos;
+bool explosion;
 //
 int babaseo[2][3][4];   // o1, o2 // base 1, base 2, base 3 // camp A,B,C,D
-int gunner[NBMAXTIR]; short int vieshot[NBMAXTIR];
-struct bomb *bombe; int bombidx;
+int gunner[NBMAXTIR];
+short int vieshot[NBMAXTIR];
+struct bomb *bomb;
+int bombidx;
 char (*playbotname)[30];
 struct debris debris[NBGRAVMAX];
 // options changeables à la ligne de com :
-char PHONG=1;
-float TROPLOIN=120.,TROPLOIN2;
-int _DX,_DY,SX=400,SY=250,SYTB,SXTB,SIZECERCLE,POLYMAX=25,TBY;
+int _DX,_DY,SX=400,SY=250,SYTB,SXTB,SIZECERCLE,TBY;
 int nbtir;
-// ajoute un objet dans le world
-void addobjet(int mo, struct vector *p, struct matrix *m, int or, uchar sol) {
+
+// add an object to obj[]
+void object_add(int mo, struct vector *p, struct matrix *m, int or, uchar sol)
+{
     int xk,yk,ak;
+    assert(nbobj < (int)ARRAY_LEN(obj));
     obj[nbobj].model=mo;
     obj[nbobj].type=mod[mo].type;
     obj[nbobj].aff=1;
@@ -91,24 +92,9 @@ void addobjet(int mo, struct vector *p, struct matrix *m, int or, uchar sol) {
     obj[nbobj].prec=-1;
     if (obj[nbobj].next!=-1) obj[obj[nbobj].next].prec=nbobj;
     nbobj++;
-    //calcposaind(nbobj-1);
 }
-void tournevion(int v, float d, float p, float g) {
-    float ar, ap, ag, c1, c2, c3, s1, s2, s3;
-    struct matrix r;
-    ar=d*2.; ap=p*.5; ag=g*.5;
-    c1=cos(ar); s1=sin(ar); c2=cos(ap); s2=sin(ap); c3=cos(ag); s3=sin(ag);
-/*  r.x.x=c2;       r.y.x=0;        r.z.x=-s2;
-    r.x.y=-s1*s2;   r.y.y=c1;   r.z.y=-s1*c2;
-    r.x.z=c1*s2;    r.y.z=s1;   r.z.z=c1*c2;
-    */
-    r.x.x=c2*c3;                r.y.x=-c2*s3;               r.z.x=-s2;
-    r.x.y=c1*s3-s1*s2*c3;   r.y.y=s1*s2*s3+c1*c3;   r.z.y=-s1*c2;
-    r.x.z=c1*s2*c3+s1*s3;   r.y.z=s1*c3-s3*c1*s2;   r.z.z=c1*c2;
-    mulm(&obj[v].rot,&r);
-    // renormalize/orthogonalize ?
-}
-void backgroundline(int *v,int sx,int dz,int z,int coul) {
+
+static void background_line(int *v,int sx,int dz,int z,int coul) {
     int x;
     uchar cz;
     if (coul==-1) return;
@@ -140,10 +126,10 @@ static void background(void)
     int z1,z2, dz1,dz2;
     int dz, x, i, xfin;
     int zfront[3] = {64<<8,0,-64<<8};
-#define sol 0x1A6834
-#define soldark (0x1A6834>>1)
-#define ciel 0xA0A0C0
-#define cieldark 0x202040
+#   define sol 0x1A6834
+#   define soldark (0x1A6834>>1)
+#   define ciel 0xA0A0C0
+#   define cieldark 0x202040
     int coulfront[2][4] = {
         {ciel,0,sol,-1},
         {cieldark,0,soldark,-1}
@@ -157,187 +143,97 @@ static void background(void)
     dz1=cam.rot.y.z*256;
     dz2=cam.rot.y.z*256;
     dz=(z2-z1)/SX;
-#define ZFINSOL ((-SX/4)<<8)
+#   define ZFINSOL ((-SX/4)<<8)
     for (vid=(int*)videobuffer; vid<(int*)videobuffer+SX*SY; vid+=SX, z1+=dz1, z2+=dz2) {
         if (z1>z2) {
             for (i=0, x=0; i<3 && x<SX; i++) {
                 if (z1>zfront[i]) {
                     if (z2>zfront[i]) {
                         xfin=SX;
-                        backgroundline(vid+x,xfin-x,dz,z1,coulfront[Dark][i]);
+                        background_line(vid+x,xfin-x,dz,z1,coulfront[Dark][i]);
                         x=xfin;
                     } else {
                         if (z1-z2!=0) {
                             xfin=((z1-zfront[i])*SX)/(z1-z2);
                             if (xfin>SX) xfin=SX;
                         } else xfin=SX;
-                        backgroundline(vid+x,xfin-x,dz,z1,coulfront[Dark][i]);
+                        background_line(vid+x,xfin-x,dz,z1,coulfront[Dark][i]);
                         x=xfin;
                     }
                 }
             }
-            if (x<SX) backgroundline(vid+x,SX-x,dz,z1,coulfront[Dark][i]);
+            if (x<SX) background_line(vid+x,SX-x,dz,z1,coulfront[Dark][i]);
         } else {
             for (i=2, x=0; i>=0 && x<SX; i--) {
                 if (z1<zfront[i]) {
                     if (z2<zfront[i]) {
                         xfin=SX;
-                        backgroundline(vid+x,xfin-x,dz,z1,coulfront[Dark][i+1]);
+                        background_line(vid+x,xfin-x,dz,z1,coulfront[Dark][i+1]);
                         x=xfin;
                     } else {
                         if (z1-z2!=0) {
                             xfin=((z1-zfront[i])*SX)/(z1-z2);
                             if (xfin>SX) xfin=SX;
                         } else xfin=SX;
-                        backgroundline(vid+x,xfin-x,dz,z1,coulfront[Dark][i+1]);
+                        background_line(vid+x,xfin-x,dz,z1,coulfront[Dark][i+1]);
                         x=xfin;
                     }
                 }
             }
-            if (x<SX) backgroundline(vid+x,SX-x,dz,z1,coulfront[Dark][i+1]);
+            if (x<SX) background_line(vid+x,SX-x,dz,z1,coulfront[Dark][i+1]);
         }
     }
 }
 
-void balanceX(int o, double s) {    // balance l'obj o poue lui mettre la tete en haut
-    double d;
-    struct vector yp;
-    static struct vector ypt={0, -.099833416, .995004165};
-    struct matrix m;
-    mulmv(&obj[o].rot,&ypt,&yp);
-    if (obj[o].rot.z.z>0) d = yp.z-obj[o].rot.z.z;
-    else d = obj[o].rot.z.z-yp.z;
-    copym(&m,&mat_id);
-    m.y.y=cos(s*d);
-    m.y.z=sin(s*d);
-    m.z.y=-sin(s*d);
-    m.z.z=cos(s*d);
-    mulm(&obj[o].rot,&m);
-}
-void balanceY(int o, double s) {    // balance l'obj o poue lui mettre la tete en haut
-    double d;
-    struct vector yp;
-    static struct vector ypt={.099833416, 0, .995004165};
-    struct matrix m;
-    mulmv(&obj[o].rot,&ypt,&yp);
-    if (obj[o].rot.z.z>0) d = yp.z-obj[o].rot.z.z;
-    else d = obj[o].rot.z.z-yp.z;
-    copym(&m,&mat_id);
-    m.x.x=cos(s*d);
-    m.x.z=-sin(s*d);
-    m.z.x=sin(s*d);
-    m.z.z=cos(s*d);
-    mulm(&obj[o].rot,&m);
-}
-void basculeY(int o, float a) {
-    struct matrix m;
-    copym(&m,&mat_id);
-    m.x.x=cos(a);
-    m.x.z=-sin(a);
-    m.z.x=sin(a);
-    m.z.z=cos(a);
-    mulm(&obj[o].rot,&m);
-}
-void basculeX(int o, float a) {
-    struct matrix m;
-    copym(&m,&mat_id);
-    m.y.y=cos(a);
-    m.y.z=sin(a);
-    m.z.y=-sin(a);
-    m.z.z=cos(a);
-    mulm(&obj[o].rot,&m);
-}
-void basculeZ(int o, float a) {
-    struct matrix m;
-    copym(&m,&mat_id);
-    m.x.x=cos(a);
-    m.x.y=sin(a);
-    m.y.x=-sin(a);
-    m.y.y=cos(a);
-    mulm(&obj[o].rot,&m);
-}
-int visubot=0, visuobj=0;
+int viewed_bot = 0, viewed_obj = 0;
+enum view_type view = VIEW_IN_PLANE;
+int viewed_bomb=0, map_mode=0, accelerated_mode=0, autopilot=0, game_paused=0, controled_bot, frame_count=0;
+double extcam_dist = 2. * ONE_METER;    // external camera distance (ie. "zoom")
+double sight_teta=0, sight_phi=0;   // direction of vision while in plane view
+bool view_instruments, view_predef, prompt_quit, quit_game, draw_high_scores;
+int selected_weapon = 0;
 
-int akpos(struct vector *p) {
-    int x,y;
-    x=p->x+((WMAP<<NECHELLE)>>1);
-    y=p->y+((WMAP<<NECHELLE)>>1);
-    x>>=NECHELLE;
-    y>>=NECHELLE;
-    return x+(y<<NWMAP);
-}
-void akref(int ak,struct vector *r) {
-    int x=(ak&(WMAP-1))-(WMAP>>1);
-    int y=(ak>>NWMAP)-(WMAP>>1);
-    r->x=(x<<NECHELLE);
-    r->y=(y<<NECHELLE);
-    r->z=z_ground(r->x,r->y, true);
-}
-int resurrect(void) {   // jesus revient, jesus reviuent parmis les tiens...
-    int j=NBBOT, jj, bestprix=0;
-    struct bot bottmp;
-    for (jj=NbHosts; jj<NBBOT; jj++) {
-        if (bot[jj].camp==camp && plane_desc[bot[jj].navion].prix<=plane_desc[bot[bmanu].navion].prix && plane_desc[bot[jj].navion].prix>bestprix) {
-            bestprix=plane_desc[bot[jj].navion].prix;
-            j=jj;
-        }
-    }
-    if (j<NBBOT) {
-        memcpy(&bottmp,&bot[bmanu],sizeof(struct bot));
-        memcpy(&bot[bmanu],&bot[j],sizeof(struct bot));
-        memcpy(&bot[j],&bottmp,sizeof(struct bot));
-        bot[bmanu].gold=55;
-        playsound(VOICEEXTER, ALLELUIA, 1., &voices_in_my_head, true, false);
-        soundthrust=-1;
-        autopilot=1;
-        accel=0;
-        xcarte=obj[bot[bmanu].vion].pos.x/ECHELLE;
-        ycarte=obj[bot[bmanu].vion].pos.y/ECHELLE;
-        return 1;
-    }
-    return 0;
-}
 
 static void setup_camera(float dt_sec)
 {
-    static float angvisu1 = 0.;
-    angvisu1 += 0.03;
+    static float view_angle = 0.;   // for the rotating view
+    view_angle += 0.03;
     float n = 0.;
     int i;
 
     if (view == VIEW_ROTATING_BOMB) {
-        if (!visubomb || obj[visubomb].objref!=-1) {
-            for (i=bot[visubot].vion; i<bot[visubot].vion+n_object[bot[visubot].navion].nbpieces && (obj[i].objref!=-1 || obj[i].type!=BOMB); i++);
-            if (i<bot[visubot].vion+n_object[bot[visubot].navion].nbpieces) {
-                visubomb = i;
+        if (!viewed_bomb || obj[viewed_bomb].objref!=-1) {
+            for (i=bot[viewed_bot].vion; i<bot[viewed_bot].vion+n_object[bot[viewed_bot].navion].nbpieces && (obj[i].objref!=-1 || obj[i].type!=TYPE_BOMB); i++);
+            if (i<bot[viewed_bot].vion+n_object[bot[viewed_bot].navion].nbpieces) {
+                viewed_bomb = i;
             } else {
-                visubomb = 0;
+                viewed_bomb = 0;
                 view = VIEW_IN_PLANE;
             }
         }
     }
     if (view == VIEW_ANYTHING_CHEAT && !Gruge) view = next_external_view(view);
     if (view == VIEW_DOGFIGHT) {
-        if (visubot != bmanu) view = VIEW_IN_PLANE;
+        if (viewed_bot != controled_bot) view = VIEW_IN_PLANE;
         else {
-            if (DogBot==bmanu || bot[DogBot].camp==-1) NextDogBot();
-            if (DogBot!=bmanu && bot[DogBot].camp!=-1) {
+            if (DogBot==controled_bot || bot[DogBot].camp==-1) next_dog_bot();
+            if (DogBot!=controled_bot && bot[DogBot].camp!=-1) {
                 copyv(&DogBotDir,&obj[bot[DogBot].vion].pos);
-                subv(&DogBotDir,&obj[bot[bmanu].vion].pos);
+                subv(&DogBotDir,&obj[bot[controled_bot].vion].pos);
                 DogBotDist=renorme(&DogBotDir);
-                if (DogBotDist>DOGDISTMAX) NextDogBot();
+                if (DogBotDist>DOGDISTMAX) next_dog_bot();
                 if (DogBotDist>DOGDISTMAX) view = VIEW_IN_PLANE;
             } else view = VIEW_IN_PLANE;
         }
     }
     if (view == VIEW_IN_PLANE || view == VIEW_DOGFIGHT) {   // afficher ou effacer la tete et la tab de bord
-        for (i=0; i<plane_desc[bot[visubot].navion].nbpiecestete; i++)
-            obj[bot[visubot].vion+n_object[bot[visubot].navion].nbpieces-2-i].aff=0;
-        obj[bot[visubot].vion+plane_desc[bot[visubot].navion].tabbord].aff=1;
+        for (i=0; i<plane_desc[bot[viewed_bot].navion].nbpiecestete; i++)
+            obj[bot[viewed_bot].vion+n_object[bot[viewed_bot].navion].nbpieces-2-i].aff=0;
+        obj[bot[viewed_bot].vion+plane_desc[bot[viewed_bot].navion].tabbord].aff=1;
     } else {
-        for (i=0; i<plane_desc[bot[visubot].navion].nbpiecestete; i++)
-            obj[bot[visubot].vion+n_object[bot[visubot].navion].nbpieces-2-i].aff=1;
-        obj[bot[visubot].vion+plane_desc[bot[visubot].navion].tabbord].aff=0;
+        for (i=0; i<plane_desc[bot[viewed_bot].navion].nbpiecestete; i++)
+            obj[bot[viewed_bot].vion+n_object[bot[viewed_bot].navion].nbpieces-2-i].aff=1;
+        obj[bot[viewed_bot].vion+plane_desc[bot[viewed_bot].navion].tabbord].aff=0;
     }
     switch (view) {
     case NB_VIEWS:
@@ -348,21 +244,21 @@ static void setup_camera(float dt_sec)
         obj[0].pos = vec_zero;
         struct matrix ct;
         // Even in dogfight view we want to be able to focus on pannel or look toward predefined directions
-        if (view == VIEW_IN_PLANE || avancevisu || tournevisu) {
-            ct.x = obj[bot[visubot].vion].rot.y;
+        if (view == VIEW_IN_PLANE || view_instruments || view_predef) {
+            ct.x = obj[bot[viewed_bot].vion].rot.y;
             neg(&ct.x);
-            ct.y = obj[bot[visubot].vion].rot.z;
+            ct.y = obj[bot[viewed_bot].vion].rot.z;
             neg(&ct.y);
-            ct.z = obj[bot[visubot].vion].rot.x;
+            ct.z = obj[bot[viewed_bot].vion].rot.x;
         } else {
             ct.z = DogBotDir;
-            ct.y = obj[bot[visubot].vion].rot.z;
+            ct.y = obj[bot[viewed_bot].vion].rot.z;
             neg(&ct.y);
             orthov(&ct.y, &ct.z);
             renorme(&ct.y);
             prodvect(&ct.y, &ct.z, &ct.x);
         }
-        if (avancevisu) {
+        if (view_instruments) {
             // Go for the instrument pannel
             struct vector v = ct.z;
             mulv(&v, 2.1);
@@ -371,12 +267,12 @@ static void setup_camera(float dt_sec)
             mulv(&v, 5.2);
             addv(&obj[0].pos, &v);
         } else {
-            // Look in any direction (visuteta/phi)
+            // Look in any direction (sight_teta/phi)
             struct matrix m;
-            double ctt = cos(visuteta);
-            double st = sin(visuteta);
-            double cf = cos(visuphi);
-            double sf = sin(visuphi);
+            double ctt = cos(sight_teta);
+            double st = sin(sight_teta);
+            double cf = cos(sight_phi);
+            double sf = sin(sight_phi);
             m.x.x = cf; m.y.x = sf*st;  m.z.x = -sf*ctt;
             m.x.y = 0;  m.y.y = ctt;    m.z.y = st;
             m.x.z = sf; m.y.z = -st*cf; m.z.z = cf*ctt;
@@ -393,14 +289,14 @@ static void setup_camera(float dt_sec)
         /* Now alter this static position to take into account acceleration.
          * Unfortunately, we do not know objs acceleration (nor velocity in the
          * general case), so we have to figure it out. */
-        if (! accel) {
+        if (! accelerated_mode) {
             static struct vector prev_vit;
             struct vector acc;
-            subv3(&bot[visubot].vionvit, &prev_vit, &acc);
+            subv3(&bot[viewed_bot].vionvit, &prev_vit, &acc);
             mulv(&acc, .02/dt_sec);
             cap_dist(&acc, 3.);
             subv(&obj[0].pos, &acc);
-            prev_vit = bot[visubot].vionvit;
+            prev_vit = bot[viewed_bot].vionvit;
         }
 
         /* Smooth this position with the previous one */
@@ -412,51 +308,51 @@ static void setup_camera(float dt_sec)
         prev_cam_pos = obj[0].pos;
 
         /* Finally, add to this position the actual position of the cockpit */
-        addv(&obj[0].pos, &obj[bot[visubot].vion+n_object[bot[visubot].navion].nbpieces-1].pos);
+        addv(&obj[0].pos, &obj[bot[viewed_bot].vion+n_object[bot[viewed_bot].navion].nbpieces-1].pos);
 
         break;
     case VIEW_ROTATING_PLANE:
         obj[0].rot.y.x=0; obj[0].rot.y.y=0; obj[0].rot.y.z=-1;
-        obj[0].rot.x.x=cos(angvisu1); obj[0].rot.x.y=sin(angvisu1); obj[0].rot.x.z=0;
-        obj[0].rot.z.x=-sin(angvisu1); obj[0].rot.z.y=cos(angvisu1); obj[0].rot.z.z=0;
+        obj[0].rot.x.x=cos(view_angle); obj[0].rot.x.y=sin(view_angle); obj[0].rot.x.z=0;
+        obj[0].rot.z.x=-sin(view_angle); obj[0].rot.z.y=cos(view_angle); obj[0].rot.z.z=0;
         copyv(&obj[0].pos,&obj[0].rot.z);
-        mulv(&obj[0].pos,-loinvisu);
-        addv(&obj[0].pos,&obj[bot[visubot].vion].pos);
+        mulv(&obj[0].pos,-extcam_dist);
+        addv(&obj[0].pos,&obj[bot[viewed_bot].vion].pos);
         if (obj[0].pos.z<(n=30+z_ground(obj[0].pos.x,obj[0].pos.y, true))) obj[0].pos.z=n;
         break;
     case VIEW_PLANE_FROM_ABOVE:
         copym(&obj[0].rot,&mat_id);
         neg(&obj[0].rot.z); neg(&obj[0].rot.y);
-        copyv(&obj[0].pos,&obj[bot[visubot].vion].pos);
-        obj[0].pos.z+=loinvisu;
+        copyv(&obj[0].pos,&obj[bot[viewed_bot].vion].pos);
+        obj[0].pos.z+=extcam_dist;
         break;
     case VIEW_ROTATING_BOMB:
         obj[0].rot.y.x=0; obj[0].rot.y.y=0; obj[0].rot.y.z=-1;
-        obj[0].rot.x.x=cos(angvisu1); obj[0].rot.x.y=sin(angvisu1); obj[0].rot.x.z=0;
-        obj[0].rot.z.x=-sin(angvisu1); obj[0].rot.z.y=cos(angvisu1); obj[0].rot.z.z=0;
+        obj[0].rot.x.x=cos(view_angle); obj[0].rot.x.y=sin(view_angle); obj[0].rot.x.z=0;
+        obj[0].rot.z.x=-sin(view_angle); obj[0].rot.z.y=cos(view_angle); obj[0].rot.z.z=0;
         copyv(&obj[0].pos,&obj[0].rot.z);
-        mulv(&obj[0].pos,-loinvisu);
-        addv(&obj[0].pos,&obj[visubomb].pos);
+        mulv(&obj[0].pos,-extcam_dist);
+        addv(&obj[0].pos,&obj[viewed_bomb].pos);
         break;
     case VIEW_ANYTHING_CHEAT:
         obj[0].rot.y.x=0; obj[0].rot.y.y=0; obj[0].rot.y.z=-1;
-        obj[0].rot.x.x=cos(angvisu1); obj[0].rot.x.y=sin(angvisu1); obj[0].rot.x.z=0;
-        obj[0].rot.z.x=-sin(angvisu1); obj[0].rot.z.y=cos(angvisu1); obj[0].rot.z.z=0;
+        obj[0].rot.x.x=cos(view_angle); obj[0].rot.x.y=sin(view_angle); obj[0].rot.x.z=0;
+        obj[0].rot.z.x=-sin(view_angle); obj[0].rot.z.y=cos(view_angle); obj[0].rot.z.z=0;
         copyv(&obj[0].pos,&obj[0].rot.z);
-        mulv(&obj[0].pos,-loinvisu);
-        addv(&obj[0].pos,&obj[visuobj].pos);
+        mulv(&obj[0].pos,-extcam_dist);
+        addv(&obj[0].pos,&obj[viewed_obj].pos);
         break;
     case VIEW_BEHIND_PLANE:
-        obj[0].pos = obj[bot[visubot].vion].pos;
-        obj[0].rot.x = obj[bot[visubot].vion].rot.y;
+        obj[0].pos = obj[bot[viewed_bot].vion].pos;
+        obj[0].rot.x = obj[bot[viewed_bot].vion].rot.y;
         neg(&obj[0].rot.x);
-        obj[0].rot.y = obj[bot[visubot].vion].rot.z;
+        obj[0].rot.y = obj[bot[viewed_bot].vion].rot.z;
         neg(&obj[0].rot.y);
-        obj[0].rot.z = obj[bot[visubot].vion].rot.x;
+        obj[0].rot.z = obj[bot[viewed_bot].vion].rot.x;
         struct vector p = obj[0].rot.z;
-        mulv(&p, -(loinvisu-80));
+        mulv(&p, -(extcam_dist-80));
         addv(&obj[0].pos, &p);
-        p = bot[visubot].vionvit;
+        p = bot[viewed_bot].vionvit;
         mulv(&p, -1.);
         addv(&obj[0].pos, &p);
         if (obj[0].pos.z < (n = 30 + z_ground(obj[0].pos.x, obj[0].pos.y, true))) {
@@ -464,7 +360,7 @@ static void setup_camera(float dt_sec)
         }
         break;
     case VIEW_STANDING:
-        subv3(&obj[bot[visubot].vion].pos,&obj[0].pos,&obj[0].rot.z);
+        subv3(&obj[bot[viewed_bot].vion].pos,&obj[0].pos,&obj[0].rot.z);
         renorme(&obj[0].rot.z);
         obj[0].rot.y.x=obj[0].rot.y.y=0;
         obj[0].rot.y.z=-1;
@@ -475,12 +371,9 @@ static void setup_camera(float dt_sec)
     }
 }
 
-enum view_type view = VIEW_IN_PLANE;
-int visubomb=0, mapmode=0, accel=0, autopilot=0, lapause=0, lepeintre=0, bmanu, imgcount=0;
-double loinvisu=110, visuteta=0,visuphi=0;
-uchar avancevisu=0, tournevisu=0, quitte=0, arme=0, AfficheHS=0;
-int main(int narg, char **arg) {
-    int i,j, dtradio=0, RedefineKeys=0;
+int main(int narg, char **arg)
+{
+    int i,j, dtradio=0;
     struct matrix m;
     int caisse=0, dtcaisse=0, oldgold=0, caissetot=0, maxgold=0, initradio=0;
     char *userid;
@@ -521,7 +414,6 @@ int main(int narg, char **arg) {
 "   killemAll       : Kill em All! (default : just be kool, this is a game)\n"
 "   plane n         : The plane you start with : 1 for Dewoitine, 2 for Corsair, etc (default : 2)\n"
 "   french          : Pour que les textes soient en francais (defaut : frenglish)\n"
-"   keys            : Redefine the keys and save in file '.fachoda-keys'\n"
 "   gruge           : Who knows ?\n"
 );
     /*
@@ -565,7 +457,6 @@ int main(int narg, char **arg) {
         else if (0 == strcasecmp(&arg[i][c],"plane")) {
             if (++i==narg || sscanf(arg[i],"%d",&monvion)!=1 || monvion<1 || monvion>NBNAVIONS) goto parse_error;
         } else if (0 == strcasecmp(&arg[i][c],"french")) lang=0;
-        else if (0 == strcasecmp(&arg[i][c],"keys")) RedefineKeys=1;
         else if (0 == strcasecmp(&arg[i][c],"gruge")) Gruge=1;
         else {
 parse_error:
@@ -600,8 +491,8 @@ parse_error:
     tbback2=tbback;
     initmapping();
     initsol();
-    for (i=0; i<NBREPMAX; i++) repere[i].x=MAXFLOAT;
-    if (opensound(with_sound)==-1) printf("Ce sera le monde du silence...\n");
+    for (i=0; i<NBREPMAX; i++) mark[i].x=MAXFLOAT;
+    if (sound_init(with_sound)==-1) printf("Ce sera le monde du silence...\n");
 
     /*
         VIDEO
@@ -616,79 +507,62 @@ parse_error:
     XFreeFontNames(fontname);
     XSetState(disp,gc,0xFFFF00,0,GXcopy,0xFFFFFF);
     XSetFont(disp,gc,xfont->fid);*/
-    /* KEYS */
+    // KEYS
     keys_load();
+    // Load sound samples
+    loadsample(SAMPLE_PRESENT,"snd/pingouin.raw", false, 1.);
+    loadsample(SAMPLE_BIPINTRO,"snd/bipintro.raw", false, 1.);
+    load_wave(SAMPLE_SHOT,"snd2/shot1.wav", false, 1.);
+    loadsample(SAMPLE_GEAR_DN,"snd/gear_dn.raw", false, 1.);
+    loadsample(SAMPLE_GEAR_UP,"snd/gear_up.raw", false, 1.);
+    loadsample(SAMPLE_SCREETCH,"snd/screetch.raw", false, 1.);
+    load_wave(SAMPLE_LOW_SPEED, "snd2/taxi.wav", true, .4);
+    load_wave(SAMPLE_MOTOR, "snd2/spit2.wav", true, .7);
+    loadsample(SAMPLE_HIT,"snd/hit.raw", false, 1.);
+    loadsample(SAMPLE_MESSAGE,"snd/message.raw", false, 1.);
+    load_wave(SAMPLE_EXPLOZ,"snd2/bombhit.wav", false, 1.);
+    load_wave(SAMPLE_BOMB_BLAST,"snd2/boum.wav", false, 1.);
+    loadsample(SAMPLE_TOLE,"snd/tole.raw", false, 1.);
+    loadsample(SAMPLE_BIPBIP,"snd/bipbip.raw", false, 1.);
+    loadsample(SAMPLE_BIPBIP2,"snd/bipbip2.raw", false, 1.);
+    loadsample(SAMPLE_BIPBIP3,"snd/bipcarte.raw", false, 1.);
+    loadsample(SAMPLE_FEU,"snd/feu.raw", true, 1.);
+    loadsample(SAMPLE_TARATATA,"snd/taratata.raw", false, 1.);
+    loadsample(SAMPLE_ALLELUIA,"snd/alleluia.raw", false, 1.);
+    loadsample(SAMPLE_ALERT,"snd/alert.raw", false, 1.);
+    loadsample(SAMPLE_PAIN,"snd/pain.raw", false, 1.);
+    load_wave(SAMPLE_DEATH,"snd2/death.wav", false, 1.);
+    load_wave(SAMPLE_BRAVO,"snd2/bravo.wav", false, 1.);
     // PRESENTATION
-    loadsample(PRESENT,"snd/pingouin.raw", false, 1.);
     animpresent();
-    if (RedefineKeys) {
-        redefinekeys();
-        goto fin;
-    }
-    loadsample(BIPINTRO,"snd/bipintro.raw", false, 1.);
-    if (present()==-1) goto fin;
-    //memset32((int*)videobuffer,BACKCOLOR,SX*SY);
+    if (present() == -1) goto fin;
     affpresent(0,0);
+    //
     pstr("LOADING and CREATING THE WORLD",_DY+(SY>>3)+10,0xE5D510);
-    /* SOUND */
-    load_wave(SHOT,"snd2/shot1.wav", false, 1.);
-    loadsample(GEAR_DN,"snd/gear_dn.raw", false, 1.);
-    loadsample(GEAR_UP,"snd/gear_up.raw", false, 1.);
-    loadsample(SCREETCH,"snd/screetch.raw", false, 1.);
-    load_wave(LOW_SPEED, "snd2/taxi.wav", true, .4);
-    load_wave(MOTOR, "snd2/spit2.wav", true, .7);
-    loadsample(HIT,"snd/hit.raw", false, 1.);
-    loadsample(MESSAGE,"snd/message.raw", false, 1.);
-    load_wave(EXPLOZ,"snd2/bombhit.wav", false, 1.);
-    load_wave(BOMB_BLAST,"snd2/boum.wav", false, 1.);
-    loadsample(TOLE,"snd/tole.raw", false, 1.);
-    loadsample(BIPBIP,"snd/bipbip.raw", false, 1.);
-    loadsample(BIPBIP2,"snd/bipbip2.raw", false, 1.);
-    loadsample(BIPBIP3,"snd/bipcarte.raw", false, 1.);
-    loadsample(FEU,"snd/feu.raw", true, 1.);
-    loadsample(TARATATA,"snd/taratata.raw", false, 1.);
-    loadsample(ALLELUIA,"snd/alleluia.raw", false, 1.);
-    loadsample(ALERT,"snd/alert.raw", false, 1.);
-    loadsample(PAIN,"snd/pain.raw", false, 1.);
-    load_wave(DEATH,"snd2/death.wav", false, 1.);
-    load_wave(BRAVO,"snd2/bravo.wav", false, 1.);
-    /*
-        contact le serveur
-                           */
     NBBOT+=NbHosts;
     playbotname = malloc(30*NbHosts);
-    strcpy(&(playbotname[bmanu])[0],myname);
+    strcpy(&(playbotname[controled_bot])[0],myname);
     if (Dark==-1) Dark=drand48()>.9;
     Fleuve=drand48()>.01;
     /*
-        Load les modèles
+        Load 3D models
                            */
     LoadModeles();
     /*
-        init le world
+        Populate world
                         */
     initworld();
-    // etre RAPIDE après, jusqu'au prochain NetSend, car le serveur
-    // attend la marque de fin de tour avec un timeout de 3 secondes !
-//  printf("World is now generated (%d objs) ; let it now degenerate !\n",nbobj);
-/*  for (dtradio=j=k=l=i=0; i<nbobj; i++) {
-        j+=mod[obj[i].model].nbpts[0];
-        k+=mod[obj[i].model].nbfaces[0];
-        l+=obj[i].objref==-1;
-        dtradio+=mod[obj[i].model].fixe==-1;
-    }
-    printf("Taille d'un objet : %d octets (%.3f Mo pour tous)\n",sizeof(objet),sizeof(objet)*(double)nbobj/1048576);
-    printf("%d Objets, %d Pts, %d Faces, %d obj autoréférencés, %d obj immobiles\n",nbobj,j,k,l,dtradio);*/
-    dtradio=0;
-    debtir=nbobj;
-    for (i=0; i<NBMAXTIR; i++) vieshot[i]=0;
-    if ((obj = realloc(obj, sizeof(*obj)*(nbobj+NBMAXTIR+1)))==NULL) { perror("realloc bot"); exit(-1); }
-    for (i=0; i<NBGRAVMAX; i++) debris[i].o=-1;
-    for (i=0; i<NBFUMEESOURCE; i++) fumeesourceintens[i]=0;
-    copyv(&obj[0].pos,&obj[bot[bmanu].vion].pos);
-    copym(&obj[0].rot,&obj[bot[bmanu].vion].rot);
-    visubot=bmanu;
-    bombidx=0;
+    debtir = nbobj;
+    printf("World is now generated (%d objs) ; let it now degenerate !\n", nbobj);
+    for (i=0; i<NBMAXTIR; i++) vieshot[i] = 0;
+    for (i=0; i<NBGRAVMAX; i++) debris[i].o = -1;
+    for (i=0; i<NBFUMEESOURCE; i++) fumeesourceintens[i] = 0;
+    // Camera is obj[0]
+    obj[0].pos = obj[bot[controled_bot].vion].pos;
+    obj[0].rot = obj[bot[controled_bot].vion].rot;
+    viewed_bot = controled_bot;
+    bombidx = 0;
+
     // effacer les tableaux de bord, les poscams et les charnières
     for (i=0; i<NBBOT; i++) {
         obj[bot[i].vion+plane_desc[bot[i].navion].tabbord].aff=0;
@@ -697,7 +571,7 @@ parse_error:
             obj[bot[i].vion+j+plane_desc[bot[i].navion].nbmoyeux+1].aff=0;
     }
     // VISION
-    playsound(VOICEEXTER, TARATATA, 1., &voices_in_my_head, true, false);
+    playsound(VOICE_EXTER, SAMPLE_TARATATA, 1., &voices_in_my_head, true, false);
 
     /*
      * Here comes the Big Bad Loop
@@ -705,19 +579,19 @@ parse_error:
 
     gtime_start();
     do {
-        if (accel) gtime_accel(MAX_DT >> 1);
+        if (accelerated_mode) gtime_accel(MAX_DT >> 1);
         float const dt_sec = gtime_next_sec();
 //      printf("dt = %f\n", dt_sec);
 
         struct vector v,u;
-        Exploze=0;
-        imgcount++;
+        explosion = false;
+        frame_count++;
 
         // PJ
-        manuel(bmanu);
+        control(controled_bot);
 
         // PNJ
-        if (!lapause) {
+        if (!game_paused) {
             // calcul les pos du sol
             for (i=0; i<NBBOT; i++) bot[i].zs=obj[bot[i].vion].pos.z-z_ground(obj[bot[i].vion].pos.x,obj[bot[i].vion].pos.y, true);
             for (i=NbHosts; i<NBBOT; i++) robot(i);
@@ -737,11 +611,11 @@ parse_error:
             // message d'alerte ?
             float n;
             if (
-                bot[bmanu].camp != -1 &&    // not dead
-                bot[bmanu].vionvit.z < -.3*ONE_METER && // and fast toward the ground
-                (n=bot[bmanu].vionvit.z * 10 + bot[bmanu].zs) < 0  // will hit ground in less than 10s
+                bot[controled_bot].camp != -1 &&    // not dead
+                bot[controled_bot].vionvit.z < -.3*ONE_METER && // and fast toward the ground
+                (n=bot[controled_bot].vionvit.z * 10 + bot[controled_bot].zs) < 0  // will hit ground in less than 10s
             ) {
-                playsound(VOICEALERT, ALERT, 1-n*.001, &voices_in_my_head, true, false);
+                playsound(VOICE_ALERT, SAMPLE_ALERT, 1-n*.001, &voices_in_my_head, true, false);
             }
             // avance les shots
             for (i=debtir; i<nbobj; i++) {
@@ -750,7 +624,7 @@ parse_error:
                 vieshot[i-debtir]--;
                 // collision ?
                 for (oc=map[obj[i].ak].first_obj; oc!=-1; oc=obj[oc].next) {
-                    if (obj[oc].type != BOMB && collision(i, oc)) {
+                    if (obj[oc].type != TYPE_BOMB && collision(i, oc)) {
                         if (hitgun(oc, i)) vieshot[i-debtir]=0;
                     }
                 }
@@ -762,7 +636,7 @@ parse_error:
                 randomv(&obj[i].rot.y);
                 orthov(&obj[i].rot.y,&obj[i].rot.x);
                 prodvect(&obj[i].rot.x,&obj[i].rot.y,&obj[i].rot.z);
-                controlepos(i);
+                obj_check_pos(i);
                 if (vieshot[i-debtir]==0 || obj[i].pos.z<z_ground(obj[i].pos.x,obj[i].pos.y, true)) {
                     obj[i].aff=0;   // pour qu'il soit plus affiché
 #ifndef DEMO
@@ -781,30 +655,30 @@ parse_error:
             }
             // déplace les bombes
             for (i=0; i<bombidx; i++) {
-                j=bombe[i].o;
+                j=bomb[i].o;
                 if (j!=-1) {
                     int oc, fg=0;
                     // FIXME: given dt, &pos, &vit, &acc, drag factor, apply gravity?
-                    bombe[i].vit.z -= G * dt_sec;
-                    mulv(&bombe[i].vit, pow(.9, dt_sec));
-                    v = bombe[i].vit;
+                    bomb[i].vit.z -= G * dt_sec;
+                    mulv(&bomb[i].vit, pow(.9, dt_sec));
+                    v = bomb[i].vit;
                     mulv(&v, dt_sec);
                     addv(&obj[j].pos, &v);
-                    controlepos(j);
+                    obj_check_pos(j);
                     // collision ?
                     for (oc=map[obj[j].ak].first_obj; oc!=-1; oc=obj[oc].next)
-                        if (obj[oc].type!=TIR && obj[oc].type!=CAMERA && obj[oc].type!=DECO && (oc<bot[bombe[i].b].vion || oc>=bot[bombe[i].b].vion+n_object[bot[bombe[i].b].navion].nbpieces) && collision(j,oc)) {
+                        if (obj[oc].type!=TYPE_SHOT && obj[oc].type!=TYPE_CAMERA && obj[oc].type!=TYPE_DECO && (oc<bot[bomb[i].b].vion || oc>=bot[bomb[i].b].vion+n_object[bot[bomb[i].b].navion].nbpieces) && collision(j,oc)) {
                             explose(oc,j);
                             fg=1;
                             break;
                         }
                     if (fg || obj[j].pos.z<z_ground(obj[j].pos.x,obj[j].pos.y, true)) {
-                        playsound(VOICEEXTER2, BOMB_BLAST, 1+(drand48()-.5)*.08, &obj[j].pos, false, false);
-                        obj[j].objref=bot[bombe[i].b].babase;
+                        playsound(VOICE_EXTER2, SAMPLE_BOMB_BLAST, 1+(drand48()-.5)*.08, &obj[j].pos, false, false);
+                        obj[j].objref=bot[bomb[i].b].babase;
                         copyv(&obj[j].pos,&vec_zero);
                         copym(&obj[j].rot,&mat_id);
-                        bombe[i].o=-1;
-                        while (bombidx>0 && bombe[bombidx-1].o==-1) bombidx--;
+                        bomb[i].o=-1;
+                        while (bombidx>0 && bomb[bombidx-1].o==-1) bombidx--;
                     }
                 }
             }
@@ -830,7 +704,7 @@ parse_error:
                     obj[debris[i].o].rot.z.z = c2;
                     debris[i].a1 += debris[i].ai1 * dt_sec;
                     debris[i].a2 += debris[i].ai2 * dt_sec;
-                    controlepos(debris[i].o);
+                    obj_check_pos(debris[i].o);
                     mulv(&debris[i].vit, pow(.99, dt_sec));
                     debris[i].vit.z -= G * dt_sec;
                     zs=z_ground(obj[debris[i].o].pos.x,obj[debris[i].o].pos.y, true);
@@ -866,7 +740,7 @@ parse_error:
 #                       define SMOKE_GROWING_SPEED (.3 * ONE_METER) // per seconds
                         mulv(&v, SMOKE_GROWING_SPEED * dt_sec);
                         addv(&obj[firstfumee+i].pos,&v);
-                        controlepos(firstfumee+i);
+                        obj_check_pos(firstfumee+i);
                     }
                 } else fumeedispo=i;
             }
@@ -880,7 +754,7 @@ parse_error:
                             rayonfumee[fumeedispo]=1;
                             typefumee[fumeedispo]=0;    // type noir
                             copyv(&obj[firstfumee+fumeedispo].pos,&obj[bot[i].vion].pos);
-                            controlepos(firstfumee+fumeedispo);
+                            obj_check_pos(firstfumee+fumeedispo);
                         }
                     }
                 }
@@ -893,48 +767,48 @@ parse_error:
                         if (fumeedispo>=0) {
                             rayonfumee[fumeedispo]=1;
                             copyv(&obj[firstfumee+fumeedispo].pos,&obj[fumeesource[i]].pos);
-                            controlepos(firstfumee+fumeedispo);
+                            obj_check_pos(firstfumee+fumeedispo);
                         }
                     }
                 }
             }
-            // fait avancer les voitures
+            // Animate cars
             for (i=0; i<NBVOITURES; i++) {
                 int dist;
-                if (obj[voiture[i].o].type==DECO) continue;
-                subv3(&route[voiture[i].r].i,&obj[voiture[i].o].pos,&u);
+                if (obj[car[i].o].type==TYPE_DECO) continue;
+                subv3(&route[car[i].r].i,&obj[car[i].o].pos,&u);
                 dist=fabs(u.x)+fabs(u.y);
-                if (dist>voiture[i].dist) {
-                    if (voiture[i].r<2 || voiture[i].r>routeidx-3 || route[voiture[i].r+voiture[i].sens].ak==-1) voiture[i].sens=-voiture[i].sens;
-                    if (route[voiture[i].r+voiture[i].sens].ak!=-1) {
-                        subv3(&route[voiture[i].r+voiture[i].sens].i,&route[voiture[i].r].i,&obj[voiture[i].o].rot.x);
-                        renorme(&obj[voiture[i].o].rot.x);
-                        orthov(&obj[voiture[i].o].rot.z,&obj[voiture[i].o].rot.x);
-                        renorme(&obj[voiture[i].o].rot.z);
-                        prodvect(&obj[voiture[i].o].rot.z,&obj[voiture[i].o].rot.x,&obj[voiture[i].o].rot.y);
-                        voiture[i].r+=voiture[i].sens;
+                if (dist>car[i].dist) {
+                    if (car[i].r<2 || car[i].r>routeidx-3 || route[car[i].r+car[i].sens].ak==-1) car[i].sens=-car[i].sens;
+                    if (route[car[i].r+car[i].sens].ak!=-1) {
+                        subv3(&route[car[i].r+car[i].sens].i,&route[car[i].r].i,&obj[car[i].o].rot.x);
+                        renorme(&obj[car[i].o].rot.x);
+                        orthov(&obj[car[i].o].rot.z,&obj[car[i].o].rot.x);
+                        renorme(&obj[car[i].o].rot.z);
+                        prodvect(&obj[car[i].o].rot.z,&obj[car[i].o].rot.x,&obj[car[i].o].rot.y);
+                        car[i].r+=car[i].sens;
                         dist=MAXINT;
-                    } else voiture[i].vit=0;
+                    } else car[i].vit=0;
                 }
-                voiture[i].dist=dist;
-                copyv(&v, &obj[voiture[i].o].rot.x);
-                mulv(&v, dt_sec * voiture[i].vit);
-                addv(&obj[voiture[i].o].pos, &v);
-                controlepos(voiture[i].o);
-                for (j=voiture[i].o+1; j<voiture[i+1].o; j++) calcposrigide(j);
+                car[i].dist=dist;
+                copyv(&v, &obj[car[i].o].rot.x);
+                mulv(&v, dt_sec * car[i].vit);
+                addv(&obj[car[i].o].pos, &v);
+                obj_check_pos(car[i].o);
+                for (j=car[i].o+1; j<car[i+1].o; j++) calcposrigide(j);
             }
-            // messages radio ?
+            // new radio messages
             if (msgactutime) msgactutime--;
             else if (initradio || !dtradio--) {
                 if (!SpaceInvaders && initradio) {
                     campactu=camp;
                     strcpy(msgactu,scenar[campactu][4-initradio][lang]);
                     initradio--;
-                    playsound(VOICEGEAR, MESSAGE, 1., &voices_in_my_head, true, false);
+                    playsound(VOICE_GEAR, SAMPLE_MESSAGE, 1., &voices_in_my_head, true, false);
                     msgactutime=40;
                 } else {
                     newprime();
-                    if (campactu==bot[visubot].camp) playsound(VOICEGEAR, MESSAGE, 1., &voices_in_my_head, true, false);
+                    if (campactu==bot[viewed_bot].camp) playsound(VOICE_GEAR, SAMPLE_MESSAGE, 1., &voices_in_my_head, true, false);
                     dtradio=10+drand48()*100;
                     if (campactu==0) {
                         dtradio+=10000;
@@ -942,22 +816,22 @@ parse_error:
                 }
             }
 
-            // fait tourner les moulins
+            // Animate mills
 #           define MILL_ANGULAR_SPEED (2. * M_PI / 5.)  // one rotation every 5 secs
             AngleMoulin += (1. - 0.2*(drand48()-0.5)) * dt_sec;
             m.x.x=1; m.x.y=0; m.x.z=0;
             m.y.x=0; m.y.y=cos(AngleMoulin); m.y.z=sin(AngleMoulin);
             m.z.x=0; m.z.y=-sin(AngleMoulin); m.z.z=cos(AngleMoulin);
             for (i=DebMoulins+1; i<FinMoulins; i+=10){
-                if (obj[i].type!=DECO) {
+                if (obj[i].type!=TYPE_DECO) {
                     calcposarti(i,&m);
                     for (j=i+1; j<i+5; j++) calcposrigide(j);
                 }
             }
 
-            for (i=0; i<NBBOT; i++) control_plane(i, dt_sec);
-            for (i=0; i<NBTANKBOTS; i++) control_vehic(i, dt_sec);
-            for (i=0; i<NBZEPS; i++) control_zep(i, dt_sec);
+            for (i = 0; i < NBBOT; i++) physics_plane(i, dt_sec);
+            for (i = 0; i < NBTANKBOTS; i++) physics_tank(i, dt_sec);
+            for (i = 0; i < NBZEPS; i++) physics_zep(i, dt_sec);
 
             // Now that we know the location of all objects, setup the camera.
             setup_camera(dt_sec);
@@ -967,12 +841,12 @@ parse_error:
             update_listener(&obj[0].pos, &velocity, &obj[0].rot);
 
             // Draw the frame
-            if (!accel || 0 == (imgcount&31)) {
+            if (!accelerated_mode || 0 == (frame_count&31)) {
                 // RENDU
                 // La lumière vient d'où ?
                 copym(&Light,&LightSol);
-                if (Exploze) {
-                    subv3(&obj[0].pos,&ExplozePos,&u);
+                if (explosion) {
+                    subv3(&obj[0].pos,&explosion_pos,&u);
                     if (renorme(&u)<ECHELLE) {
                         copyv(&Light.z,&u);
                         Light.x.x=u.y;
@@ -984,18 +858,17 @@ parse_error:
                     }
                 }
                 animsoleil();
-                if (mapmode) {
-                    rendumapbg();
-                    rendumap();
+                if (map_mode) {
+                    map_draw();
                 } else {
                     background();
                     affsoleil(&Light.z);
-                    mulmtv(&obj[bot[visubot].vion].rot,&Light.z,&v);
+                    mulmtv(&obj[bot[viewed_bot].vion].rot,&Light.z,&v);
                     lx=-127*v.y; ly=-127*v.z; lz=50*v.x+77;
-                    if (plane_desc[bot[visubot].navion].oldtb) tbback=tbback1;
+                    if (plane_desc[bot[viewed_bot].navion].oldtb) tbback=tbback1;
                     else tbback=tbback2;
                     drawtbback();
-                    drawtbcadrans(visubot);
+                    drawtbcadrans(viewed_bot);
                     animate_water(dt_sec);
                     draw_ground_and_objects();
 #                   ifdef VEC_DEBUG
@@ -1010,40 +883,34 @@ parse_error:
                         }
                     }
                     if (Easy) {
-                        if (bot[visubot].cibt != -1) {
-                            draw_target(obj[bot[visubot].cibt].pos, 0xC02080);
-                            fall_min_dist2(visubot);
-                            draw_mark(bot[visubot].drop_mark, 0x400000);
+                        if (bot[viewed_bot].cibt != -1) {
+                            draw_target(obj[bot[viewed_bot].cibt].pos, 0xC02080);
+                            fall_min_dist2(viewed_bot);
+                            draw_mark(bot[viewed_bot].drop_mark, 0x400000);
                         }
-                        if (bot[visubot].cibv != -1) draw_target(obj[bot[visubot].cibv].pos, 0xC08020);
-                        struct vector nav = bot[visubot].u;
-                        nav.z += bot[visubot].target_rel_alt;
+                        if (bot[viewed_bot].cibv != -1) draw_target(obj[bot[viewed_bot].cibv].pos, 0xC08020);
+                        struct vector nav = bot[viewed_bot].u;
+                        nav.z += bot[viewed_bot].target_rel_alt;
                         draw_target(nav, 0x20F830);
                     }
                 }
-                if (view == VIEW_DOGFIGHT && bot[bmanu].camp!=-1) cercle(0,0,10,colcamp[(int)bot[bmanu].camp]);
-                plotmouse(_DX*bot[visubot].xctl,_DY*bot[visubot].yctl);
+                if (view == VIEW_DOGFIGHT && bot[controled_bot].camp!=-1) cercle(0,0,10,colcamp[(int)bot[controled_bot].camp]);
+                plotmouse(_DX*bot[viewed_bot].xctl,_DY*bot[viewed_bot].yctl);
 #               ifdef PRINT_DEBUG
-                if (bot[visubot].aerobatic != MANEUVER) {
-                    pstr(aerobatic_2_str(bot[visubot].aerobatic), 20, 0xFF8080);
+                if (bot[viewed_bot].aerobatic != MANEUVER) {
+                    pstr(aerobatic_2_str(bot[viewed_bot].aerobatic), 20, 0xFF8080);
                 } else {
-                    pstr(maneuver_2_str(bot[visubot].maneuver), 20, 0x80FF80);
+                    pstr(maneuver_2_str(bot[viewed_bot].maneuver), 20, 0x80FF80);
                 }
 #               endif
-/*
-                pnum(bot[visubot].vitlin,SX-50,30,0xFFFFFF,1);
-                pnum(norme(&bot[visubot].vionvit),SX-50,40,0xFFFF,1);
-                pnum(bot[visubot].zs,SX-50,50,0xFFFF,1);
-                pnum(bot[visubot].cibt,SX-50,60,0xFFFFFF,1);
-                pnum(bot[visubot].gunned,SX-50,70,0xFFFFFF,1);*/
-                // AFFICHAGE DIGITAL MODE FACILE
+                // HUD
                 if (Easy) {
-                    int const b = visubot; // bmanu;
+                    int const b = viewed_bot; // controled_bot;
                     pword("Sz:", 10, 10, 0x406040);
                     pnum(bot[b].vionvit.z, 40, 10, 0xAFDF10, 1);
                     pword("Sl:", 10, 20, 0x406040);
                     pnum(bot[b].vitlin, 40, 20, 0xFFFFFF, 1);
-                    if (autopilot || b != bmanu) {
+                    if (autopilot || b != controled_bot) {
                         float const diff_speed = bot[b].target_speed - bot[b].vitlin;
                         pnum(diff_speed, 40+4*10, 20, diff_speed > 0 ? 0xD0D0F0 : 0xF0D0D0, 1);
                     }
@@ -1051,7 +918,7 @@ parse_error:
                     pnum(norme(&bot[b].vionvit), 40, 30, 0x00FFFF, 1);
                     pword("Zg:", 10, 40, 0x406040);
                     pnum(bot[b].zs, 40, 40, 0xFF00FF, 1);
-                    if (autopilot || b != bmanu) {
+                    if (autopilot || b != controled_bot) {
                         float const diff_alt = (bot[b].u.z + bot[b].target_rel_alt) - obj[bot[b].vion].pos.z;
                         pnum(diff_alt, 40+4*10, 40, diff_alt > 0 ? 0xD0D0F0 : 0xF0D0D0, 1);
                     }
@@ -1060,9 +927,9 @@ parse_error:
                     if (bot[b].but.frein) pword("brakes",10,80,0xD0D0D0);
                     if (autopilot) pword("auto", 10, 90, 0xD0D0D0);
                 }
-                if (accel) pstr("ACCELERATED MODE",_DY/3,0xFFFFFF);
-                if (quitte==1) pstr("Quit ? Yes/No",_DY/2-8,0xFFFFFF);
-                if (msgactutime && bot[visubot].camp==campactu) pstr(msgactu,10,0xFFFF00);
+                if (accelerated_mode) pstr("ACCELERATED MODE",_DY/3,0xFFFFFF);
+                if (prompt_quit) pstr("Quit ? Yes/No",_DY/2-8,0xFFFFFF);
+                if (msgactutime && bot[viewed_bot].camp==campactu) pstr(msgactu,10,0xFFFF00);
                 if (view == VIEW_DOGFIGHT && bot[DogBot].camp!=-1) {
                     char vn[100];
                     snprintf(vn, sizeof(vn), "%s%s%s%s",
@@ -1073,8 +940,8 @@ parse_error:
                     pstr(vn, SY-12, colcamp[(int)bot[DogBot].camp]);
                 }
                 // Display current balance
-                if (bot[bmanu].gold - 2000 > maxgold) {
-                    maxgold = bot[bmanu].gold - 2000;
+                if (bot[controled_bot].gold - 2000 > maxgold) {
+                    maxgold = bot[controled_bot].gold - 2000;
                     if (maxrank < ARRAY_LEN(highscore)) highscore[maxrank].score = maxgold;
                     while (maxrank > 0 && highscore[maxrank-1].score < maxgold) {
                         maxrank--;
@@ -1082,17 +949,17 @@ parse_error:
                             memcpy(&highscore[maxrank+1], &highscore[maxrank], sizeof(struct high_score));
                         }
                         highscore[maxrank].score = maxgold;
-                        snprintf(highscore[maxrank].name, sizeof(highscore[maxrank].name), "%s", playbotname[bmanu]);
+                        snprintf(highscore[maxrank].name, sizeof(highscore[maxrank].name), "%s", playbotname[controled_bot]);
                     }
                 }
-                if (bot[bmanu].gold>oldgold) {
-                    if (!caissetot && caisse>0) caisse+=bot[bmanu].gold-oldgold;
-                    else caisse=bot[bmanu].gold-oldgold;
+                if (bot[controled_bot].gold>oldgold) {
+                    if (!caissetot && caisse>0) caisse+=bot[controled_bot].gold-oldgold;
+                    else caisse=bot[controled_bot].gold-oldgold;
                     dtcaisse=20;
                     caissetot=0;
-                } else if (oldgold>bot[bmanu].gold) {
-                    if (!caissetot && caisse<0) caisse+=bot[bmanu].gold-oldgold;
-                    else caisse=bot[bmanu].gold-oldgold;
+                } else if (oldgold>bot[controled_bot].gold) {
+                    if (!caissetot && caisse<0) caisse+=bot[controled_bot].gold-oldgold;
+                    else caisse=bot[controled_bot].gold-oldgold;
                     dtcaisse=20;
                     caissetot=0;
                 }
@@ -1101,19 +968,19 @@ parse_error:
                     dtcaisse--;
                     if (!dtcaisse) {
                         if (!caissetot) {
-                            caisse=bot[bmanu].gold;
+                            caisse=bot[controled_bot].gold;
                             dtcaisse=30;
                             caissetot=1;
-                            playsound(VOICEGEAR, MESSAGE, 1.4, &voices_in_my_head, true, false);
+                            playsound(VOICE_GEAR, SAMPLE_MESSAGE, 1.4, &voices_in_my_head, true, false);
                         } else {
                             caissetot=0;
                             caisse=0;
                         }
                     }
                 }
-                oldgold=bot[bmanu].gold;
+                oldgold=bot[controled_bot].gold;
 
-                if (AfficheHS) {
+                if (draw_high_scores) {
                     int y=(SY-(ARRAY_LEN(highscore)+2)*9)>>1;
                     pstr("Hall of Shame",y,0xFFFFFF);
                     for (unsigned i = 0; i < ARRAY_LEN(highscore); i++) {
@@ -1126,22 +993,18 @@ parse_error:
                 buffer2video();
             }
         }
-    } while (quitte<2);
+    } while (! quit_game);
     // FIN
 fin:
-//  XFreeFont(disp,xfont);
-//  XAutoRepeatOn(disp);    // Ceci concerne tous les programmes, donc
-//  aussi d'autres clients tournant sur la meme machine... ce qui
-//  théoriquement n'arrive que chez moi pour les tests.
-    exitsound();
-    system("xset r on");    // pis aller
-    // sauver les highscore
+    sound_fini();
+    system("xset r on");    // FIXME
+    // save highscores
     if (!Easy && !ViewAll && plane_desc[monvion-1].prix<=plane_desc[0].prix && (file=file_open(".fachoda-highscores", getenv("HOME"), "w+"))!=NULL) {
         fwrite(&highscore, sizeof(struct high_score), ARRAY_LEN(highscore), file);
         fclose(file);
     }
     {
-        // affiche les highscores
+        // print highscores
         char *rank[9][2]={
             { "affamé", "famished" },
             { "assisté", "needy" },
@@ -1167,5 +1030,5 @@ fin:
             (maxgold>16000);
         printf("\n    Your score : %d\n    %s %s.\n\n",maxgold,lang?"You retreat as a":"Vous vous retirez en tant que",rank[i][lang]);
     }
-    exit(0);
+    return EXIT_SUCCESS;
 }

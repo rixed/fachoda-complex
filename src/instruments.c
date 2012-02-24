@@ -144,8 +144,10 @@ void loadtbtile(char *fn) {
     tbback = malloc(SXTB*SYTB*sizeof(*tbback));
     vid=tbback;
     for (y=0; y<SYTB; y++) {
-        for (x=0; x<SXTB-sxtbtile; x+=sxtbtile) MMXCopy((int*)vid+x,(int*)tbtile+(y%sytbtile)*sxtbtile,sxtbtile);
-        MMXCopy((int*)vid+x,(int*)tbtile+(y%sytbtile)*sxtbtile,SXTB-x);
+        for (x=0; x<SXTB-sxtbtile; x+=sxtbtile) {
+            memcpy(vid+x, tbtile+(y%sytbtile)*sxtbtile, sxtbtile*sizeof(*vid));
+        }
+        memcpy(vid+x, tbtile+(y%sytbtile)*sxtbtile, (SXTB-x)*sizeof(*vid));
         vid+=SXTB;
     }
     free(tbtile);
@@ -261,7 +263,7 @@ void loadtbtile(char *fn) {
 }
 void drawtbback() {
     int y;
-    for (y=0; y<SYTB; y++) MMXCopy(mapping+((MARGE+y)<<8)+MARGE,(int*)tbback+SXTB*y,SXTB);
+    for (y=0; y<SYTB; y++) memcpy(mapping+((MARGE+y)<<8)+MARGE, tbback+SXTB*y, SXTB*sizeof(*mapping));
 }
 
 int lx,ly,lz,lumdec=6;
@@ -300,8 +302,8 @@ void drawtbcadrans(int b) {
     // Cargo
     pnuma(bot[b].bullets,MARGE+xsoute+1+20,MARGE+ysoute+1,0x403010,0);
     pnuma(bot[b].nbomb,MARGE+xsoute+1+20,MARGE+ysoute+11, 0x403010,0);
-    pnuma(bot[b].bullets,MARGE+xsoute+20,MARGE+ysoute,b==bmanu && arme==0?0xFFFFFF:0xFFFF10,0);
-    pnuma(bot[b].nbomb,MARGE+xsoute+20,MARGE+ysoute+10,b==bmanu && arme==1?0xFFFFFF:0xFFFF10,0);
+    pnuma(bot[b].bullets,MARGE+xsoute+20,MARGE+ysoute,b==controled_bot && selected_weapon==0?0xFFFFFF:0xFFFF10,0);
+    pnuma(bot[b].nbomb,MARGE+xsoute+20,MARGE+ysoute+10,b==controled_bot && selected_weapon==1?0xFFFFFF:0xFFFF10,0);
     lumdec=7;
     rectangleL(xsoute-1,ysoute-1,32,22);    // regrouper à la fin et faire un seul MMXSAVEFPU
     // Thrust
@@ -405,8 +407,8 @@ void drawtbcadrans(int b) {
     disqueL(xauto,yauto,rauto);
     // Compas
     p1.x=xbous; p1.y=ybous;
-    p2.x=rbous*.6*cos(bot[visubot].cap)+p1.x;
-    p2.y=-rbous*.6*sin(bot[visubot].cap)+p1.y;
+    p2.x=rbous*.6*cos(bot[viewed_bot].cap)+p1.x;
+    p2.y=-rbous*.6*sin(bot[viewed_bot].cap)+p1.y;
     drawline2(&p1,&p2,0xF0F000);
     lumdec=6;
     disqueL(xbous,ybous,rbous);

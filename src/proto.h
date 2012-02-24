@@ -29,8 +29,6 @@
 #define SQUARE(x) ((x)*(x))
 #define ARRAY_LEN(x) (sizeof(x)/sizeof((x)[0]))
 
-#define NHASH 11    // 2048 eléments dans la table de hash
-#define NBREPHASH   4   // nbr max d'éléments dans la meme case de la table
 #define NBZEPS 20
 #define NBVOITURES 400
 #define BACKCOLOR 0xAC8DBD
@@ -78,7 +76,7 @@
 
 //#define NBNOMVILLAGE 5
 
-enum obj_type { CAMERA, TIR, AVION, CIBGRAT, BOMB, PHARE, VEHIC, DECO, GRAV, NUAGE, FUMEE, TABBORD, ZEPPELIN };
+enum obj_type { TYPE_CAMERA, TYPE_SHOT, TYPE_PLANE, TYPE_CAR, TYPE_BOMB, TYPE_LIGHT, TYPE_TANK, TYPE_DECO, TYPE_GRAV, TYPE_CLOUD, TYPE_SMOKE, TYPE_INSTRUMENTS, TYPE_ZEPPELIN };
 
 typedef unsigned char uchar;
 
@@ -144,7 +142,7 @@ struct button {
     char gearup:1;  // if the gears are currently up
     char frein:1;
     char business:1;
-    char repere:1;
+    char mark:1;
 };
 
 struct face {
@@ -177,7 +175,7 @@ struct object {
     short int ak;
     struct vector posc;
     float distance; // eloignement en R2 a la camera
-    struct vector t;   // position du centre dans le repere de la camera
+    struct vector t;   // position du centre dans le mark de la camera
     uchar aff:1;    // 0 = pas aff, 1=aff normal
 };
 
@@ -185,7 +183,7 @@ struct part {
     char *fn, *fnlight;
     int pere;   // relativement à la première pièce du modèle
     char plat:1;    // 1 si la piece est plate
-    char bomb:3;    // 0 si pas bombe, 1 si light, 2 si HEAVY ! 3 = destructible à la bombe, pour instal terrestres
+    char bomb:3;    // 0 si pas bomb, 1 si light, 2 si HEAVY ! 3 = destructible à la bomb, pour instal terrestres
     char mobil;
     char platlight:1;
 };
@@ -346,24 +344,19 @@ struct car {
     int dist;
 };
 
-// naw.c
+// main.c
 #define NbHosts 1   // Later, will be the number of opened slots
-extern struct vector ExplozePos;
-extern int Exploze;
+extern struct vector explosion_pos;
+extern bool explosion;  // Tru if explosion_pos is set with the location of an explosion in this frame, to use as an alternate light source
 extern int DebMoulins, FinMoulins;
-void akref(int ak,struct vector *r);
 int akpos(struct vector *p);
-void basculeY(int o, float a);
-void basculeX(int o, float a);
-void basculeZ(int o, float a);
 extern char (*playbotname)[30];
-int resurrect(void);
 extern int NBBOT,NBTANKBOTS, camp, AllowResurrect, Easy, Gruge, ViewAll, SpaceInvaders, monvion, lang, Dark, Fleuve, MouseCtl, Accident, Smooth;
 extern float CtlSensitiv, CtlSensActu, CtlAmortis, CtlYequ;
 extern char myname[30];
 extern int fumeesource[], fumeesourceintens[];
 extern struct debris debris[];
-extern struct bomb *bombe;
+extern struct bomb *bomb;
 extern int bombidx;
 extern int babaseo[2][3][4];
 extern enum view_type {
@@ -381,30 +374,29 @@ extern enum view_type {
     NB_VIEWS,
 } view;
 enum view_type next_external_view(enum view_type);
-extern int visubomb,mapmode, accel, autopilot, bmanu, lapause, imgcount, visuobj;
-extern double loinvisu, visuteta, visuphi;
-extern uchar avancevisu,tournevisu,quitte,arme,AfficheHS;
+extern int viewed_bomb,map_mode, accelerated_mode, autopilot, controled_bot, game_paused, frame_count, viewed_obj;
+extern double extcam_dist, sight_teta, sight_phi;
+extern bool view_instruments, view_predef, prompt_quit, quit_game, draw_high_scores;
+extern int selected_weapon;
 extern struct matrix mat_id;
 extern struct vector vac_diag, vec_zero, vec_g;
 extern struct matrix mat_id;
 extern struct model *mod;
-extern struct object *obj;
-extern int nbobj, debtir;
+extern struct object obj[];
+extern int nbobj;
+extern int debtir;
 extern double focale;
 extern struct matrix Light;
-extern char PHONG;
-extern float TROPLOIN,TROPLOIN2;
-extern int _DX,_DY,SX,SY,SYTB,SXTB,SIZECERCLE,POLYMAX,TBY;
+extern int _DX,_DY,SX,SY,SYTB,SXTB,SIZECERCLE,TBY;
 extern int nbtir;
-void addobjet(int, struct vector *, struct matrix *, int, uchar);
-extern int visubot;
+void object_add(int, struct vector *, struct matrix *, int, uchar);
+extern int viewed_bot;
 extern int gold;
 extern int gunner[NBMAXTIR];
 extern short int vieshot[NBMAXTIR];
 extern uchar *rayonfumee;
 extern uchar *typefumee;
 extern int firstfumee;
-void tournevion(int v, float d, float p, float g);
 // video_interf
 extern int bank, size, width, BufVidOffset, depth;
 extern struct pixel32 *videobuffer;
@@ -412,8 +404,8 @@ extern char *video;
 void buffer2video(void);
 char getscancode(void);
 void initvideo(bool fullscreen);
-int kread(unsigned n);
-int kreset(unsigned n);
+bool kread(unsigned n);
+bool kreset(unsigned n);
 void xproceed(void);
 // renderer.c
 void calcposrigide(int o);
@@ -462,7 +454,7 @@ void pword(char const *m, int x, int y, int c);
 void pwordlent(char const *m, int x, int y, int c);
 void pstr(char const *m, int y, int c);
 void pstrlent(char const *m, int y, int c);
-// modele.c
+// model.c
 extern struct plane_desc plane_desc[];
 extern struct n_object n_object[];
 void LoadModeles(void);
@@ -475,22 +467,21 @@ extern char *nomvillage[];
 extern char msgactu[1000];
 extern int msgactutime;
 extern int campactu;
-// map.c
+// heightfield.c
 void polyclip(struct vecic *p1, struct vecic *p2, struct vecic *p3);
 extern struct pixel *colormap;
 extern uchar *mapcol;
-// carte.c
-extern struct vector repere[NBREPMAX];
-extern int zoom, xcarte, ycarte, repidx;
-void rendumap(void);
-void rendumapbg(void);
+// map.c
+extern struct vector mark[NBREPMAX];
+extern int zoom, map_x, map_y, next_mark_set;
+void map_draw(void);
 extern int colcamp[4];
 
 // FIXME: defined in robot.c but should go elsewhere
 extern struct bot *bot;
-extern struct tank *vehic;
+extern struct tank *tank;
 extern struct zeppelin *zep;
-extern struct car *voiture;
+extern struct car *car;
 
 //tableaubord.c
 extern int xsoute,ysoute,xthrust,ythrust,rthrust,xspeed,yspeed,rspeed,xalti,yalti,ralti,xinclin,yinclin,hinclin,dxinclin,xgear,ygear,rgear;
@@ -508,22 +499,22 @@ extern short int sxtbtile, sytbtile;
 extern struct pixel32 *tbtile, *tbback, *tbback1, *tbback2;
 extern uchar *tbz;
 extern int *tbwidth;
-// control
+// physics
 #define BEST_LIFT_SPEED (2.5 * ONE_METER)    // according to control.c
 #define MIN_SPEED_FOR_LIFT 120.
-extern float soundthrust;
-void control_plane(int b, float dt_sec);
-void control_vehic(int v, float dt_sec);
-void controlepos(int i);
-void control_zep(int z, float dt_sec);
+extern float snd_thrust;
+void physics_plane(int b, float dt_sec);
+void physics_tank(int v, float dt_sec);
+void obj_check_pos(int i);
+void physics_zep(int z, float dt_sec);
 // mapping.c
 void polymap(struct vect2dm *p1, struct vect2dm *p2, struct vect2dm *p3);
 void initmapping(void);
 extern int *mapping;
 void polyphong(struct vect2dlum *p1, struct vect2dlum *p2, struct vect2dlum *p3, struct pixel c);
-// manuel.c
-void NextDogBot(void);
-void manuel(int b);
+// control.c
+void next_dog_bot(void);
+void control(int b);
 extern uchar but1released,but2released;
 extern int xmouse,ymouse,bmouse;
 extern int DogBot;
@@ -556,14 +547,12 @@ void MMXFlatTransp(int *dest, int nbr, int c);
 void memset32(int *deb, int coul, int n);
 void MMXAddSatInt(int *deb, int coul, int n);
 void MMXCopyToScreen(int *dest, int *src, int sx, int sy, int width);
-void MMXCopy(int *dest, int *src, int nbr);
 extern uchar *BigFont;
 extern uchar font[112][10];
 // keycodes
 extern struct kc gkeys[NBKEYS];
-// route
+// roads
 extern int largroute[3];
-extern short (*map2route)[NBREPHASH];
 void hashroute(void);
 extern int NbElmLim, EndMotorways, EndRoads;
 extern struct road *route;
@@ -572,8 +561,7 @@ void initroute(void);
 void endinitroute(void);
 void prospectroute(struct vector *i,struct vector *f);
 void traceroute(struct vector *i,struct vector *f);
-// drawroute
-void drawroute(int bb/*, struct vecic *ptref*/);
+void drawroute(int bb);
 // init
 void affjauge(float j);
 void initworld(void);

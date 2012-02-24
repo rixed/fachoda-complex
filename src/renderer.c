@@ -21,7 +21,7 @@
 #include <stdbool.h>
 #include <math.h>
 #include <values.h>
-#include "map.h"
+#include "heightfield.h"
 
 #define cam obj[0]
 struct vect2dlum *pts2d;
@@ -287,13 +287,13 @@ void calcposrigide(int o) {
     mulmv(&obj[obj[o].objref].rot,&mod[obj[o].model].offset,&obj[o].pos);
     addv(&obj[o].pos,&obj[obj[o].objref].pos);
     copym(&obj[o].rot,&obj[obj[o].objref].rot);
-    controlepos(o);
+    obj_check_pos(o);
 }
 void calcposarti(int o, struct matrix *m) {
     mulmv(&obj[obj[o].objref].rot,&mod[obj[o].model].offset,&obj[o].pos);
     addv(&obj[o].pos,&obj[obj[o].objref].pos);
     mulm3(&obj[o].rot,&obj[obj[o].objref].rot,m);
-    controlepos(o);
+    obj_check_pos(o);
 }
 void calcposaind(int i) {
     int xk,yk,ak;
@@ -323,8 +323,8 @@ void calcposaind(int i) {
 }
 void calcposa() {
     // calcule les pos et les rot absolues des objets du monde réel
-    int i, xk, yk, ak;
-    for (i=0; i<nbobj; i++) {
+    int xk, yk, ak;
+    for (int i=0; i<nbobj; i++) {
 /*      if (obj[i].objref!=-1 && obj[i].objref<i) {
             mulmv(&obj[obj[i].objref].rota,&obj[i].pos,&obj[i].posa);
             addv(&obj[i].posa,&obj[obj[i].objref].posa);    // que deux passes possibles !
@@ -497,7 +497,7 @@ void renderer(int ak, enum render_part fast) {
     if (map[ak].first_obj==-1) return;
     // boucler sur tous les objets
     for (o=map[ak].first_obj; o!=-1; o=obj[o].next) {
-        if ((fast==1 && obj[o].type!=NUAGE) || fast==2) continue;
+        if ((fast==1 && obj[o].type!=TYPE_CLOUD) || fast==2) continue;
         // calcul la position de l'objet dans le repère de la caméra, ie CamT*(objpos-campos)
 //      if (obj[o].model==0) continue;  // une roue effacée
 //      copyv(&obj[o].t,&obj[o].pos);
@@ -534,7 +534,7 @@ void renderer(int ak, enum render_part fast) {
     if (fast!=1) do {
         float z;
         char aff=norme2(&obj[o].t)<ECHELLE*ECHELLE*4;
-        if (obj[o].aff && (fast==3 || (fast==0 && (obj[o].type==CIBGRAT || obj[o].type==VEHIC || obj[o].type==PHARE || obj[o].type==DECO || obj[o].type==GRAV)) || (fast==2 && (obj[o].type==AVION || obj[o].type==ZEPPELIN || obj[o].type==TABBORD || obj[o].type==BOMB)))) {
+        if (obj[o].aff && (fast==3 || (fast==0 && (obj[o].type==TYPE_CAR || obj[o].type==TYPE_TANK || obj[o].type==TYPE_LIGHT || obj[o].type==TYPE_DECO || obj[o].type==TYPE_GRAV)) || (fast==2 && (obj[o].type==TYPE_PLANE || obj[o].type==TYPE_ZEPPELIN || obj[o].type==TYPE_INSTRUMENTS || obj[o].type==TYPE_BOMB)))) {
             mulmt3(&oL[no], &obj[o].rot, &Light);
 #define DISTLUM 300.
             mulv(&oL[no].x,DISTLUM);
@@ -570,7 +570,7 @@ void renderer(int ak, enum render_part fast) {
     o=map[ak].first_obj; no=0;
     if (fast!=1) while (obj[o].next!=-1 /*&& (viewall || obj[obj[o].next].distance<TL2)*/) { o=obj[o].next; no++; }
     do {
-        if (fast==3 || (fast==1 && obj[o].type==NUAGE) || (fast==0 && (obj[o].type==CIBGRAT || obj[o].type==VEHIC || obj[o].type==PHARE || obj[o].type==DECO || obj[o].type==GRAV)) || (fast==2 && (obj[o].type==AVION || obj[o].type==ZEPPELIN || obj[o].type==FUMEE || obj[o].type==TIR || obj[o].type==BOMB || obj[o].type==TABBORD || obj[o].type==NUAGE))) {
+        if (fast==3 || (fast==1 && obj[o].type==TYPE_CLOUD) || (fast==0 && (obj[o].type==TYPE_CAR || obj[o].type==TYPE_TANK || obj[o].type==TYPE_LIGHT || obj[o].type==TYPE_DECO || obj[o].type==TYPE_GRAV)) || (fast==2 && (obj[o].type==TYPE_PLANE || obj[o].type==TYPE_ZEPPELIN || obj[o].type==TYPE_SMOKE || obj[o].type==TYPE_SHOT || obj[o].type==TYPE_BOMB || obj[o].type==TYPE_INSTRUMENTS || obj[o].type==TYPE_CLOUD))) {
             if (obj[o].aff && obj[o].posc.z>-mod[obj[o].model].rayon) { // il faut déjà que l'objet soit un peu devant la caméra et que ce soit pas un objet à passer...
                 int visu;
                 if (obj[o].posc.z>0) {
@@ -579,7 +579,7 @@ void renderer(int ak, enum render_part fast) {
                     rayonapparent = proj1(mod[obj[o].model].rayon,obj[o].posc.z);
                     visu = e.x>-rayonapparent && e.x<SX+rayonapparent && e.y>-rayonapparent && e.y<SY+rayonapparent;
                 } else {    // verifier la formule qd meme...
-                    if (obj[o].type!=NUAGE && obj[o].type!=FUMEE && obj[o].type!=PHARE) {
+                    if (obj[o].type!=TYPE_CLOUD && obj[o].type!=TYPE_SMOKE && obj[o].type!=TYPE_LIGHT) {
                         double r = mod[obj[o].model].rayon*sqrt(focale*focale+_DX*_DX)/_DX;
                         visu = obj[o].posc.z > focale*fabs(obj[o].posc.x)/_DX - r;
                         r = mod[obj[o].model].rayon*sqrt(focale*focale+_DY*_DY)/_DY;
@@ -589,11 +589,11 @@ void renderer(int ak, enum render_part fast) {
                 }
                 // la sphère est-elle visible ?
                 if (visu) {
-                    if (obj[o].type==NUAGE) {
+                    if (obj[o].type==TYPE_CLOUD) {
                         if (Dark) plotfumee(e.x,e.y,rayonapparent);
                         else plotnuage(e.x,e.y,rayonapparent);
                     }
-                    else if (obj[o].type==FUMEE) {
+                    else if (obj[o].type==TYPE_SMOKE) {
                         if (rayonfumee[o-firstfumee]) plotfumee(e.x,e.y,((int)rayonapparent*rayonfumee[o-firstfumee])>>9);
                     } else {
                         if (rayonapparent>.3) {
@@ -617,7 +617,7 @@ void renderer(int ak, enum render_part fast) {
                                         pts2d[p].yl = scalaire(&mod[obj[o].model].norm[mo][p],&oL[no].y);
                                     } else pts2d[p].xl = MAXINT;
                                 }
-                                if (obj[o].type==TIR) {
+                                if (obj[o].type==TYPE_SHOT) {
                                     if (pts2d[0].v.x!=MAXINT && pts2d[1].v.x!=MAXINT) drawline(&pts2d[0].v, &pts2d[1].v, 0xFFA0F0);
                                 } else {
                                     for (p=0; p<mod[obj[o].model].nbfaces[mo]; p++) {
@@ -628,7 +628,7 @@ void renderer(int ak, enum render_part fast) {
                                             if (pts2d[mod[obj[o].model].fac[mo][p].p[0]].v.x != MAXINT &&
                                                     pts2d[mod[obj[o].model].fac[mo][p].p[1]].v.x != MAXINT &&
                                                     pts2d[mod[obj[o].model].fac[mo][p].p[2]].v.x != MAXINT) {
-                                                if (obj[o].type==TABBORD && p>=mod[obj[o].model].nbfaces[mo]-2) {
+                                                if (obj[o].type==TYPE_INSTRUMENTS && p>=mod[obj[o].model].nbfaces[mo]-2) {
                                                     struct vect2dm pt[3];
                                                     int i;
                                                     for (i=0; i<3; i++) {
@@ -654,7 +654,7 @@ void renderer(int ak, enum render_part fast) {
                                                 } else {
                                                     struct pixel coul = mod[obj[o].model].fac[mo][p].color;
                                                     if (Dark) {
-                                                        if (obj[o].type != TABBORD) {
+                                                        if (obj[o].type != TYPE_INSTRUMENTS) {
                                                             darken(&coul.r);
                                                         }
                                                         darken(&coul.g);
@@ -680,7 +680,7 @@ void renderer(int ak, enum render_part fast) {
                             }
                         }
                     }
-                    if (Dark && obj[o].type==PHARE) {   // HALO
+                    if (Dark && obj[o].type==TYPE_LIGHT) {   // HALO
                         plotphare(e.x,e.y,rayonapparent*4+1);
                     }
                 }

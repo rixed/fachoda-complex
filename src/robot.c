@@ -24,13 +24,13 @@
 #include <assert.h>
 #include "proto.h"
 #include "robot.h"
-#include "map.h"
+#include "heightfield.h"
 
 //#define PRINT_DEBUG
 
 struct bot *bot;
-struct tank *vehic;
-struct car *voiture;
+struct tank *tank;
+struct car *car;
 struct zeppelin *zep;
 
 char const *aerobatic_2_str(enum aerobatic aerobatic)
@@ -70,7 +70,7 @@ static double tirz(struct vector const *v0, double d)
     double const h_speed = SHOT_SPEED * sqrt(v0->x*v0->x + v0->y*v0->y);
     if (h_speed == 0) return 0;
     double const t = d / h_speed;   // the t when shot will have traversed dist d horizontaly
-    return .05 /* from naw.c */ * .5 * SQUARE(t) + SHOT_SPEED * v0->z * t;
+    return .05 /* from main.c */ * .5 * SQUARE(t) + SHOT_SPEED * v0->z * t;
 }
 
 // FIXME: same function to actually move the bombs!
@@ -98,8 +98,8 @@ static int vehic_new_flying_target(int v)
 {
     struct vector p;
     int cib = drand48()*NBBOT;
-    if (bot[cib].camp != -1 && bot[cib].camp != vehic[v].camp) {
-        subv3(&obj[bot[cib].vion].pos, &obj[vehic[v].o1].pos, &p);
+    if (bot[cib].camp != -1 && bot[cib].camp != tank[v].camp) {
+        subv3(&obj[bot[cib].vion].pos, &obj[tank[v].o1].pos, &p);
         if (norme2(&p) < 5000000) return bot[cib].vion;
     }
 
@@ -117,14 +117,14 @@ static int vehic_new_ground_target(int v)
             int a = NBVILLAGES*drand48();
             for (int i = 0; i < 10; i++) {
                 int cib = village[a].o1 + (village[a].o2 - village[a].o1)*drand48();
-                if (obj[cib].type == CIBGRAT) return cib;
+                if (obj[cib].type == TYPE_CAR) return cib;
             }
         } else {
             // go for another tank
             for (int i = 0; i < 10; i++) {
                 int v2 = NBTANKBOTS*drand48();
-                if (obj[vehic[v2].o1].type == VEHIC && vehic[v2].camp != vehic[v].camp && vehic[v2].camp != -1) {
-                    return vehic[v2].o1;
+                if (obj[tank[v2].o1].type == TYPE_TANK && tank[v2].camp != tank[v].camp && tank[v2].camp != -1) {
+                    return tank[v2].o1;
                 }
             }
         }
@@ -139,30 +139,30 @@ void robotvehic(int v)
     struct vector p, u;
     double xx, yy, n;
 
-    if (vehic[v].camp == -1) return;
-    vehic[v].tir = 0;
+    if (tank[v].camp == -1) return;
+    tank[v].tir = 0;
 
     // Try to aquire a flying target
-    // Notice that any object can become a DECO when crashed or destroyed
-    if (vehic[v].cibv != -1 && obj[vehic[v].cibv].type == DECO) {
-        vehic[v].cibv = -1;
+    // Notice that any object can become a TYPE_DECO when crashed or destroyed
+    if (tank[v].cibv != -1 && obj[tank[v].cibv].type == TYPE_DECO) {
+        tank[v].cibv = -1;
     }
-    if (vehic[v].cibv == -1) {
-        vehic[v].cibv = vehic_new_flying_target(v);
+    if (tank[v].cibv == -1) {
+        tank[v].cibv = vehic_new_flying_target(v);
     }
 
-    if (vehic[v].cibt != -1 && obj[vehic[v].cibt].type == DECO) {
-        vehic[v].cibt = -1;
+    if (tank[v].cibt != -1 && obj[tank[v].cibt].type == TYPE_DECO) {
+        tank[v].cibt = -1;
     }
-    if (vehic[v].cibt == -1) {
-        vehic[v].cibt = vehic_new_ground_target(v);
+    if (tank[v].cibt == -1) {
+        tank[v].cibt = vehic_new_ground_target(v);
     }
 
     // Choose to aim at the flying target if we have one, then the ground target
-    int cib = vehic[v].cibv;
+    int cib = tank[v].cibv;
     int vol = 1;
     if (cib == -1) {
-        cib = vehic[v].cibt;
+        cib = tank[v].cibt;
         vol = 0;
     }
 
@@ -171,39 +171,39 @@ void robotvehic(int v)
         return;
     }
 
-    subv3(&obj[cib].pos, &obj[vehic[v].o1].pos, &p);
+    subv3(&obj[cib].pos, &obj[tank[v].o1].pos, &p);
     n = renorme(&p);
     if (n < 4000) {
         // Target is close enough to deal with it. Only change turret position.
-        if (n < 600) vehic[v].moteur = 0;
-        yy = scalaire(&p, &obj[vehic[v].o1+1].rot.y);
-        xx = scalaire(&p, &obj[vehic[v].o1+1].rot.x);
+        if (n < 600) tank[v].moteur = 0;
+        yy = scalaire(&p, &obj[tank[v].o1+1].rot.y);
+        xx = scalaire(&p, &obj[tank[v].o1+1].rot.x);
         if (xx < 0) {
-            vehic[v].ang1 += .4;
+            tank[v].ang1 += .4;
         } else {
-            vehic[v].ang1 += .4 * yy;
+            tank[v].ang1 += .4 * yy;
             if (yy > -.2 && yy < .2) {
-                subv3(&obj[cib].pos, &obj[vehic[v].o1+3+vehic[v].ocanon].pos, &u);
-                double tz = u.z - tirz(&obj[vehic[v].o1+2].rot.x, sqrt(u.x*u.x + u.y*u.y));
+                subv3(&obj[cib].pos, &obj[tank[v].o1+3+tank[v].ocanon].pos, &u);
+                double tz = u.z - tirz(&obj[tank[v].o1+2].rot.x, sqrt(u.x*u.x + u.y*u.y));
                 if (tz > 0.) {
-                    vehic[v].ang2 += tz < 100. ? .001*tz : .1;
+                    tank[v].ang2 += tz < 100. ? .001*tz : .1;
                 } else if (tz<0) {
-                    vehic[v].ang2 += tz >-100. ? .001*tz :-.1;
+                    tank[v].ang2 += tz >-100. ? .001*tz :-.1;
                 }
                 if (tz > -100. && tz < 100. && n < 2500.) {
-                    vehic[v].tir = 1;
+                    tank[v].tir = 1;
                 }
             }
         }
     } else {
         // Target is not close enough to fire at it, get closer.
-        if (vol) vehic[v].cibv = -1;
-        vehic[v].moteur = 1;
-        yy = scalaire(&p, &obj[vehic[v].o1].rot.y);
-        xx = scalaire(&p, &obj[vehic[v].o1].rot.x);
-        if (xx < 0.) vehic[v].ang0 += .01;
-        else if (yy > 0.) vehic[v].ang0 += .01;
-        else vehic[v].ang0 -= .01;
+        if (vol) tank[v].cibv = -1;
+        tank[v].moteur = 1;
+        yy = scalaire(&p, &obj[tank[v].o1].rot.y);
+        xx = scalaire(&p, &obj[tank[v].o1].rot.x);
+        if (xx < 0.) tank[v].ang0 += .01;
+        else if (yy > 0.) tank[v].ang0 += .01;
+        else tank[v].ang0 -= .01;
     }
 }
 
@@ -212,7 +212,7 @@ void armstate(int b)
     int i;
     bot[b].nbomb=0;
     for (i=bot[b].vion; i<bot[b].vion+n_object[bot[b].navion].nbpieces; i++) {
-        if (obj[i].objref==bot[b].vion && obj[i].type==BOMB) bot[b].nbomb++;
+        if (obj[i].objref==bot[b].vion && obj[i].type==TYPE_BOMB) bot[b].nbomb++;
     }
 }
 
@@ -264,7 +264,7 @@ choiz:
             do {
                 bot[b].cibt=village[bot[b].a].o1+(village[bot[b].a].o2-village[bot[b].a].o1)*drand48();
                 i++;
-            } while(i<10 && obj[bot[b].cibt].type!=CIBGRAT);
+            } while(i<10 && obj[bot[b].cibt].type!=TYPE_CAR);
             if (i==10) goto choiz;
         } else {
             // attaque un tank
@@ -272,9 +272,9 @@ choiz:
             do {
                 bot[b].cibt=(int)(NBTANKBOTS*drand48());
                 i++;
-            } while(i<10 && obj[bot[b].cibt].type!=VEHIC && vehic[bot[b].cibt].camp==bot[b].camp);
+            } while(i<10 && obj[bot[b].cibt].type!=TYPE_TANK && tank[bot[b].cibt].camp==bot[b].camp);
             if (i==10) goto choiz;
-            else bot[b].cibt=vehic[bot[b].cibt].o1;
+            else bot[b].cibt=tank[bot[b].cibt].o1;
         }
     }
 }
@@ -301,7 +301,7 @@ static void adjust_slope(int b, float diff_alt)
     // (note: we should choose vertical speed instead)
     float slope = .7 * atan(.001 * diff_alt);    // ranges from -1 to 1
 #   ifdef PRINT_DEBUG
-    if (b==visubot) printf("naive slope: %f ", slope);
+    if (b==viewed_bot) printf("naive slope: %f ", slope);
 #   endif
 
     // But we do not want to have a slope too distinct from plane actual direction
@@ -315,7 +315,7 @@ static void adjust_slope(int b, float diff_alt)
     aoa = max_aoa*atan(5. * aoa);  // smoothly cap the angle of attack
     slope = aoa + speed.z;
 #   ifdef PRINT_DEBUG
-    if (b==visubot) printf("capped slope: %f ", slope);
+    if (b==viewed_bot) printf("capped slope: %f ", slope);
 #   endif
 
     if (slope > 0 && bot[b].vitlin < BEST_LIFT_SPEED) {
@@ -327,7 +327,7 @@ static void adjust_slope(int b, float diff_alt)
             bot[b].but.flap = 1;
         }
 #       ifdef PRINT_DEBUG
-        if (b==visubot) printf("vitlin slope: %f ", slope);
+        if (b==viewed_bot) printf("vitlin slope: %f ", slope);
 #       endif
     }
 
@@ -350,7 +350,7 @@ static void adjust_slope(int b, float diff_alt)
     if (bot[b].thrust > 1.) bot[b].thrust = 1.;
 
 #   ifdef PRINT_DEBUG
-    if (b == visubot) printf("vitlin=%f, diff_alt=%f, Sz=%f, slope=%f, yctl=%f, rot.x.z=%f\n",
+    if (b == viewed_bot) printf("vitlin=%f, diff_alt=%f, Sz=%f, slope=%f, yctl=%f, rot.x.z=%f\n",
         bot[b].vitlin, diff_alt, speed.z, slope, bot[b].yctl, obj[bot[b].vion].rot.x.z);
 #   endif
 }
@@ -369,7 +369,7 @@ static double adjust_direction_rel(int b, struct vector const *dir)
     // First of all, do not allow the plane to get upside down
     if (obj[bot[b].vion].rot.z.z < 0) {
 #       ifdef PRINT_DEBUG
-        if (b == visubot) printf("upside down!\n");
+        if (b == viewed_bot) printf("upside down!\n");
 #       endif
         bot[b].xctl = obj[bot[b].vion].rot.y.z > 0 ? -1. : 1.;
         return 0.;
@@ -388,7 +388,7 @@ static double adjust_direction_rel(int b, struct vector const *dir)
     bot[b].xctl = a - obj[bot[b].vion].rot.y.z;
     CLAMP(bot[b].xctl, 1.);
 #   ifdef PRINT_DEBUG
-    if (b == visubot) printf("a=%f rot.y.z=%f xctl=%f\n", a, obj[bot[b].vion].rot.y.z, bot[b].xctl);
+    if (b == viewed_bot) printf("a=%f rot.y.z=%f xctl=%f\n", a, obj[bot[b].vion].rot.y.z, bot[b].xctl);
 #   endif
     return dc;
 }
@@ -430,7 +430,7 @@ void robot_safe(int b, float min_alt)
         adjust_throttle(b, 2.5 * ONE_METER);
         // No vertical speed
 #       ifdef PRINT_DEBUG
-        if (b == visubot) printf("safe, high\n");
+        if (b == viewed_bot) printf("safe, high\n");
 #       endif
         adjust_slope(b, 0.);
     } else {
@@ -438,7 +438,7 @@ void robot_safe(int b, float min_alt)
         bot[b].but.flap = 1;
         bot[b].thrust = 1.;
 #       ifdef PRINT_DEBUG
-        if (b == visubot) printf("safe, low: %f < %f\n", bot[b].zs, min_alt);
+        if (b == viewed_bot) printf("safe, low: %f < %f\n", bot[b].zs, min_alt);
 #       endif
         adjust_slope(b, min_alt - bot[b].zs);
     }
@@ -464,7 +464,7 @@ void robot_autopilot(int b)
     }
 
 #   ifdef PRINT_DEBUG
-    if (b == visubot) printf("d=%f, low_alt=%f, rel_alt=%f\n", d, low_alt, bot[b].target_rel_alt);
+    if (b == viewed_bot) printf("d=%f, low_alt=%f, rel_alt=%f\n", d, low_alt, bot[b].target_rel_alt);
 #   endif
     if (bot[b].zs < low_alt) {
         robot_safe(b, low_alt);
@@ -495,7 +495,7 @@ void robot(int b)
                 bot[b].cibv=bot[bot[b].gunned].vion;
             }
         } else {
-            bot[b].cibt = vehic[bot[b].gunned&((1<<NTANKMARK)-1)].o1;
+            bot[b].cibt = tank[bot[b].gunned&((1<<NTANKMARK)-1)].o1;
             bot[b].maneuver = NAVIG;
             bot[b].aerobatic = MANEUVER;   // il va voir sa mere lui !
             bot[b].gunned = -1;
@@ -513,7 +513,7 @@ void robot(int b)
             }
         }
     }
-    if (bot[b].aerobatic != MANEUVER && obj[bot[b].cibv].type == DECO) {
+    if (bot[b].aerobatic != MANEUVER && obj[bot[b].cibv].type == TYPE_DECO) {
         bot[b].aerobatic = MANEUVER;
         bot[b].cibv = -1;
         bot[b].maneuver = NAVIG;
@@ -527,7 +527,7 @@ void robot(int b)
         case MANEUVER:;
             float d;
 #           ifdef PRINT_DEBUG
-            if (b == visubot) printf("%s\n", maneuver_2_str(bot[b].maneuver));
+            if (b == viewed_bot) printf("%s\n", maneuver_2_str(bot[b].maneuver));
 #           endif
             switch (bot[b].maneuver) {
                 case PARKING:
@@ -555,7 +555,7 @@ void robot(int b)
                         }
                     }
 #                   ifdef PRINT_DEBUG
-                    if (b == visubot) printf("d=%f, u*x=%f, u=%"PRIVECTOR"\n", d, scalaire(&u, &obj[o].rot.x), PVECTOR(u));
+                    if (b == viewed_bot) printf("d=%f, u*x=%f, u=%"PRIVECTOR"\n", d, scalaire(&u, &obj[o].rot.x), PVECTOR(u));
 #                   endif
                     break;
                 case LINE_UP:
@@ -612,7 +612,7 @@ void robot(int b)
                     break;
                 case BOMBING:
                     robot_autopilot(b);
-                    if (obj[bot[b].cibt].type == DECO) {
+                    if (obj[bot[b].cibt].type == TYPE_DECO) {
                         newcib(b);
                         newnav(b);
                         break;
@@ -633,7 +633,7 @@ void robot(int b)
                         if (cx < 0.) bot[b].maneuver = NOSE_UP;
                     }
 #                   ifdef PRINT_DEBUG
-                    if (b == visubot) printf("vion.z=%f, cibt.z=%f\n", obj[bot[b].vion].pos.z, bot[b].u.z + bot[b].target_rel_alt);
+                    if (b == viewed_bot) printf("vion.z=%f, cibt.z=%f\n", obj[bot[b].vion].pos.z, bot[b].u.z + bot[b].target_rel_alt);
 #                   endif
                     break;
                 case EVADE:
@@ -644,7 +644,7 @@ void robot(int b)
                         newnav(b);
                     }
 #                   ifdef PRINT_DEBUG
-                    if (b == visubot) printf("d=%f, target_alt=%f\n", d, bot[b].u.z + bot[b].target_rel_alt);
+                    if (b == viewed_bot) printf("d=%f, target_alt=%f\n", d, bot[b].u.z + bot[b].target_rel_alt);
 #                   endif
                     break;
                 case ILS_1:
@@ -755,7 +755,7 @@ void robot(int b)
                         distfrap2 = obj[bot[b].cibv].pos.z - (obj[o].pos.z + dz_shot);
                         if (fabs(distfrap2) < 3. * m) bot[b].but.canon = 1;
 #                       ifdef PRINT_DEBUG
-                        if (b == visubot) printf("dz_shot=%f bot.z=%f cib.z=%f\n", dz_shot, obj[o].pos.z, obj[bot[b].cibv].pos.z);
+                        if (b == viewed_bot) printf("dz_shot=%f bot.z=%f cib.z=%f\n", dz_shot, obj[o].pos.z, obj[bot[b].cibv].pos.z);
 #                       endif
                     }
                 }
@@ -770,7 +770,7 @@ void robot(int b)
                     bot[b].vitlin + away_speed - (0.4 * ONE_METER); // be conservative with speed
             }
 #           ifdef PRINT_DEBUG
-            if (b == visubot) printf("close, dist=%f dc=%f, distfrap2=%f, target_speed=%f\n", dist, dc, distfrap2, target_speed);
+            if (b == viewed_bot) printf("close, dist=%f dc=%f, distfrap2=%f, target_speed=%f\n", dist, dc, distfrap2, target_speed);
 #           endif
             // if we are too low deal with the ground first
             if (zs < min_z) {

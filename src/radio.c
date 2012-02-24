@@ -45,7 +45,7 @@ char *villagemsg[NBMSG][4][2] = {
     {
         {"Une imprimerie clandestine de l'opposition doit se trouver a %s. Detruisez la par inadvertance. Poussez l'inadvertance jusqu'a rasez tout le village s'il le faut.",
          "The oposition should own an underground printing-plant in %s. Destroy it inadvertently. So inadvertently that the village be leveled to the ground if you must."},
-        {"Il reste des fideles a Mokassa caches dans le village de %s ! Il faut aneantir ces malfaisants quitte a raser le village !",
+        {"Il reste des fideles a Mokassa caches dans le village de %s ! Il faut aneantir ces malfaisants prompt_quit a raser le village !",
          "Amongst the population of %s remain people who are still in favour of Mokassa ! You MUST annihilate them ! Wipe out all the village if you wish !"},
         {"British-Betoneum a decroche la reconstruction de %s ! Si ce village etait entierement detruit, ce contrat prendrait une immense valeure !",
          "British-Concrete win the first prize for the reconstruction of %s ! How fabulous would worth this contract if this village was reduced to nothing..."},
@@ -156,7 +156,7 @@ void newprime() {
                 k++;
                 j=NBVILLAGES*drand48();
                 prime[i].no=village[j].o1+(village[j].o2-village[j].o1)*drand48();
-            } while (k<10 && obj[prime[i].no].type==DECO);
+            } while (k<10 && obj[prime[i].no].type==TYPE_DECO);
             if (k<10) {
                 sprintf(msgactu,villagemsg[(int)(drand48()*NBMSG)][campactu][lang],village[j].nom);
                 prime[i].camp=campactu;
@@ -187,12 +187,12 @@ void newprime() {
         case 2:
             // détruire un bot véhic
             k=0;
-            do {k++; j=NBTANKBOTS*drand48();} while (k<10 && vehic[j].camp==-1);
+            do {k++; j=NBTANKBOTS*drand48();} while (k<10 && tank[j].camp==-1);
             if (k<10) {
-                sprintf(msgactu,botvehicmsg[vehic[j].camp==campactu][(int)(drand48()*NBMSG)][campactu][lang],vehic[j].nom,obj[vehic[j].o1].pos.x,obj[vehic[j].o1].pos.y);
+                sprintf(msgactu,botvehicmsg[tank[j].camp==campactu][(int)(drand48()*NBMSG)][campactu][lang],tank[j].nom,obj[tank[j].o1].pos.x,obj[tank[j].o1].pos.y);
                 prime[i].camp=campactu;
                 prime[i].reward=1500+1000*drand48();
-                prime[i].no=vehic[j].o1;
+                prime[i].no=tank[j].o1;
                 prime[i].dt=-1;
                 prime[i].endmsg=NULL;
             }

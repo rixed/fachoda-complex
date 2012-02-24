@@ -6,11 +6,11 @@ CFLAGS   := $(CFLAGS) -std=c99 -W -Wall -D_GNU_SOURCE ${shell sdl-config --cflag
 LDFLAGS  := $(LDFLAGS) -lm -ljpeg -lopenal ${shell sdl-config --libs}
 
 SRCS = \
-	renderer.c map.c modele.c radio.c robot.c \
-	tableaubord.c txt.c control.c mapping.c \
-	manuel.c soleil.c carte.c sound.c ravages.c \
-	present.c keycodes.c route.c drawroute.c \
-	init.c intro.c naw.c video_sdl.c world.c \
+	renderer.c heightfield.c model.c radio.c robot.c \
+	instruments.c txt.c physics.c mapping.c \
+	control.c sun.c map.c sound.c ravages.c \
+	present.c keycodes.c roads.c \
+	init.c intro.c main.c video_sdl.c world.c \
 	gtime.c file.c
 
 OBJS = ${subst .c,.o,$(SRCS)}

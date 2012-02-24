@@ -20,12 +20,12 @@
 #include <stdio.h>
 #include <math.h>
 #include "proto.h"
-#include "map.h"
+#include "heightfield.h"
 #include "sound.h"
 
 int collision(int p, int o){    // l'obj p est-il rentré dans l'obj o ?
     struct vector u;
-    if (obj[o].type==NUAGE || obj[o].type==FUMEE || p==o || obj[p].ak!=obj[o].ak) return 0;
+    if (obj[o].type==TYPE_CLOUD || obj[o].type==TYPE_SMOKE || p==o || obj[p].ak!=obj[o].ak) return 0;
     subv3(&obj[p].pos,&obj[o].pos,&u);
     return norme(&u)<=mod[obj[o].model].rayoncollision+mod[obj[p].model].rayoncollision;
 }
@@ -41,15 +41,15 @@ void explose(int oc, int i) {
     int cmoi=NBBOT;
     struct vector vit = vec_zero;
     for (j=0; j<NBBOT; j++) if ((bot[j].vion<=i && bot[j].vion+n_object[bot[j].navion].nbpieces>i) || (i>=debtir && gunner[i-debtir]==j)) { cmoi=j; break; }
-    playsound(VOICEEXTER, EXPLOZ, 1+(drand48()-.5)*.1, &obj[oc].pos, false, false);
+    playsound(VOICE_EXTER, SAMPLE_EXPLOZ, 1+(drand48()-.5)*.1, &obj[oc].pos, false, false);
     switch (obj[oc].type) {
-    case CIBGRAT:
+    case TYPE_CAR:
         o1=oc;
         while (mod[obj[o1].model].pere!=obj[o1].model) o1+=mod[obj[o1].model].pere-obj[o1].model;
         o2=o1+n_object[mod[obj[o1].model].n_object].nbpieces;
         if (cmoi<NBBOT && kelkan(o1)!=bot[cmoi].camp) bot[cmoi].gold+=900*drand48()*(o1==oc?3:1);   // les églises valent plus cher !
         break;
-    case AVION:
+    case TYPE_PLANE:
         o1=oc;
         while (obj[o1].objref!=-1) o1=obj[o1].objref;
         o2=o1+n_object[mod[obj[o1].model].n_object].nbpieces;
@@ -60,18 +60,18 @@ void explose(int oc, int i) {
         if (cmoi < NBBOT) {
             if (v < NBBOT && bot[v].camp != bot[cmoi].camp) bot[cmoi].gold += 1000;
         }
-        if (v == visubot) {
-            playsound(VOICEMOTOR, FEU, 1., &obj[o1].pos, false, true);
+        if (v == viewed_bot) {
+            playsound(VOICE_MOTOR, SAMPLE_FEU, 1., &obj[o1].pos, false, true);
         }
-        playsound(VOICEGEAR, DEATH, 1+(drand48()-.5)*.15, &obj[o1].pos, false, false);
+        playsound(VOICE_GEAR, SAMPLE_DEATH, 1+(drand48()-.5)*.15, &obj[o1].pos, false, false);
         break;
-    case VEHIC:
+    case TYPE_TANK:
         o1=oc;
         while (obj[o1].objref!=-1) o1=obj[o1].objref;
         o2=o1+n_object[mod[obj[o1].model].n_object].nbpieces;
-        for (v=0; v<NBTANKBOTS; v++) if (vehic[v].o1==o1) break;
+        for (v=0; v<NBTANKBOTS; v++) if (tank[v].o1==o1) break;
         if (cmoi<NBBOT) {
-            if (v<NBTANKBOTS && vehic[v].camp!=bot[cmoi].camp) bot[cmoi].gold+=900;
+            if (v<NBTANKBOTS && tank[v].camp!=bot[cmoi].camp) bot[cmoi].gold+=900;
         }
         break;
     default:
@@ -80,27 +80,27 @@ void explose(int oc, int i) {
     }
     if (o1) {
         switch (obj[o1].type) {
-        case AVION:
+        case TYPE_PLANE:
             if (v<NBBOT) {
             //  printf("bot#%d, camp %d, destroyed\n",v,bot[v].camp);
                 bot[v].camp=-1;
                 if (i==oc && bot[v].gunned>=0 && bot[v].gunned<NBBOT) { cmoi=bot[v].gunned; bot[cmoi].gold+=1500; }
             }
             break;
-        case VEHIC:
+        case TYPE_TANK:
             if (v<NBTANKBOTS) {
-            //  printf("vehic%d, camp %d, destroyed\n",v,vehic[v].camp);
-                vehic[v].camp=-1;
+            //  printf("tank%d, camp %d, destroyed\n",v,tank[v].camp);
+                tank[v].camp=-1;
                 break;
             }
             break;
         }
 //      printf("Obj %d sauvagely burst obj#%d out (type %d)\n",i,oc,obj[oc].type);
-        copyv(&ExplozePos,&obj[i].pos);
-        Exploze=1;
+        copyv(&explosion_pos,&obj[i].pos);
+        explosion = true;
         if (obj[o1].pos.z<z_ground(obj[o1].pos.x,obj[o1].pos.y, true)+50) {
             obj[o1].model=n_object[NBNAVIONS+NBBASES+NBMAISONS+NBVEHICS+2].firstpiece;    // CRATERE
-            obj[o1].type=DECO;
+            obj[o1].type=TYPE_DECO;
             obj[o1].pos.z=5+z_ground(obj[o1].pos.x,obj[o1].pos.y, true);
             obj[o1].objref=-1;
             copym(&obj[o1].rot,&mat_id);
@@ -110,7 +110,7 @@ void explose(int oc, int i) {
     //      obj[j].model=n_object[NBNAVIONS+NBBASES+NBMAISONS+NBVEHICS+6].firstpiece;
         //  copyv(&obj[j].pos,&obj[o1].pos);
             obj[j].objref=-1;
-            obj[j].type=DECO;
+            obj[j].type=TYPE_DECO;
         }
         for (i=0, j=jk; i<NBGRAVMAX && j<o2; i++) {
             if (debris[i].o == -1) {
@@ -157,14 +157,14 @@ bool hitgun(int oc, int i) {
     int o1,j,tarif;
     int const shooter = gunner[i-debtir];
     switch (obj[oc].type) {
-    case CIBGRAT:
+    case TYPE_CAR:
         o1=oc;
         while (mod[obj[o1].model].pere!=obj[o1].model) o1+=mod[obj[o1].model].pere-obj[o1].model;
         break;
-    case ZEPPELIN:
+    case TYPE_ZEPPELIN:
         if (shooter==-1) return false;  // a zeppelin shooting another one: ignore
-    case AVION:
-    case VEHIC:
+    case TYPE_PLANE:
+    case TYPE_TANK:
         for (o1 = oc; obj[o1].objref != -1; o1 = obj[o1].objref) ;  // Find reference object
         break;
     default:
@@ -173,29 +173,29 @@ bool hitgun(int oc, int i) {
     }
     if (o1) {
         switch (obj[o1].type) {
-        case CIBGRAT:
+        case TYPE_CAR:
             if (shooter>=0 && shooter<NBBOT && kelkan(o1)!=bot[shooter].camp) if (drand48()<.05) bot[shooter].gold+=60;
             if (o1!=oc && drand48()<.01) explose(o1,i);
             break;
-        case AVION:
+        case TYPE_PLANE:
             for (j=0; j<NBBOT; j++) if (bot[j].vion==o1) {
                 if (j == shooter) {
                     // Do not allow the shooter to shoot himself
                     return false;
                 }
                 tarif=-(bot[j].fiulloss/4+bot[j].motorloss*8+bot[j].aeroloss*8+bot[j].bloodloss*2);
-                if (j==bmanu) accel=0;
+                if (j==controled_bot) accelerated_mode=0;
                 struct vector r;
                 randomv(&r);    // FIXME: mul by size of obj?
                 addv(&r, &obj[o1].pos);
-                playsound(VOICEGEAR, HIT, 1+(drand48()-.5)*.1, &r, false, false);
+                playsound(VOICE_GEAR, SAMPLE_HIT, 1+(drand48()-.5)*.1, &r, false, false);
             //  printf("bot %d hit\n",j);
                 if (drand48()<.1) bot[j].fiulloss+=drand48()*100;
                 if (drand48()<.04) if ((bot[j].motorloss+=drand48()*10)<0) bot[j].motorloss=127;
                 if (drand48()<.05) if ((bot[j].aeroloss+=drand48()*10)<0) bot[j].aeroloss=127;
                 if (drand48()<.04) {
                     bot[j].bloodloss+=drand48()*100;
-                    playsound(VOICEGEAR, PAIN, 1+(drand48()-.2)*.1, &obj[o1].pos, false, false);
+                    playsound(VOICE_GEAR, SAMPLE_PAIN, 1+(drand48()-.2)*.1, &obj[o1].pos, false, false);
                 }
                 if (drand48()<bot[j].nbomb/1000. || drand48()<.05) {
                     bot[j].burning+=drand48()*1000;
@@ -212,13 +212,13 @@ bool hitgun(int oc, int i) {
                 }
             }
             break;
-        case VEHIC:
-        /*  for (j=0; j<NBTANKBOTS; j++) if (vehic[j].o1==o1) {
-                printf("vehic %d hit\n",j);
+        case TYPE_TANK:
+        /*  for (j=0; j<NBTANKBOTS; j++) if (tank[j].o1==o1) {
+                printf("tank %d hit\n",j);
             }*/
             if (drand48()<.07) explose(o1,i);
             break;
-        case ZEPPELIN:
+        case TYPE_ZEPPELIN:
             if (drand48()<.004) {
                 for (i=0; i<NBZEPS && zep[i].o!=o1; i++);
                 if (i<NBZEPS) {

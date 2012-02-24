@@ -91,11 +91,11 @@ uchar but1released=1, but2released=1;
 int xmouse,ymouse,bmouse;
 static void bitset(unsigned n) { keytab[n/8] |= 1U<<(n&7); }
 static void bitzero(unsigned n) { keytab[n/8] &= ~(1U<<(n&7)); }
-int kread(unsigned n) {
+bool kread(unsigned n) {
     return !!(keytab[n/8] & (1U<<(n&7)));
 }
-int kreset(unsigned n) {
-    int r = kread(n);
+bool kreset(unsigned n) {
+    bool r = kread(n);
     bitzero(n);
     return r;
 }

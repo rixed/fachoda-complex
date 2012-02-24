@@ -20,7 +20,7 @@
 #include <stdio.h>
 #include <math.h>
 #include <values.h>
-#include "map.h"
+#include "heightfield.h"
 #include "robot.h"
 
 char *tankname="Rug-Warrior";
@@ -127,7 +127,7 @@ void addbabase(int c) {
             pp.y+=(drand48()-.5)*ECHELLE*.2;
             pp.z=15;
             randomhm(&m);
-            addnobjet(NBNAVIONS+NBBASES+NBMAISONS+drand48()*3, &pp, &m, 1); // des vehic
+            addnobjet(NBNAVIONS+NBBASES+NBMAISONS+drand48()*3, &pp, &m, 1); // des tank
         }
         babaseo[1][x][c]=nbobj;
         for (y=0; y<NBNAVIONS; y++) {
@@ -186,14 +186,13 @@ void initworld() {
     int i,j,k;
     struct vector p;
     struct matrix m;
-   
-    bombe = malloc(NBBOT*4*sizeof(*bombe));    // FIXME: most bots have 2 or 4 bombs, but spitflame has 7!
-    vehic = malloc(NBTANKBOTS*sizeof(*vehic));
+
+    bomb = malloc(NBBOT*4*sizeof(*bomb));    // FIXME: most bots have 2 or 4 bombs, but spitflame has 7!
+    tank = malloc(NBTANKBOTS*sizeof(*tank));
     initmap();
-    obj = malloc(sizeof(*obj)*50000);
     // caméra
     obj[0].objref=-1;
-    obj[0].type=CAMERA;
+    obj[0].type=TYPE_CAMERA;
     obj[0].distance=-1;
     obj[0].prec=-1; obj[0].next=-1;
     map[0].first_obj = 0;
@@ -443,40 +442,40 @@ void initworld() {
     }
     printf("Adding vehicules...\n");
     // des véhicules en décors
-    voiture = malloc((NBVOITURES+1)*sizeof(*voiture));
+    car = malloc((NBVOITURES+1)*sizeof(*car));
     for (i=0; i<NBVOITURES/4; i++) {
-        voiture[i].r=randomvroute(&p);
-        voiture[i].sens=1;
+        car[i].r=randomvroute(&p);
+        car[i].sens=1;
         p.z=15;
-        voiture[i].o=addnobjet(NBNAVIONS+NBBASES+NBMAISONS+1, &p, &mat_id, 1);
-        voiture[i].dist=-1;
-        voiture[i].vit=5+15*drand48();
+        car[i].o=addnobjet(NBNAVIONS+NBBASES+NBMAISONS+1, &p, &mat_id, 1);
+        car[i].dist=-1;
+        car[i].vit=5+15*drand48();
     }
     for (; i<NBVOITURES/2; i++) {
-        voiture[i].r=randomvroute(&p);
-        voiture[i].sens=1;
+        car[i].r=randomvroute(&p);
+        car[i].sens=1;
         p.z=15;
-        voiture[i].o=addnobjet(NBNAVIONS+NBBASES+NBMAISONS+4, &p, &mat_id, 1);
-        voiture[i].dist=-1;
-        voiture[i].vit=5+15*drand48();
+        car[i].o=addnobjet(NBNAVIONS+NBBASES+NBMAISONS+4, &p, &mat_id, 1);
+        car[i].dist=-1;
+        car[i].vit=5+15*drand48();
     }
     for (; i<NBVOITURES*8/10; i++) {
-        voiture[i].r=randomvroute(&p);
-        voiture[i].sens=1;
+        car[i].r=randomvroute(&p);
+        car[i].sens=1;
         p.z=15;
-        voiture[i].o=addnobjet(NBNAVIONS+NBBASES+NBMAISONS+2, &p, &mat_id, 1);
-        voiture[i].dist=-1;
-        voiture[i].vit=10+10*drand48();
+        car[i].o=addnobjet(NBNAVIONS+NBBASES+NBMAISONS+2, &p, &mat_id, 1);
+        car[i].dist=-1;
+        car[i].vit=10+10*drand48();
     }
     for (; i<NBVOITURES; i++) {
-        voiture[i].r=randomvroute(&p);
-        voiture[i].sens=1;
+        car[i].r=randomvroute(&p);
+        car[i].sens=1;
         p.z=30;
-        voiture[i].o=addnobjet(NBNAVIONS+NBBASES+NBMAISONS+3, &p, &mat_id, 1);
-        voiture[i].dist=-1;
-        voiture[i].vit=5+5*drand48();
+        car[i].o=addnobjet(NBNAVIONS+NBBASES+NBMAISONS+3, &p, &mat_id, 1);
+        car[i].dist=-1;
+        car[i].vit=5+5*drand48();
     }
-    voiture[i].o=nbobj;
+    car[i].o=nbobj;
     printf("Adding tractors...\n");
     // des tracteurs dans les champs
     for (i=0; i<50; i++) {
@@ -507,8 +506,8 @@ void initworld() {
     printf("Adding planes...\n");
     // des vionvions
     if ((bot=calloc(sizeof(*bot),NBBOT))==NULL) { perror("bot"); exit(-1); }
-    bot[bmanu].camp=camp;
-    bot[bmanu].navion=monvion-1;
+    bot[controled_bot].camp=camp;
+    bot[controled_bot].navion=monvion-1;
     //if (NetCamp()==-1) {printf("Net Error\n"); exit(-1); }
     printf("Playing with %d planes & %d tanks\nPlayers :\n",NBBOT,NBTANKBOTS);
     for (i=0; i<NbHosts; i++) printf("%s, camp %d, in a %s\n",playbotname[i],bot[i].camp+1, plane_desc[bot[i].navion].name);
@@ -586,19 +585,19 @@ void initworld() {
             p.y+=(drand48()-.5)*100;
         }
         p.z=z_ground(p.x,p.y, true);
-        if (p.y>0) vehic[i].camp=2; else vehic[i].camp=0;
-        if (p.x>0) vehic[i].camp++;
-        vehic[i].cibv=-1;
-        copyv(&vehic[i].p,&p);
+        if (p.y>0) tank[i].camp=2; else tank[i].camp=0;
+        if (p.x>0) tank[i].camp++;
+        tank[i].cibv=-1;
+        copyv(&tank[i].p,&p);
         p.z=20;
-        vehic[i].o1=addnobjet(NBNAVIONS+NBBASES+NBMAISONS, &p, &mat_id, 1);
-        vehic[i].o2=nbobj;
-        vehic[i].moteur=0;
-        vehic[i].cibt=-1;
-        vehic[i].ang0=vehic[i].ang1=vehic[i].ang2=0;
-        vehic[i].ocanon=0;
-        vehic[i].last_shot = 0;
-        vehic[i].nom=tankname;
+        tank[i].o1=addnobjet(NBNAVIONS+NBBASES+NBMAISONS, &p, &mat_id, 1);
+        tank[i].o2=nbobj;
+        tank[i].moteur=0;
+        tank[i].cibt=-1;
+        tank[i].ang0=tank[i].ang1=tank[i].ang2=0;
+        tank[i].ocanon=0;
+        tank[i].last_shot = 0;
+        tank[i].nom=tankname;
     }
     printf("Adding clouds...\n");
     // et des nuages

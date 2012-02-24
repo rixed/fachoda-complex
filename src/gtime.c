@@ -136,7 +136,7 @@ gtime gtime_next(void)
         printf("gtime_next(): usleep(%"PRIuLEAST64")\n", MIN_DT - dt);
 #       endif
         usleep(MIN_DT - dt); // give excess CPU to the system
-        if (lapause) break;
+        if (game_paused) break;
     }
 #   ifdef DT_DEBUG
     printf("gtime_next(): prev_gtime is now %"PRIuLEAST64"\n", now);
