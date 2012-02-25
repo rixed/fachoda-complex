@@ -114,7 +114,7 @@ static int vehic_new_ground_target(int v)
         double r = drand48();
         if (r < .3) {
             // go for a village
-            int a = MAX_VILLAGES*drand48();
+            int a = NB_VILLAGES*drand48();
             for (int i = 0; i < 10; i++) {
                 int cib = village[a].o1 + (village[a].o2 - village[a].o1)*drand48();
                 if (obj[cib].type == TYPE_CAR) return cib;
@@ -230,7 +230,7 @@ static void landing_approach(int b)
 
 void newnav(int b)
 {
-    if (SpaceInvaders) {
+    if (killemall_mode) {
         bot[b].u.x = bot[b].u.y = 0.;
         bot[b].u.z = z_ground(bot[b].u.x, bot[b].u.y, true);
         bot[b].target_speed = 2. * ONE_METER;
@@ -252,14 +252,14 @@ static void newcib(int b)
 {
     int i, j=0;
     double r;
-    if (SpaceInvaders) j=10;
+    if (killemall_mode) j=10;
 choiz:
     if (j++>10) bot[b].cibt=-1;
     else {
         r=drand48();
         if (r<.5) {
             // attaque un village
-            bot[b].a=MAX_VILLAGES*drand48();
+            bot[b].a=NB_VILLAGES*drand48();
             i=0;
             do {
                 bot[b].cibt=village[bot[b].a].o1+(village[bot[b].a].o2-village[bot[b].a].o1)*drand48();

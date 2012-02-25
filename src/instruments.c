@@ -51,17 +51,17 @@ void disque(int *v, int r, int c) {
 void rectangletb(struct pixel32 *v, int rx, int ry, int c) {
     while (ry>0) {
         memset32((int*)v,c,rx);
-        v+=SXTB;
+        v+=pannel_height;
         ry--;
     }
 }
 void disquetb(struct pixel32 *v, int r, int c) {
     int balance=-r, xoff=0, yoff=r;
     do {
-        rectangletb(v-xoff+SXTB*(yoff), xoff+xoff, 1, c);
-        rectangletb(v-xoff+SXTB*(-yoff), xoff+xoff, 1, c);
-        rectangletb(v-yoff+SXTB*(xoff), yoff+yoff, 1, c);
-        rectangletb(v-yoff+SXTB*(-xoff), yoff+yoff, 1, c);
+        rectangletb(v-xoff+pannel_height*(yoff), xoff+xoff, 1, c);
+        rectangletb(v-xoff+pannel_height*(-yoff), xoff+xoff, 1, c);
+        rectangletb(v-yoff+pannel_height*(xoff), yoff+yoff, 1, c);
+        rectangletb(v-yoff+pannel_height*(-xoff), yoff+yoff, 1, c);
         if ((balance += xoff + xoff + 1) >= 0) {
             yoff --;
             balance -= yoff + yoff;
@@ -71,14 +71,14 @@ void disquetb(struct pixel32 *v, int r, int c) {
 void cercletb(int x, int y, int r, int c) {
     int balance=-r, xoff=0, yoff=r;
     do {
-        *((int*)tbback+x+xoff+(y+yoff)*SXTB)=c;
-        *((int*)tbback+x-xoff+(y+yoff)*SXTB)=c;
-        *((int*)tbback+x-xoff+(y-yoff)*SXTB)=c;
-        *((int*)tbback+x+xoff+(y-yoff)*SXTB)=c;
-        *((int*)tbback+x+yoff+(y-xoff)*SXTB)=c;
-        *((int*)tbback+x-yoff+(y-xoff)*SXTB)=c;
-        *((int*)tbback+x-yoff+(y+xoff)*SXTB)=c;
-        *((int*)tbback+x+yoff+(y+xoff)*SXTB)=c;
+        *((int*)tbback+x+xoff+(y+yoff)*pannel_height)=c;
+        *((int*)tbback+x-xoff+(y+yoff)*pannel_height)=c;
+        *((int*)tbback+x-xoff+(y-yoff)*pannel_height)=c;
+        *((int*)tbback+x+xoff+(y-yoff)*pannel_height)=c;
+        *((int*)tbback+x+yoff+(y-xoff)*pannel_height)=c;
+        *((int*)tbback+x-yoff+(y-xoff)*pannel_height)=c;
+        *((int*)tbback+x-yoff+(y+xoff)*pannel_height)=c;
+        *((int*)tbback+x+yoff+(y+xoff)*pannel_height)=c;
         if ((balance += xoff + xoff + 1) >= 0) {
             yoff --;
             balance -= yoff + yoff;
@@ -95,26 +95,26 @@ void gradutb(int x, int y, double a, int r1, int r2, int c) {
 }
 void rectangleZ(int x, int y, int rx, int ry, int c) {
     int xx,yy;
-    rectangletb(tbback+x+y*SXTB,rx,ry,c);
+    rectangletb(tbback+x+y*pannel_height,rx,ry,c);
     for (yy=0; yy<ry; yy++) {
         double p=(double)yy*2./(double)ry-1.;
         double pp=1.-p*p*p*p;
         for (xx=0; xx<rx; xx++) {
-            tbz[x+xx+SXTB*(y+yy)]=255*sin(xx*M_PI/rx)*pp;
+            tbz[x+xx+pannel_height*(y+yy)]=255*sin(xx*M_PI/rx)*pp;
         }
     }
 }
 void disqueZ(int x, int y, int r, int c) {
     int xx,yy;
     double r2=r*.85;
-    disquetb(tbback+x+SXTB*y,r,c);
+    disquetb(tbback+x+pannel_height*y,r,c);
     for (yy=-r; yy<+r; yy++) {
         for(xx=-r; xx<r; xx++) {
             double rr=sqrt(xx*xx+yy*yy);
             if (rr<=r && rr>r2) {
-                tbz[x+xx+SXTB*(y+yy)]=40*sin(((double)rr-r2)*M_PI/(r-r2));
+                tbz[x+xx+pannel_height*(y+yy)]=40*sin(((double)rr-r2)*M_PI/(r-r2));
             } else if (rr<=r2) {
-                tbz[x+xx+SXTB*(y+yy)]=255*cos((double)rr*.5*M_PI/r2);
+                tbz[x+xx+pannel_height*(y+yy)]=255*cos((double)rr*.5*M_PI/r2);
             }
         }
     }
@@ -140,27 +140,27 @@ void loadtbtile(char *fn) {
         tbtile[x+y*sxtbtile].b=p.b;
     }
     fclose(f);
-    tbz=(uchar*)malloc(SXTB*SYTB*sizeof(uchar));
-    tbback = malloc(SXTB*SYTB*sizeof(*tbback));
+    tbz=(uchar*)malloc(pannel_height*pannel_width*sizeof(uchar));
+    tbback = malloc(pannel_height*pannel_width*sizeof(*tbback));
     vid=tbback;
-    for (y=0; y<SYTB; y++) {
-        for (x=0; x<SXTB-sxtbtile; x+=sxtbtile) {
+    for (y=0; y<pannel_width; y++) {
+        for (x=0; x<pannel_height-sxtbtile; x+=sxtbtile) {
             memcpy(vid+x, tbtile+(y%sytbtile)*sxtbtile, sxtbtile*sizeof(*vid));
         }
-        memcpy(vid+x, tbtile+(y%sytbtile)*sxtbtile, (SXTB-x)*sizeof(*vid));
-        vid+=SXTB;
+        memcpy(vid+x, tbtile+(y%sytbtile)*sxtbtile, (pannel_height-x)*sizeof(*vid));
+        vid+=pannel_height;
     }
     free(tbtile);
-    for (y=0; y<SYTB; y++) {
-        for (x=0; x<SXTB; x++) {
-            tbz[x+y*SXTB]=0;
+    for (y=0; y<pannel_width; y++) {
+        for (x=0; x<pannel_height; x++) {
+            tbz[x+y*pannel_height]=0;
         }
     }
-    delta=((SYTB<<2)-320)/13;
+    delta=((pannel_width<<2)-320)/13;
 
-    rvert=(SYTB-3*delta)/4;
+    rvert=(pannel_width-3*delta)/4;
     xvert=delta+rvert;
-    yvert=SYTB>>2;
+    yvert=pannel_width>>2;
     disqueZ(xvert,yvert,rvert,0);
     gradutb(xvert,yvert,M_PI,0,rvert-1,0x707070);
     gradutb(xvert,yvert,M_PI-4*M_PI/5,0,rvert-1,0x303080);
@@ -211,7 +211,7 @@ void loadtbtile(char *fn) {
 
     xinclin=xthrust+rthrust+delta;
     yinclin=delta*3;
-    hinclin=SYTB-6*delta;
+    hinclin=pannel_width-6*delta;
     dxinclin=hinclin*.1;
     rectangleZ(xinclin,yinclin,dxinclin,hinclin,0x03030);
 
@@ -223,7 +223,7 @@ void loadtbtile(char *fn) {
     for (x=0; x<10; x++) {
         a=-M_PI/2+x*M_PI/5;
         gradutb(xalti,yalti,a,ralti-4,ralti-1,0xD0D0D0);
-        if (!(x&1)) pcharady(x+16,(int*)tbback+(int)(xalti+.6*ralti*cos(a))+((int)(yalti-4+.6*ralti*sin(a)))*SXTB,0xE0E0E0,SXTB);
+        if (!(x&1)) pcharady(x+16,(int*)tbback+(int)(xalti+.6*ralti*cos(a))+((int)(yalti-4+.6*ralti*sin(a)))*pannel_height,0xE0E0E0,pannel_height);
     }
     cercletb(xalti,yalti,1,0xA0A0A0);
 
@@ -231,10 +231,10 @@ void loadtbtile(char *fn) {
     xbous=xalti;
     ybous=yassi;
     disqueZ(xbous,ybous,rbous,0);
-    pcharady('E',(int*)tbback+xbous-3+rbous/2+(ybous-4)*SXTB,0xE0E0E0,SXTB);
-    pcharady('N',(int*)tbback+xbous-3+(ybous-rbous/2-4)*SXTB,0xF03030,SXTB);
-    pcharady('O',(int*)tbback+xbous-3-rbous/2+(ybous-4)*SXTB,0xE0E0E0,SXTB);
-    pcharady('S',(int*)tbback+xbous-3+(ybous+rbous/2-4)*SXTB,0x3030F0,SXTB);
+    pcharady('E',(int*)tbback+xbous-3+rbous/2+(ybous-4)*pannel_height,0xE0E0E0,pannel_height);
+    pcharady('N',(int*)tbback+xbous-3+(ybous-rbous/2-4)*pannel_height,0xF03030,pannel_height);
+    pcharady('O',(int*)tbback+xbous-3-rbous/2+(ybous-4)*pannel_height,0xE0E0E0,pannel_height);
+    pcharady('S',(int*)tbback+xbous-3+(ybous+rbous/2-4)*pannel_height,0x3030F0,pannel_height);
     for (a=0; a<2*M_PI; a+=M_PI/2) {
         gradutb(xbous,ybous,a,0,rbous/3,0xD0D0D0);
         gradutb(xbous,ybous,a,2*rbous/3,.8*rbous,0xD0D0D0);
@@ -263,8 +263,8 @@ void loadtbtile(char *fn) {
 }
 void drawtbback() {
     int y;
-    for (y=0; y<SYTB; y++) {
-        memcpy(mapping+((MAP_MARGIN+y)<<8)+MAP_MARGIN, tbback+SXTB*y, SXTB*sizeof(*mapping));
+    for (y=0; y<pannel_width; y++) {
+        memcpy(mapping+((MAP_MARGIN+y)<<8)+MAP_MARGIN, tbback+pannel_height*y, pannel_height*sizeof(*mapping));
     }
 }
 
@@ -274,7 +274,7 @@ void rectangleL(int x,int y, int rx,int ry) {
     if (lz<=0) return;
     for (yy=y; yy<(y+ry); yy++) {
         for (xx=x; xx<x+rx; xx++) {
-            int j = ((100+((lx*(tbz[xx+yy*SXTB+1]-tbz[xx+yy*SXTB])+ly*(tbz[xx+yy*SXTB+SXTB]-tbz[xx+yy*SXTB]))>>lumdec))*lz)>>lumdec;
+            int j = ((100+((lx*(tbz[xx+yy*pannel_height+1]-tbz[xx+yy*pannel_height])+ly*(tbz[xx+yy*pannel_height+pannel_height]-tbz[xx+yy*pannel_height]))>>lumdec))*lz)>>lumdec;
             MMXAddSat((int*)mapping+MAP_MARGIN+((MAP_MARGIN+yy)<<8)+xx,j);
         }
     }

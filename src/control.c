@@ -47,8 +47,8 @@ static int resurrect(void)
         bot[controled_bot].gold=55;
         playsound(VOICE_EXTER, SAMPLE_ALLELUIA, 1., &voices_in_my_head, true, false);
         snd_thrust=-1;
-        autopilot=1;
-        accelerated_mode=0;
+        autopilot = true;
+        accelerated_mode = false;
         map_x=obj[bot[controled_bot].vion].pos.x/TILE_LEN;
         map_y=obj[bot[controled_bot].vion].pos.y/TILE_LEN;
         return 1;
@@ -99,20 +99,20 @@ void control(int b)
     struct vector u;
     xproceed();
     // Left button
-    if (!map_mode) switch (selected_weapon) {
+    if (! map_mode) switch (selected_weapon) {
     case 0:
-        if ((MouseCtl && kread(0)) || kread(gkeys[kc_fire].kc)) bot[b].but.canon=1;
+        if ((enable_mouse && kread(0)) || kread(gkeys[kc_fire].kc)) bot[b].but.canon=1;
         break;
     case 1:
-        if ((MouseCtl && kreset(0)) || kreset(gkeys[kc_fire].kc)) bot[b].but.bomb=1;
+        if ((enable_mouse && kreset(0)) || kreset(gkeys[kc_fire].kc)) bot[b].but.bomb=1;
         break;
-    } else if ((MouseCtl && kread(0)) || kread(gkeys[kc_fire].kc)) {
-        bot[b].u.x = ((xmouse-_DX)*(MAP_LEN/2)*TILE_LEN)/zoom+map_x*TILE_LEN;
-        bot[b].u.y = ((_DY-ymouse)*(MAP_LEN/2)*TILE_LEN)/zoom+map_y*TILE_LEN;
+    } else if ((enable_mouse && kread(0)) || kread(gkeys[kc_fire].kc)) {
+        bot[b].u.x = ((xmouse-win_center_x)*(MAP_LEN/2)*TILE_LEN)/zoom+map_x*TILE_LEN;
+        bot[b].u.y = ((win_center_y-ymouse)*(MAP_LEN/2)*TILE_LEN)/zoom+map_y*TILE_LEN;
         bot[b].u.z = z_ground(bot[b].u.x, bot[b].u.y, true);
     }
     // Right button
-    if ((MouseCtl && kreset(1)) || kreset(gkeys[kc_weapon].kc)) {
+    if ((enable_mouse && kreset(1)) || kreset(gkeys[kc_weapon].kc)) {
         if (abs(xmouse) < 2 && abs(ymouse) < 2) {
             if (! prompt_quit) prompt_quit = true;
             else quit_game = true;
@@ -123,7 +123,7 @@ void control(int b)
     if (prompt_quit) {
         if (kreset(gkeys[kc_yes].kc)) quit_game = true;
         if (kreset(gkeys[kc_no].kc)) prompt_quit = false;
-    } else if (kreset(gkeys[kc_esc].kc) && (bot[controled_bot].camp!=-1 || !AllowResurrect || !resurrect())) {
+    } else if (kreset(gkeys[kc_esc].kc) && (bot[controled_bot].camp!=-1 || !enable_resurrection || !resurrect())) {
         prompt_quit = true;
     }
     // Motor
@@ -131,12 +131,12 @@ void control(int b)
     if (kread(gkeys[kc_motorless].kc)) bot[b].thrust-=.05;
     // Views
     if (kreset(gkeys[kc_externview].kc)) {
-        map_mode = 0;
+        map_mode = false;
         view = next_external_view(view);
         snd_thrust=-1;
     }
     if (kreset(gkeys[kc_internview].kc)) {
-        map_mode = 0;
+        map_mode = false;
         if (view == VIEW_IN_PLANE) {
             view = VIEW_DOGFIGHT;
         } else {
@@ -146,7 +146,7 @@ void control(int b)
     }
     if (kreset(gkeys[kc_travelview].kc)) {
         float zs;
-        map_mode=0;
+        map_mode = false;
         view = VIEW_STANDING;
         copyv(&obj[0].pos,&obj[bot[viewed_bot].vion].rot.x);
         mulv(&obj[0].pos,300+drand48()*600+extcam_dist);
@@ -162,26 +162,26 @@ void control(int b)
     }
     if (kreset(gkeys[kc_nextbot].kc)) {
         if (view == VIEW_ANYTHING_CHEAT) {
-            if (++viewed_obj >= nbobj) viewed_obj = 0;
+            if (++viewed_obj >= nb_obj) viewed_obj = 0;
         } else if (view == VIEW_DOGFIGHT) {
             next_dog_bot();
         } else {
             do {
                 if (++viewed_bot>=NBBOT) viewed_bot=0;
-            } while (!ViewAll && bot[viewed_bot].camp!=camp);  // pas controled_bot.camp car peut etre tue
+            } while (!enable_view_enemy && bot[viewed_bot].camp!=camp);  // pas controled_bot.camp car peut etre tue
             snd_thrust=-1;
             if (bot[viewed_bot].camp==-1) playsound(VOICE_MOTOR, SAMPLE_FEU, 1., &voices_in_my_head, true, true);
         }
     }
     if (kreset(gkeys[kc_prevbot].kc)) {
         if (view == VIEW_ANYTHING_CHEAT) {
-            if (--viewed_obj<0) viewed_obj = nbobj-1;
+            if (--viewed_obj<0) viewed_obj = nb_obj-1;
         } else if (view == VIEW_DOGFIGHT) {
             prev_dog_bot();
         } else {
             do {
                 if (--viewed_bot<0) viewed_bot=NBBOT-1;
-            } while (!ViewAll && bot[viewed_bot].camp!=camp);
+            } while (!enable_view_enemy && bot[viewed_bot].camp!=camp);
             snd_thrust=-1;
             if (bot[viewed_bot].camp==-1) playsound(VOICE_MOTOR, SAMPLE_FEU, 1., &voices_in_my_head, true, true);
         }
@@ -222,37 +222,37 @@ void control(int b)
     if (!accelerated_mode || frame_count > 64) {
             if (kread(gkeys[kc_zoomout].kc)) {
             if (! map_mode) extcam_dist += 10;
-            else zoom += _DX/6;
+            else zoom += win_center_x/6;
         }
         if (kread(gkeys[kc_zoomin].kc)) {
             if (! map_mode) extcam_dist -= 10;
-            else if ((zoom -= _DX/6) < _DX) zoom = _DX;
+            else if ((zoom -= win_center_x/6) < win_center_x) zoom = win_center_x;
         }
         if (kread(gkeys[kc_riseview].kc)) {
             if (! map_mode) {
                 if ((sight_teta -= .2) < -M_PI) sight_teta += 2*M_PI;
-            } else if ((map_y += 1 + (3*SX)/zoom) > MAP_LEN/2) {
+            } else if ((map_y += 1 + (3*win_width)/zoom) > MAP_LEN/2) {
                 map_y = MAP_LEN/2;
             }
         }
         if (kread(gkeys[kc_lowerview].kc)) {
             if (! map_mode) {
                 if ((sight_teta += .2) > M_PI) sight_teta -= 2*M_PI;
-            } else if ((map_y -= 1 + (3*SX)/zoom) < -MAP_LEN/2) {
+            } else if ((map_y -= 1 + (3*win_width)/zoom) < -MAP_LEN/2) {
                 map_y = -MAP_LEN/2;
             }
         }
         if (kread(gkeys[kc_rightenview].kc)) {
             if (! map_mode) {
                 if ((sight_phi -= .2) < -M_PI) sight_phi += 2*M_PI;
-            } else if ((map_x += 1 + (3*SX)/zoom) > MAP_LEN/2) {
+            } else if ((map_x += 1 + (3*win_width)/zoom) > MAP_LEN/2) {
                 map_x = MAP_LEN/2;
             }
         }
         if (kread(gkeys[kc_leftenview].kc)) {
             if (! map_mode) {
                 if ((sight_phi += .2) > M_PI) sight_phi -= 2*M_PI;
-            } else if ((map_x -= 1 + (3*SX)/zoom) < -MAP_LEN/2) {
+            } else if ((map_x -= 1 + (3*win_width)/zoom) < -MAP_LEN/2) {
                 map_x = -MAP_LEN/2;
             }
         }
@@ -282,7 +282,7 @@ void control(int b)
     bot[b].but.frein=kread(gkeys[kc_brakes].kc);
     if (kreset(gkeys[kc_business].kc)) bot[b].but.business = 1;
     if (kreset(gkeys[kc_autopilot].kc)) {
-        autopilot^=1;
+        autopilot = ! autopilot;
         playsound(VOICE_GEAR, SAMPLE_BIPBIP, 1., &obj[bot[b].vion].pos, false, false);
         if (autopilot) {
             bot[controled_bot].target_speed = BEST_LIFT_SPEED;
@@ -292,29 +292,29 @@ void control(int b)
     // Game control
     if (kreset(gkeys[kc_pause].kc)) {
         gtime_toggle();
-        game_paused ^= 1;
+        game_paused = ! game_paused;
     }
     draw_high_scores = kread(gkeys[kc_highscores].kc);
-    if (kreset(gkeys[kc_accelmode].kc)) { accelerated_mode^=1; frame_count&=63; }
+    if (kreset(gkeys[kc_accelmode].kc)) { accelerated_mode = ! accelerated_mode; frame_count&=63; }
     if (kreset(gkeys[kc_basenav].kc)) {
         bot[b].u = obj[bot[b].babase].pos;
     }
     if (kreset(gkeys[kc_mapmode].kc)) {
-        map_mode^=1;
+        map_mode = ! map_mode;
         playsound(VOICE_GEAR, SAMPLE_BIPBIP3, 1., &voices_in_my_head, true, false);
     }
     if (kreset(gkeys[kc_suicide].kc) && bot[controled_bot].camp!=-1) explose(bot[viewed_bot].vion, 0);
     if (kreset(gkeys[kc_markpos].kc)) bot[b].but.mark=1;
     // Cheats
-    if (Gruge && kread(gkeys[kc_alti].kc)) {
+    if (cheat_mode && kread(gkeys[kc_alti].kc)) {
         obj[bot[viewed_bot].vion].pos.z += 500;
         bot[viewed_bot].vionvit.z = 0;
     }
-    if (Gruge && kreset(gkeys[kc_gunned].kc)) bot[viewed_bot].gunned=controled_bot;
+    if (cheat_mode && kreset(gkeys[kc_gunned].kc)) bot[viewed_bot].gunned=controled_bot;
     if (!autopilot && !map_mode) {
-        if (MouseCtl) {
-            bot[b].xctl = ((xmouse-_DX)/(double)_DX);
-            bot[b].yctl = ((ymouse-_DY)/(double)_DY);
+        if (enable_mouse) {
+            bot[b].xctl = ((xmouse-win_center_x)/(double)win_center_x);
+            bot[b].yctl = ((ymouse-win_center_y)/(double)win_center_y);
         } else {
             int i=0;
             i=kread(gkeys[kc_left].kc);

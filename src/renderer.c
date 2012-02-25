@@ -33,16 +33,16 @@ void initrender() {
 }
 void plot(int x, int y, int r)
 {
-    if(x<_DX && x>=-_DX && y<_DY && y>=-_DY) {
-        ((int*)videobuffer)[x+_DX+SX*(y+_DY)]=r;
+    if(x<win_center_x && x>=-win_center_x && y<win_center_y && y>=-win_center_y) {
+        ((int*)videobuffer)[x+win_center_x+win_width*(y+win_center_y)]=r;
     }
 }
 
 void mixplot(int x, int y, int r, int g, int b){
     int c;
     int rr,gg,bb;
-    if(x<_DX && x>=-_DX && y<_DY && y>=-_DY) {
-        c=((int*)videobuffer)[x+_DX+SX*(y+_DY)];
+    if(x<win_center_x && x>=-win_center_x && y<win_center_y && y>=-win_center_y) {
+        c=((int*)videobuffer)[x+win_center_x+win_width*(y+win_center_y)];
         rr=(c>>16)&0xFF;
         gg=(c>>8)&0xFF;
         bb=c&0xFF;
@@ -52,7 +52,7 @@ void mixplot(int x, int y, int r, int g, int b){
         rr>>=1;
         gg>>=1;
         bb>>=1;
-        ((int*)videobuffer)[x+_DX+SX*(y+_DY)]=(rr<<16)+(gg<<8)+bb;
+        ((int*)videobuffer)[x+win_center_x+win_width*(y+win_center_y)]=(rr<<16)+(gg<<8)+bb;
     }
 }
 void plotmouse(int x,int y){
@@ -96,10 +96,10 @@ void plotcursor(int x,int y) {
     float r=8*sin(ar);
     float c=r*cos(a);
     float s=r*sin(a);
-    plotboule(x+c-_DX,y+s-_DY);
-    plotboule(x+s-_DX,y-c-_DY);
-    plotboule(x-c-_DX,y-s-_DY);
-    plotboule(x-s-_DX,y+c-_DY);
+    plotboule(x+c-win_center_x,y+s-win_center_y);
+    plotboule(x+s-win_center_x,y-c-win_center_y);
+    plotboule(x-c-win_center_x,y-s-win_center_y);
+    plotboule(x-s-win_center_x,y+c-win_center_y);
     a+=.31; ar+=.2;
 }
 void cercle(int x, int y, int radius, int c) {
@@ -134,7 +134,7 @@ bool polyflat(struct vect2d *p1, struct vect2d *p2, struct vect2d *p3, struct pi
     if (p3->y<p1->y) { tmp=p1; p1=p3; p3=tmp; }
     if (p3->y<p2->y) { tmp=p2; p2=p3; p3=tmp; }
     if (p1->y==p2->y && p1->x>p2->x) { tmp=p1; p1=p2; p2=tmp; }
-    if (p3->y<0 || p1->y>=SY) return false;
+    if (p3->y<0 || p1->y>=win_height) return false;
 
 //  if (p3->y==p2->y) p3->y++;
 //  if (p1->y==p2->y) p1->y--;
@@ -187,21 +187,21 @@ bool polyflat(struct vect2d *p1, struct vect2d *p2, struct vect2d *p3, struct pi
         yi=0;
     }
 debtrace:
-    vid=videobuffer+(yi)*SX;
+    vid=videobuffer+(yi)*win_width;
 
     for (i=0; i<2; i++, yfin=p3->y, ql=ql2, qx=qx2){
-        while (yi<yfin && yi<SY) {
+        while (yi<yfin && yi<win_height) {
             jlim = (lx+xi)>>vf;
             j = xi>>vf;
             if (j < 0) j = 0;
-            if (jlim > SX) jlim = SX;
+            if (jlim > win_width) jlim = win_width;
             if (j < jlim) {
                 memset32((int*)(vid+j), color_of_pixel(coul), jlim-j);
             }
             xi += qx;
             yi++;
             lx += ql;
-            vid += SX;
+            vid += win_width;
         }
     }
     return true;
@@ -220,11 +220,11 @@ void drawline(struct vect2d const *restrict p1, struct vect2d const *restrict p2
         q = ((p2->x - p1->x)<<vf)/(1+dy);
     }
     // FIXME: clipping
-    if (p2->x - p1->x > SX || dy > SY) return;
+    if (p2->x - p1->x > win_width || dy > win_height) return;
     x = p1->x<<vf;
     for (y = p1->y; dy >= 0; dy--, y += s) {
         for (xi = x>>vf; xi < 1+((x+q)>>vf); xi++) {
-            plot(xi - _DX, y - _DY, col);
+            plot(xi - win_center_x, y - win_center_y, col);
         }
         x += q;
     }
@@ -279,7 +279,7 @@ void drawlinetb(struct vect2d *p1, struct vect2d *p2, int col) {
     }
     x = (p1->x)<<vf;
     for (y=p1->y; dy>=0; dy--, y+=s) {
-        for (xi=x>>vf; xi<1+((x+q)>>vf); xi++) *((int*)tbback+xi+MAP_MARGIN+(y+MAP_MARGIN)*SXTB)=col;
+        for (xi=x>>vf; xi<1+((x+q)>>vf); xi++) *((int*)tbback+xi+MAP_MARGIN+(y+MAP_MARGIN)*pannel_height)=col;
         x+=q;
     }
 }
@@ -316,7 +316,7 @@ void calcposaind(int i) {
 void calcposa() {
     // calcule les pos et les rot absolues des objets du monde réel
     int xk, yk, ak;
-    for (int i=0; i<nbobj; i++) {
+    for (int i=0; i<nb_obj; i++) {
         if (! mod[obj[i].model].fix) {
             xk=(int)floor(obj[i].pos.x/TILE_LEN)+(MAP_LEN>>1);
             yk=(int)floor(obj[i].pos.y/TILE_LEN)+(MAP_LEN>>1);
@@ -341,14 +341,14 @@ int zfac;
 static void phplot(int x, int y, int r) {
     int ix=0,iy=zfac*r;
     int balance=-r, xoff=0, yoff=r, newyoff=1;
-    if (r<=0 || y<0 || y>=SY) return;
+    if (r<=0 || y<0 || y>=win_height) return;
     do {
         int lum = ((iy&0xff00)<<8) | (iy&0xff00);
-        if (x+xoff>=0 && x+xoff<SX) MMXAddSatC((int*)videobuffer+x+xoff+y*SX, lum);
-        if (xoff && x-xoff>=0 && x-xoff<SX) MMXAddSatC((int*)videobuffer+x-xoff+y*SX, lum);
+        if (x+xoff>=0 && x+xoff<win_width) MMXAddSatC((int*)videobuffer+x+xoff+y*win_width, lum);
+        if (xoff && x-xoff>=0 && x-xoff<win_width) MMXAddSatC((int*)videobuffer+x-xoff+y*win_width, lum);
         if (newyoff && xoff!=yoff) {
-            if (x+yoff>=0 && x+yoff<SX) MMXAddSatC((int*)videobuffer+x+yoff+y*SX, lum);
-            if (x-yoff>=0 && x-yoff<SX) MMXAddSatC((int*)videobuffer+x-yoff+y*SX, lum);
+            if (x+yoff>=0 && x+yoff<win_width) MMXAddSatC((int*)videobuffer+x+yoff+y*win_width, lum);
+            if (x-yoff>=0 && x-yoff<win_width) MMXAddSatC((int*)videobuffer+x-yoff+y*win_width, lum);
         }
         if ((balance += xoff + xoff + 1) >= 0) {
             yoff--;
@@ -361,7 +361,7 @@ static void phplot(int x, int y, int r) {
 }
 void plotphare(int x, int y, int r) {
     int balance=-r, xoff=0, yoff=r, newyoff=1;
-    if (r==0 || x-r>=SX || x+r<0 || y-r>=SY || y+r<0 || r>SX) return;
+    if (r==0 || x-r>=win_width || x+r<0 || y-r>=win_height || y+r<0 || r>win_width) return;
     zfac=(190<<8)/r;
     do {
         if (newyoff) {
@@ -384,13 +384,13 @@ void plotphare(int x, int y, int r) {
 static void nuplot(int x, int y, int r) {
     int ix=0,iy=zfac*r;
     int balance=-r, xoff=0, yoff=r, newyoff=1;
-    if (r<=0 || y<0 || y>=SY) return;
+    if (r<=0 || y<0 || y>=win_height) return;
     do {
-        if (x+xoff>=0 && x+xoff<SX) MMXAddSat((int*)videobuffer+x+xoff+y*SX,iy>>8);
-        if (xoff && x-xoff>=0 && x-xoff<SX) MMXAddSat((int*)videobuffer+x-xoff+y*SX,iy>>8);
+        if (x+xoff>=0 && x+xoff<win_width) MMXAddSat((int*)videobuffer+x+xoff+y*win_width,iy>>8);
+        if (xoff && x-xoff>=0 && x-xoff<win_width) MMXAddSat((int*)videobuffer+x-xoff+y*win_width,iy>>8);
         if (newyoff && xoff!=yoff) {
-            if (x+yoff>=0 && x+yoff<SX) MMXAddSat((int*)videobuffer+x+yoff+y*SX,ix>>8);
-            if (x-yoff>=0 && x-yoff<SX) MMXAddSat((int*)videobuffer+x-yoff+y*SX,ix>>8);
+            if (x+yoff>=0 && x+yoff<win_width) MMXAddSat((int*)videobuffer+x+yoff+y*win_width,ix>>8);
+            if (x-yoff>=0 && x-yoff<win_width) MMXAddSat((int*)videobuffer+x-yoff+y*win_width,ix>>8);
         }
         if ((balance += xoff + xoff) >= 0) {
             --yoff;
@@ -405,7 +405,7 @@ static void nuplot(int x, int y, int r) {
 
 void plotnuage(int x, int y, int r) {
     int balance=-r, xoff=0, yoff=r, newyoff=1;
-    if (r==0 || x-r>=SX || x+r<0 || y-r>=SY || y+r<0 || r>SX) return;
+    if (r==0 || x-r>=win_width || x+r<0 || y-r>=win_height || y+r<0 || r>win_width) return;
     zfac=(90<<8)/r;
     do {
         if (newyoff) {
@@ -427,13 +427,13 @@ void plotnuage(int x, int y, int r) {
 static void fuplot(int x, int y, int r) {
     int ix=0,iy=zfac*r;
     int balance=-r, xoff=0, yoff=r, newyoff=1;
-    if (r<=0 || y<0 || y>=SY) return;
+    if (r<=0 || y<0 || y>=win_height) return;
     do {
-        if (x+xoff>=0 && x+xoff<SX) MMXSubSat((int*)videobuffer+x+xoff+y*SX,iy>>8);
-        if (xoff && x-xoff>=0 && x-xoff<SX) MMXSubSat((int*)videobuffer+x-xoff+y*SX,iy>>8);
+        if (x+xoff>=0 && x+xoff<win_width) MMXSubSat((int*)videobuffer+x+xoff+y*win_width,iy>>8);
+        if (xoff && x-xoff>=0 && x-xoff<win_width) MMXSubSat((int*)videobuffer+x-xoff+y*win_width,iy>>8);
         if (newyoff && xoff!=yoff) {
-            if (x+yoff>=0 && x+yoff<SX) MMXSubSat((int*)videobuffer+x+yoff+y*SX,ix>>8);
-            if (x-yoff>=0 && x-yoff<SX) MMXSubSat((int*)videobuffer+x-yoff+y*SX,ix>>8);
+            if (x+yoff>=0 && x+yoff<win_width) MMXSubSat((int*)videobuffer+x+yoff+y*win_width,ix>>8);
+            if (x-yoff>=0 && x-yoff<win_width) MMXSubSat((int*)videobuffer+x-yoff+y*win_width,ix>>8);
         }
         if ((balance += xoff + xoff + 1) >= 0) {
             yoff--;
@@ -446,7 +446,7 @@ static void fuplot(int x, int y, int r) {
 }
 void plotfumee(int x, int y, int r) {
     int balance=-r, xoff=0, yoff=r, newyoff=1;
-    if (r==0 || x-r>=SX || x+r<0 || y-r>=SY || y+r<0 || r>SX) return;
+    if (r==0 || x-r>=win_width || x+r<0 || y-r>=win_height || y+r<0 || r>win_width) return;
     zfac=(40<<8)/r;
     do {
         if (newyoff) {
@@ -518,7 +518,7 @@ void renderer(int ak, enum render_part fast) {
         float z;
         char aff=norme2(&obj[o].t)<TILE_LEN*TILE_LEN*4;
         if (obj[o].aff && (fast==3 || (fast==0 && (obj[o].type==TYPE_CAR || obj[o].type==TYPE_TANK || obj[o].type==TYPE_LIGHT || obj[o].type==TYPE_DECO || obj[o].type==TYPE_DEBRIS)) || (fast==2 && (obj[o].type==TYPE_PLANE || obj[o].type==TYPE_ZEPPELIN || obj[o].type==TYPE_INSTRUMENTS || obj[o].type==TYPE_BOMB)))) {
-            mulmt3(&oL[no], &obj[o].rot, &Light);
+            mulmt3(&oL[no], &obj[o].rot, &light);
 #define DISTLUM 300.
             mulv(&oL[no].x,DISTLUM);
             mulv(&oL[no].y,DISTLUM);
@@ -560,27 +560,27 @@ void renderer(int ak, enum render_part fast) {
                     // on va projetter ce centre à l'écran
                     proj(&e,&obj[o].posc);
                     rayonapparent = proj1(mod[obj[o].model].rayon,obj[o].posc.z);
-                    visu = e.x>-rayonapparent && e.x<SX+rayonapparent && e.y>-rayonapparent && e.y<SY+rayonapparent;
+                    visu = e.x>-rayonapparent && e.x<win_width+rayonapparent && e.y>-rayonapparent && e.y<win_height+rayonapparent;
                 } else {    // verifier la formule qd meme...
                     if (obj[o].type!=TYPE_CLOUD && obj[o].type!=TYPE_SMOKE && obj[o].type!=TYPE_LIGHT) {
-                        double r = mod[obj[o].model].rayon*sqrt(focale*focale+_DX*_DX)/_DX;
-                        visu = obj[o].posc.z > focale*fabs(obj[o].posc.x)/_DX - r;
-                        r = mod[obj[o].model].rayon*sqrt(focale*focale+_DY*_DY)/_DY;
-                        visu = visu && (obj[o].posc.z > focale*fabs(obj[o].posc.y)/_DY - r);
-                        rayonapparent = SX;
+                        double r = mod[obj[o].model].rayon*sqrt(z_near*z_near+win_center_x*win_center_x)/win_center_x;
+                        visu = obj[o].posc.z > z_near*fabs(obj[o].posc.x)/win_center_x - r;
+                        r = mod[obj[o].model].rayon*sqrt(z_near*z_near+win_center_y*win_center_y)/win_center_y;
+                        visu = visu && (obj[o].posc.z > z_near*fabs(obj[o].posc.y)/win_center_y - r);
+                        rayonapparent = win_width;
                     } else visu=0;
                 }
                 // la sphère est-elle visible ?
                 if (visu) {
                     if (obj[o].type==TYPE_CLOUD) {
-                        if (Dark) plotfumee(e.x,e.y,rayonapparent);
+                        if (night_mode) plotfumee(e.x,e.y,rayonapparent);
                         else plotnuage(e.x,e.y,rayonapparent);
                     }
                     else if (obj[o].type==TYPE_SMOKE) {
-                        if (rayonfumee[o-firstfumee]) plotfumee(e.x,e.y,((int)rayonapparent*rayonfumee[o-firstfumee])>>9);
+                        if (smoke_radius[o-smoke_start]) plotfumee(e.x,e.y,((int)rayonapparent*smoke_radius[o-smoke_start])>>9);
                     } else {
                         if (rayonapparent>.3) {
-                            if (rayonapparent<.5) plot(e.x-_DX,e.y-_DY,0x0);
+                            if (rayonapparent<.5) plot(e.x-win_center_x,e.y-win_center_y,0x0);
                             else {
                                 int mo = obj[o].distance<(TILE_LEN*TILE_LEN*.14) ? 0 : 1;
                                 // on calcule alors la pos de la obj[0] dans le repère de l'objet, ie ObjT*(campos-objpos)
@@ -620,23 +620,23 @@ void renderer(int ak, enum render_part fast) {
                                                     }
                                                     if (p-(mod[obj[o].model].nbfaces[mo]-2)) {
                                                         pt[2].mx=MAP_MARGIN;
-                                                        pt[2].my=SYTB+MAP_MARGIN;
-                                                        pt[0].mx=SXTB+MAP_MARGIN;
+                                                        pt[2].my=pannel_width+MAP_MARGIN;
+                                                        pt[0].mx=pannel_height+MAP_MARGIN;
                                                         pt[0].my=MAP_MARGIN;
-                                                        pt[1].mx=SXTB+MAP_MARGIN;
-                                                        pt[1].my=SYTB+MAP_MARGIN;
+                                                        pt[1].mx=pannel_height+MAP_MARGIN;
+                                                        pt[1].my=pannel_width+MAP_MARGIN;
                                                     } else {
                                                         pt[0].mx=MAP_MARGIN;
-                                                        pt[0].my=SYTB+MAP_MARGIN;
+                                                        pt[0].my=pannel_width+MAP_MARGIN;
                                                         pt[1].mx=MAP_MARGIN;
                                                         pt[1].my=MAP_MARGIN;
-                                                        pt[2].mx=SXTB+MAP_MARGIN;
+                                                        pt[2].mx=pannel_height+MAP_MARGIN;
                                                         pt[2].my=MAP_MARGIN;
                                                     }
                                                     polymap(&pt[0],&pt[1],&pt[2]);
                                                 } else {
                                                     struct pixel coul = mod[obj[o].model].fac[mo][p].color;
-                                                    if (Dark) {
+                                                    if (night_mode) {
                                                         if (obj[o].type != TYPE_INSTRUMENTS) {
                                                             darken(&coul.r);
                                                         }
@@ -663,7 +663,7 @@ void renderer(int ak, enum render_part fast) {
                             }
                         }
                     }
-                    if (Dark && obj[o].type==TYPE_LIGHT) {   // HALO
+                    if (night_mode && obj[o].type==TYPE_LIGHT) {   // HALO
                         plotphare(e.x,e.y,rayonapparent*4+1);
                     }
                 }

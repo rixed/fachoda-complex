@@ -87,7 +87,7 @@ static void random_submap(
     int ss = s >> 1;
     if (! ss) return;
 
-    double sf = Accident * (double)s/smap;
+    double sf = hilly_level * (double)s/smap;
     // offset of first corner of the square
     size_t const sx = z_off * x;
     size_t const sy = z_off * y * smap;
@@ -147,7 +147,7 @@ static void make_map(uchar *m, int smooth_factor, int mapzmax, int map_length, s
         m[i] = (m[i]-zmin)*ratio;
     }
 
-    // Smooth all maps at least once
+    // smooth_level all maps at least once
     smooth_map(m, map_length, smooth_factor, z_off);
 }
 
@@ -195,7 +195,7 @@ void initmap(void) {
             zcol[x].b=colterrain[y].b+(colterrain[y+1].b-colterrain[y].b)/(zcolterrain[y+1].z1-zcolterrain[y].z2)*(x-zcolterrain[y].z2);
         }
     }
-    if (Dark) for (x=0; x<256; x++) {
+    if (night_mode) for (x=0; x<256; x++) {
         zcol[x].r-=zcol[x].r>>1;
         zcol[x].g-=zcol[x].g>>2;
         zcol[x].b-=zcol[x].b>>2;
@@ -203,11 +203,11 @@ void initmap(void) {
 
     // Global map
     map = calloc(MAP_LEN*MAP_LEN,sizeof(*map));   // starts from 0
-    if (Fleuve) dig(0); // digging in 0?
+    dig(0); // digging in 0?
     make_map(&map[0].z, 0, 255, MAP_LEN, sizeof(*map));
-    for (i=0;i<Smooth; i++) {   // Instead of using make_map smooth_factor, we smooth (and dig) several times.
+    for (i=0;i<smooth_level; i++) {   // Instead of using make_map smooth_factor, we smooth (and dig) several times.
         smooth_map(&map[0].z, MAP_LEN, 1, sizeof(*map));
-        if (Fleuve) dig(0);
+        dig(0);
     }
     for (y=0; y<MAP_LEN; y++) {
         for (x=0; x<MAP_LEN; x++) {
@@ -760,19 +760,19 @@ void gouraud_section(void) {
             Gouroyi=0;
         }
     }
-    Gourovid=(int*)videobuffer+Gouroyi*SX;
-    while (Gourody>0 && Gouroyi<SY) {
+    Gourovid=(int*)videobuffer+Gouroyi*win_width;
+    while (Gourody>0 && Gouroyi<win_height) {
         int i=Gouroxi>>Gourovf;
         int ilim=i-(Gourolx>>Gourovf);
         if (ilim<0) ilim=0;
         cr=Gourocoulr;
         cg=Gourocoulg;
         cb=Gourocoulb;
-        if (i>=SX) {
-            cr+=(i-SX+1)*Gouroir;
-            cg+=(i-SX+1)*Gouroig;
-            cb+=(i-SX+1)*Gouroib;
-            i=SX-1;
+        if (i>=win_width) {
+            cr+=(i-win_width+1)*Gouroir;
+            cg+=(i-win_width+1)*Gouroig;
+            cb+=(i-win_width+1)*Gouroib;
+            i=win_width-1;
         }
         if (i>=ilim) {
             do {
@@ -786,7 +786,7 @@ void gouraud_section(void) {
         Gourocoulr+=Gouroqr;
         Gourocoulg+=Gouroqg;
         Gourocoulb+=Gouroqb;
-        Gourovid+=SX;
+        Gourovid+=win_width;
         Gourody--;
         Gouroyi++;
     }
@@ -800,7 +800,7 @@ bool poly_gouraud(struct vect2dc *p1, struct vect2dc *p2, struct vect2dc *p3) {
     if (p2->v.y<p1->v.y) { tmp=p1; p1=p2; p2=tmp; }
     if (p3->v.y<p1->v.y) { tmp=p1; p1=p3; p3=tmp; }
     if (p3->v.y<p2->v.y) { tmp=p2; p2=p3; p3=tmp; }
-    if (p3->v.y<0 || p1->v.y>SY) return false;
+    if (p3->v.y<0 || p1->v.y>win_height) return false;
     // bounds along X
     p_minx=p_maxx=p1;
     if (p2->v.x>p_maxx->v.x) p_maxx=p2;
@@ -808,7 +808,7 @@ bool poly_gouraud(struct vect2dc *p1, struct vect2dc *p2, struct vect2dc *p3) {
     if (p_maxx->v.x<0) return false;
     if (p2->v.x<p_minx->v.x) p_minx=p2;
     if (p3->v.x<p_minx->v.x) p_minx=p3;
-    if (p_minx->v.x>SX) return false;
+    if (p_minx->v.x>win_width) return false;
     Gouroyi=p1->v.y;
     if (p1->v.y!=p2->v.y) {
         Gouroxi=p1->v.x<<Gourovf;

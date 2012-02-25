@@ -724,7 +724,7 @@ void loadmodele(int n, char *fn, char *fnlight, int type, int pere, int plat, in
     mod[n].anchored = mobil >= 1;   // FIXME: both concepts are merged in the modele description
     mod[n].rayon=0;
     for (i=0; i<mod[n].nbpts[0]; i++) if (norme(&mod[n].pts[0][i])>mod[n].rayon) mod[n].rayon=norme(&mod[n].pts[0][i]);
-    if (mod[n].type==TYPE_BOMB) mod[n].rayoncollision=Easy?400:250;
+    if (mod[n].type==TYPE_BOMB) mod[n].rayoncollision=easy_mode?400:250;
     else {
         mod[n].rayoncollision=mod[n].rayon;
         if (mod[n].type==TYPE_PLANE && n==pere) mod[n].rayoncollision*=1.5;
@@ -746,13 +746,13 @@ void LoadModeles() {
         mod[0].fac[l] = NULL;
     }
     mod[0].rayoncarac = 0;
-    mod[0].rayoncollision = Easy ? 10:3;
+    mod[0].rayoncollision = easy_mode ? 10:3;
     mod[0].rayon = 60;
     mod[0].type = TYPE_SHOT;
     mod[0].fix = false;
     mod[0].anchored = false;
     mod[0].pere = 0;
-    nbtir = 0;
+    nb_shot = 0;
     s = 1;
     // LOAD NAVIONS
     for (n=0; n<NB_PLANES; n++) {
@@ -822,7 +822,7 @@ void LoadModeles() {
 }
 int addnobjet(int na, struct vector *p, struct matrix *m, uchar sol) {
     int i;
-    int firstobj=nbobj;
+    int firstobj=nb_obj;
     for (i=n_object[na].firstpiece; i<n_object[na].firstpiece+n_object[na].nbpieces; i++) {
         struct vector pp;
         if (mod[i].pere==i)
@@ -834,7 +834,7 @@ int addnobjet(int na, struct vector *p, struct matrix *m, uchar sol) {
         }
     }
     if (na<NB_PLANES) { // ne pas afficher les poscam
-        obj[nbobj-1].aff=0;
+        obj[nb_obj-1].aff=0;
     }
     return firstobj;
 }

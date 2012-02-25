@@ -74,7 +74,7 @@ void animsoleil(void) {
 void affsoleil(struct vector *L) {
     struct vector soleil;
     struct vector ac;
-    if (Dark) for (unsigned i = 0; i < ARRAY_LEN(stars); i++) {
+    if (night_mode) for (unsigned i = 0; i < ARRAY_LEN(stars); i++) {
         // Compute star's position relative to camera (CamT*Start)
         float gh = obj[0].rot.z.x * obj[0].rot.z.y;
         float ab = obj[0].rot.x.x * obj[0].rot.x.y;
@@ -91,14 +91,14 @@ void affsoleil(struct vector *L) {
                 - ab - stars[i].xy
                 + obj[0].rot.x.z * stars[i].z;
             int x = proj1(ac.x, ac.z);
-            if (x >= -_DX && x < _DX-1) {
+            if (x >= -win_center_x && x < win_center_x-1) {
                 ac.y =
                     (obj[0].rot.y.x + stars[i].y) *
                     (obj[0].rot.y.y + stars[i].x)
                     - de - stars[i].xy
                     + obj[0].rot.y.z * stars[i].z;
                 int y = proj1(ac.y, ac.z);
-                if (y >= -_DY && y < _DY-1) {
+                if (y >= -win_center_y && y < win_center_y-1) {
                     plot(x,   y-1, 0xA0A0A0);
                     plot(x+1, y-1, 0x909090);
                     plot(x-1, y,   0xA0A0A0);
@@ -122,13 +122,13 @@ void affsoleil(struct vector *L) {
     ac.z = scalaire(&obj[0].rot.z,&soleil);
     if (ac.z > 0) {
         ac.x = scalaire(&obj[0].rot.x,&soleil);
-        int xse = _DX+(ac.x*focale)/ac.z-SunImgL/2;
-        if (xse>=-SunImgL && xse<SX) {
+        int xse = win_center_x+(ac.x*z_near)/ac.z-SunImgL/2;
+        if (xse>=-SunImgL && xse<win_width) {
             ac.y = scalaire(&obj[0].rot.y,&soleil);
-            int yse = _DY+(ac.y*focale)/ac.z-SunImgL/2;
-            if (yse>=-SunImgL && yse<SY) {
+            int yse = win_center_y+(ac.y*z_near)/ac.z-SunImgL/2;
+            if (yse>=-SunImgL && yse<win_height) {
                 // AFICHAGE DU SOLEIL
-                if (! Dark) for (int i=0; i < SunNbRays; i++) {
+                if (! night_mode) for (int i=0; i < SunNbRays; i++) {
                     for (int x=(i*SunMapX)/SunNbRays; x<((i+1)*SunMapX)/SunNbRays; x++) {
                         int y;
                         for (y=0; (y<SunMapY*.3+SunMapY*.3*(sin(SunPicPh[i])+1.5)*sin(x*M_PI*SunNbRays/SunMapX)*sin(x*M_PI*SunNbRays/SunMapX)) && y<SunMapY; y++) {
@@ -142,7 +142,7 @@ void affsoleil(struct vector *L) {
                             SunMap[y*SunMapX+x].b = 0xC0;
                         }
                     }
-                } else /* Dark */ for (int i = 0; i < SunNbRays; i++) {
+                } else /* night_mode */ for (int i = 0; i < SunNbRays; i++) {
                     for (int x=(i*SunMapX)/SunNbRays; x<((i+1)*SunMapX)/SunNbRays; x++) {
                         int y;
                         for (y=0; (y<SunMapY*.5+SunMapY*.1*(sin(SunPicPh[i])+1.5)*sin(x*M_PI*SunNbRays/SunMapX)*sin(x*M_PI*SunNbRays/SunMapX)) && y<SunMapY; y++) {
@@ -158,12 +158,12 @@ void affsoleil(struct vector *L) {
                     }
                 }
                 for (int y=0; y<SunImgL; y++) {
-                    if (y+yse>=0 && y+yse<SY) {
+                    if (y+yse>=0 && y+yse<win_height) {
                         for (int x=0; x<SunImgL; x++) {
-                            if (x+xse>=0 && x+xse<SX) {
+                            if (x+xse>=0 && x+xse<win_width) {
                                 int a = SunImgAdy[y*SunImgL+x];
                                 if (a != -1) {
-                                    videobuffer[(y+yse)*SX+x+xse] = SunMap[a];
+                                    videobuffer[(y+yse)*win_width+x+xse] = SunMap[a];
                                 }
                             }
                         }

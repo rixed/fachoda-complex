@@ -40,33 +40,33 @@ static void draw_fg(void)
     int c[4]={ 0xFF0000, 0x00FF00, 0x0000FF, 0xFFFF00 };
     my_imgcount ++;
     for (i=0; i<3; i++) for (o=0; o<4; o++) {
-        if (ViewAll || o==bot[controled_bot].camp) plotchar(_DX+(obj[babaseo[0][i][o]].pos.x-TILE_LEN*map_x)*zoom/(TILE_LEN*MAP_LEN/2),_DY-(obj[babaseo[0][i][o]].pos.y-TILE_LEN*map_y)*zoom/(TILE_LEN*MAP_LEN/2),c[o],10);
+        if (enable_view_enemy || o==bot[controled_bot].camp) plotchar(win_center_x+(obj[airfield_obj[0][i][o]].pos.x-TILE_LEN*map_x)*zoom/(TILE_LEN*MAP_LEN/2),win_center_y-(obj[airfield_obj[0][i][o]].pos.y-TILE_LEN*map_y)*zoom/(TILE_LEN*MAP_LEN/2),c[o],10);
     }
-    for (o=0; o<MAX_VILLAGES; o++) {
+    for (o=0; o<NB_VILLAGES; o++) {
         int x,y;
-        plotchar(x=_DX+(village[o].p.x-TILE_LEN*map_x)*zoom/(TILE_LEN*MAP_LEN/2),y=_DY-(village[o].p.y-TILE_LEN*map_y)*zoom/(TILE_LEN*MAP_LEN/2),0xFFFFFF,11);
+        plotchar(x=win_center_x+(village[o].p.x-TILE_LEN*map_x)*zoom/(TILE_LEN*MAP_LEN/2),y=win_center_y-(village[o].p.y-TILE_LEN*map_y)*zoom/(TILE_LEN*MAP_LEN/2),0xFFFFFF,11);
         pwordlent(village[o].nom,x-3*strlen(village[o].nom),y+9,0xFFFFFF);
     }
     for (o=0; o<NBTANKBOTS; o++) {
-        if (tank[o].camp!=-1 && (ViewAll||tank[o].camp==bot[controled_bot].camp)) plotchar(_DX+(obj[tank[o].o1].pos.x-TILE_LEN*map_x)*zoom/(TILE_LEN*MAP_LEN/2),_DY-(obj[tank[o].o1].pos.y-TILE_LEN*map_y)*zoom/(TILE_LEN*MAP_LEN/2),c[(int)tank[o].camp],14);
+        if (tank[o].camp!=-1 && (enable_view_enemy||tank[o].camp==bot[controled_bot].camp)) plotchar(win_center_x+(obj[tank[o].o1].pos.x-TILE_LEN*map_x)*zoom/(TILE_LEN*MAP_LEN/2),win_center_y-(obj[tank[o].o1].pos.y-TILE_LEN*map_y)*zoom/(TILE_LEN*MAP_LEN/2),c[(int)tank[o].camp],14);
     }
     for (o=0; o<NBBOT; o++) {
-        if (bot[o].camp!=-1 && (ViewAll||bot[o].camp==bot[controled_bot].camp)) plotchar(_DX+(obj[bot[o].vion].pos.x-TILE_LEN*map_x)*zoom/(TILE_LEN*MAP_LEN/2),_DY-(obj[bot[o].vion].pos.y-TILE_LEN*map_y)*zoom/(TILE_LEN*MAP_LEN/2),o==viewed_bot && my_imgcount&1?0xFFFFFF:c[(int)bot[o].camp],12);
+        if (bot[o].camp!=-1 && (enable_view_enemy||bot[o].camp==bot[controled_bot].camp)) plotchar(win_center_x+(obj[bot[o].vion].pos.x-TILE_LEN*map_x)*zoom/(TILE_LEN*MAP_LEN/2),win_center_y-(obj[bot[o].vion].pos.y-TILE_LEN*map_y)*zoom/(TILE_LEN*MAP_LEN/2),o==viewed_bot && my_imgcount&1?0xFFFFFF:c[(int)bot[o].camp],12);
     }
     for (o=0; o<NB_MARKS; o++) {
-        if (mark[o].x!=MAXFLOAT) plotchar(_DX+(mark[o].x-TILE_LEN*map_x)*zoom/(TILE_LEN*MAP_LEN/2),_DY-(mark[o].y-TILE_LEN*map_y)*zoom/(TILE_LEN*MAP_LEN/2),0xBFEF9F,9);
+        if (mark[o].x!=MAXFLOAT) plotchar(win_center_x+(mark[o].x-TILE_LEN*map_x)*zoom/(TILE_LEN*MAP_LEN/2),win_center_y-(mark[o].y-TILE_LEN*map_y)*zoom/(TILE_LEN*MAP_LEN/2),0xBFEF9F,9);
     }
     for (o=0; o<MAX_REWARDS; o++) {
-        if (prime[o].reward && prime[o].camp==bot[viewed_bot].camp)
-            plotchar(_DX+(obj[prime[o].no].pos.x-TILE_LEN*map_x)*zoom/(TILE_LEN*MAP_LEN/2),_DY-(obj[prime[o].no].pos.y-TILE_LEN*map_y)*zoom/(TILE_LEN*MAP_LEN/2),0xFF00FF,13);
+        if (reward[o].amount && reward[o].camp==bot[viewed_bot].camp)
+            plotchar(win_center_x+(obj[reward[o].no].pos.x-TILE_LEN*map_x)*zoom/(TILE_LEN*MAP_LEN/2),win_center_y-(obj[reward[o].no].pos.y-TILE_LEN*map_y)*zoom/(TILE_LEN*MAP_LEN/2),0xFF00FF,13);
     }
-    plotchar(_DX+(bot[viewed_bot].u.x-TILE_LEN*map_x)*zoom/(TILE_LEN*MAP_LEN/2),_DY-(bot[viewed_bot].u.y-TILE_LEN*map_y)*zoom/(TILE_LEN*MAP_LEN/2),0xFFFF,'x'-16);
-    pchar('O',10,SY-SizeCharY*2-10,0xF0F0F0);
-    pchar('E',22,SY-SizeCharY*2-10,0xF0F0F0);
-    pchar('N',16,SY-SizeCharY*3-10,0xF0F0F0);
-    pchar('S',16,SY-SizeCharY-10,0xF0F0F0);
-    pchar(15+16,16,SY-SizeCharY*2-10,0xA0A0A0);
-    p1.v.x=19; p1.v.y=SY-SizeCharY*2+SizeCharY/2-10;
+    plotchar(win_center_x+(bot[viewed_bot].u.x-TILE_LEN*map_x)*zoom/(TILE_LEN*MAP_LEN/2),win_center_y-(bot[viewed_bot].u.y-TILE_LEN*map_y)*zoom/(TILE_LEN*MAP_LEN/2),0xFFFF,'x'-16);
+    pchar('O',10,win_height-SizeCharY*2-10,0xF0F0F0);
+    pchar('E',22,win_height-SizeCharY*2-10,0xF0F0F0);
+    pchar('N',16,win_height-SizeCharY*3-10,0xF0F0F0);
+    pchar('S',16,win_height-SizeCharY-10,0xF0F0F0);
+    pchar(15+16,16,win_height-SizeCharY*2-10,0xA0A0A0);
+    p1.v.x=19; p1.v.y=win_height-SizeCharY*2+SizeCharY/2-10;
     p2.v.x=10*cos(bot[viewed_bot].cap)+p1.v.x;
     p2.v.y=-10*sin(bot[viewed_bot].cap)+p1.v.y;
     drawline(&p1.v, &p2.v, c[(int)bot[viewed_bot].camp]);
@@ -82,8 +82,8 @@ void bpoint(struct vect2dc *p, int x, int y)
     p->c.r=(zcol[z].r*intens)>>7;
     p->c.g=(zcol[z].g*intens)>>7;
     p->c.b=(zcol[z].b*intens)>>7;
-    p->v.y=_DY+zoom-zoom*2*(y-map_y)/MAP_LEN;
-    p->v.x=_DX-zoom+zoom*2*(x-map_x)/MAP_LEN;
+    p->v.y=win_center_y+zoom-zoom*2*(y-map_y)/MAP_LEN;
+    p->v.x=win_center_x-zoom+zoom*2*(x-map_x)/MAP_LEN;
 }
 
 static void draw_roads()
@@ -99,11 +99,11 @@ static void draw_roads()
         if (i>EndMotorways) typ=1;
         if (i>EndRoads) typ=2;
         if (route[i].ak!=-1) {
-            p1.v.x=_DX+(route[i].i.x-TILE_LEN*map_x)*zoom/(TILE_LEN*MAP_LEN/2);
-            p1.v.y=_DY-(route[i].i.y-TILE_LEN*map_y)*zoom/(TILE_LEN*MAP_LEN/2);
+            p1.v.x=win_center_x+(route[i].i.x-TILE_LEN*map_x)*zoom/(TILE_LEN*MAP_LEN/2);
+            p1.v.y=win_center_y-(route[i].i.y-TILE_LEN*map_y)*zoom/(TILE_LEN*MAP_LEN/2);
             if (route[i+1].ak!=-1) {
-                p2.v.x=_DX+(route[i+1].i.x-TILE_LEN*map_x)*zoom/(TILE_LEN*MAP_LEN/2);
-                p2.v.y=_DY-(route[i+1].i.y-TILE_LEN*map_y)*zoom/(TILE_LEN*MAP_LEN/2);
+                p2.v.x=win_center_x+(route[i+1].i.x-TILE_LEN*map_x)*zoom/(TILE_LEN*MAP_LEN/2);
+                p2.v.y=win_center_y-(route[i+1].i.y-TILE_LEN*map_y)*zoom/(TILE_LEN*MAP_LEN/2);
                 drawline(&p1.v, &p2.v, coulr[typ][i&1]);
             }
         }
@@ -126,11 +126,11 @@ static void draw_bg(void)
     }
     bpoint(&p1,0,0);
     bpoint(&p2,MAP_LEN-1,MAP_LEN-1);
-    for (y=0; y<SY; y++) {
-        if (p1.v.x>0) memset32((int*)videobuffer+y*SX,0,p1.v.x);
-        if (p2.v.x<SX) memset32((int*)videobuffer+y*SX+p2.v.x-1,0,SX-p2.v.x+1);
-        if (y<p2.v.y) memset32((int*)videobuffer+y*SX+MAX(0,p1.v.x),0,MIN(p2.v.x,SX)-MAX(0,p1.v.x));
-        if (y>p1.v.y) memset32((int*)videobuffer+y*SX+MAX(0,p1.v.x),0,MIN(p2.v.x,SX)-MAX(0,p1.v.x));
+    for (y=0; y<win_height; y++) {
+        if (p1.v.x>0) memset32((int*)videobuffer+y*win_width,0,p1.v.x);
+        if (p2.v.x<win_width) memset32((int*)videobuffer+y*win_width+p2.v.x-1,0,win_width-p2.v.x+1);
+        if (y<p2.v.y) memset32((int*)videobuffer+y*win_width+MAX(0,p1.v.x),0,MIN(p2.v.x,win_width)-MAX(0,p1.v.x));
+        if (y>p1.v.y) memset32((int*)videobuffer+y*win_width+MAX(0,p1.v.x),0,MIN(p2.v.x,win_width)-MAX(0,p1.v.x));
     }
 }
 

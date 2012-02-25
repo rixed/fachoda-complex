@@ -22,14 +22,24 @@
 #include <math.h>
 #include "proto.h"
 
-struct prime prime[MAX_REWARDS];
-struct village village[MAX_VILLAGES];
+struct reward reward[MAX_REWARDS];
+struct village village[NB_VILLAGES];
 
 #define NBRADIO 1
-char *nomvillage[MAX_VILLAGES] = { "Mokolo", "Badagadir", "Mokassaville", "Miditana", "Zawabi", "Bogomips", "Osk", "Homene", "Joytown", "Peacetown" };
-char msgactu[1000];
-int msgactutime=0;
-int campactu;
+char *village_name[NB_VILLAGES] = {
+    "Mokolo",       "Badagadir",
+    "Mokassaville", "Miditana",
+    "Zawabi",       "Bogomips",
+    "Osk",          "Homene",
+    "Joytown",      "Peacetown",
+    "Badlem",       "Gabu'Argib",
+    "Toyourt",      "Djakaiki",
+    "Lisuko",       "Rimela",
+};
+
+char current_msg[1000];
+int current_msg_ttl=0;
+int current_msg_camp;
 #define NBMSG 2
 char *villagemsg[NBMSG][4][2] = {
     {
@@ -140,29 +150,29 @@ char *botvehicmsg[2][NBMSG][4][2] = {
         }
     }
 };
-void newprime() {
+void reward_new() {
     int j, i, k;
     char botname[200];
-    for (i=0; i<MAX_REWARDS && prime[i].reward!=0; i++);
+    for (i=0; i<MAX_REWARDS && reward[i].amount!=0; i++);
     if (i<MAX_REWARDS) {
-        campactu=(campactu+1)&3;
-        msgactutime=300;
-        strcpy(msgactu,lang?"Try to make more collateral victims":"Essayez de faire davantage de dommages colateraux");
+        current_msg_camp=(current_msg_camp+1)&3;
+        current_msg_ttl=300;
+        strcpy(current_msg,lang?"Try to make more collateral victims":"Essayez de faire davantage de dommages colateraux");
         switch ((int)(drand48()*3.)) {
         case 0:
             // détruire une maison d'un village
             k=0;
             do {
                 k++;
-                j=MAX_VILLAGES*drand48();
-                prime[i].no=village[j].o1+(village[j].o2-village[j].o1)*drand48();
-            } while (k<10 && obj[prime[i].no].type==TYPE_DECO);
+                j=NB_VILLAGES*drand48();
+                reward[i].no=village[j].o1+(village[j].o2-village[j].o1)*drand48();
+            } while (k<10 && obj[reward[i].no].type==TYPE_DECO);
             if (k<10) {
-                sprintf(msgactu,villagemsg[(int)(drand48()*NBMSG)][campactu][lang],village[j].nom);
-                prime[i].camp=campactu;
-                prime[i].reward=1000+1000*drand48();
-                prime[i].dt=-1;
-                prime[i].endmsg=NULL;
+                sprintf(current_msg,villagemsg[(int)(drand48()*NBMSG)][current_msg_camp][lang],village[j].nom);
+                reward[i].camp=current_msg_camp;
+                reward[i].amount=1000+1000*drand48();
+                reward[i].dt=-1;
+                reward[i].endmsg=NULL;
             }
             break;
         case 1:
@@ -176,12 +186,12 @@ void newprime() {
                     strcat(botname,&(playbotname[j])[0]);
                     strcat(botname,")");
                 }
-                sprintf(msgactu,botavionmsg[bot[j].camp==campactu][(int)(drand48()*NBMSG)][campactu][lang],j<NbHosts?botname:plane_desc[bot[j].navion].name,obj[bot[j].vion].pos.x,obj[bot[j].vion].pos.y);
-                prime[i].camp=campactu;
-                prime[i].reward=1000*drand48()+(bot[j].camp==campactu?4000:2000);
-                prime[i].no=bot[j].vion;
-                prime[i].dt=-1;
-                prime[i].endmsg=NULL;
+                sprintf(current_msg,botavionmsg[bot[j].camp==current_msg_camp][(int)(drand48()*NBMSG)][current_msg_camp][lang],j<NbHosts?botname:plane_desc[bot[j].navion].name,obj[bot[j].vion].pos.x,obj[bot[j].vion].pos.y);
+                reward[i].camp=current_msg_camp;
+                reward[i].amount=1000*drand48()+(bot[j].camp==current_msg_camp?4000:2000);
+                reward[i].no=bot[j].vion;
+                reward[i].dt=-1;
+                reward[i].endmsg=NULL;
             }
             break;
         case 2:
@@ -189,12 +199,12 @@ void newprime() {
             k=0;
             do {k++; j=NBTANKBOTS*drand48();} while (k<10 && tank[j].camp==-1);
             if (k<10) {
-                sprintf(msgactu,botvehicmsg[tank[j].camp==campactu][(int)(drand48()*NBMSG)][campactu][lang],tank[j].nom,obj[tank[j].o1].pos.x,obj[tank[j].o1].pos.y);
-                prime[i].camp=campactu;
-                prime[i].reward=1500+1000*drand48();
-                prime[i].no=tank[j].o1;
-                prime[i].dt=-1;
-                prime[i].endmsg=NULL;
+                sprintf(current_msg,botvehicmsg[tank[j].camp==current_msg_camp][(int)(drand48()*NBMSG)][current_msg_camp][lang],tank[j].nom,obj[tank[j].o1].pos.x,obj[tank[j].o1].pos.y);
+                reward[i].camp=current_msg_camp;
+                reward[i].amount=1500+1000*drand48();
+                reward[i].no=tank[j].o1;
+                reward[i].dt=-1;
+                reward[i].endmsg=NULL;
             }
             break;
         }

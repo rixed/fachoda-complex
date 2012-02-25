@@ -32,20 +32,20 @@ Window win,root;
 XEvent  ev;
 XImage img = { 0,0, 0, ZPixmap,NULL, LSBFirst, 32, LSBFirst, 32, 24, 0, 32, 0,0,0 };
 XFontStruct *xfont;
-int SX=8*16,SY=10*7+1;
+int win_width=8*16,win_height=10*7+1;
 
 void main() {
     char **fontname;
     int i,u,x,y;
-    img.data=malloc(SX*SY*4);
-    img.width=width=SX; img.height=SY;
+    img.data=malloc(win_width*win_height*4);
+    img.width=width=win_width; img.height=win_height;
     disp = XOpenDisplay("");
     gc = DefaultGC(disp,DefaultScreen(disp));
     root = DefaultRootWindow(disp);
-    win=XCreateSimpleWindow(disp, root, 0,0, SX,SY, 0,0,15);
+    win=XCreateSimpleWindow(disp, root, 0,0, win_width,win_height, 0,0,15);
     XSelectInput(disp,win,ExposureMask|KeyPressMask|ButtonPressMask|ButtonReleaseMask);
     XInitImage(&img);
-    XPutImage(disp, win, gc, &img, 0,0, 0,0, SX,SY);
+    XPutImage(disp, win, gc, &img, 0,0, 0,0, win_width,win_height);
     XMapWindow(disp,win);
 
     fontname=XListFonts(disp,"-*-clean-*-*-*-*-*-*-*-*-*-*-*-*",1,&i);

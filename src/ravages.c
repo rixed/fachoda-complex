@@ -40,7 +40,7 @@ void explose(int oc, int i) {
     int o1,o2=0,j,v=0,jk;
     int cmoi=NBBOT;
     struct vector vit = vec_zero;
-    for (j=0; j<NBBOT; j++) if ((bot[j].vion<=i && bot[j].vion+n_object[bot[j].navion].nbpieces>i) || (i>=debtir && gunner[i-debtir]==j)) { cmoi=j; break; }
+    for (j=0; j<NBBOT; j++) if ((bot[j].vion<=i && bot[j].vion+n_object[bot[j].navion].nbpieces>i) || (i>=shot_start && gunner[i-shot_start]==j)) { cmoi=j; break; }
     playsound(VOICE_EXTER, SAMPLE_EXPLOZ, 1+(drand48()-.5)*.1, &obj[oc].pos, false, false);
     switch (obj[oc].type) {
     case TYPE_CAR:
@@ -137,17 +137,17 @@ void explose(int oc, int i) {
                 j++;
             }
         }
-        for (j=0; j<MAX_SMOKE_SOURCES && fumeesourceintens[j]; j++);
+        for (j=0; j<MAX_SMOKE_SOURCES && smoke_source_intens[j]; j++);
         if (j<MAX_SMOKE_SOURCES) {
-            fumeesource[j]=o1;
-            fumeesourceintens[j]=drand48()*2000;
+            smoke_source[j]=o1;
+            smoke_source_intens[j]=drand48()*2000;
         }
         for (j=0; j<MAX_REWARDS; j++) {
-            if (prime[j].no>=o1 && prime[j].no<o2 && prime[j].reward>0) {
+            if (reward[j].no>=o1 && reward[j].no<o2 && reward[j].amount>0) {
                 if (cmoi<NBBOT) {
-                    bot[cmoi].gold+=prime[j].reward;
+                    bot[cmoi].gold+=reward[j].amount;
                 }
-                prime[j].reward=0;
+                reward[j].amount=0;
             }
         }
     }
@@ -155,7 +155,7 @@ void explose(int oc, int i) {
 
 bool hitgun(int oc, int i) {
     int o1,j,tarif;
-    int const shooter = gunner[i-debtir];
+    int const shooter = gunner[i-shot_start];
     switch (obj[oc].type) {
     case TYPE_CAR:
         o1=oc;
@@ -184,7 +184,7 @@ bool hitgun(int oc, int i) {
                     return false;
                 }
                 tarif=-(bot[j].fiulloss/4+bot[j].motorloss*8+bot[j].aeroloss*8+bot[j].bloodloss*2);
-                if (j==controled_bot) accelerated_mode=0;
+                if (j==controled_bot) accelerated_mode = false;
                 struct vector r;
                 randomv(&r);    // FIXME: mul by size of obj?
                 addv(&r, &obj[o1].pos);
@@ -222,10 +222,10 @@ bool hitgun(int oc, int i) {
             if (drand48()<.004) {
                 for (i=0; i<NBZEP && zep[i].o!=o1; i++) ;
                 if (i<NBZEP) {
-                    for (j=0; j<MAX_SMOKE_SOURCES && fumeesourceintens[j]; j++);
+                    for (j=0; j<MAX_SMOKE_SOURCES && smoke_source_intens[j]; j++);
                     if (j<MAX_SMOKE_SOURCES) {
-                        fumeesource[j]=zep[i].o;
-                        fumeesourceintens[j]=3000;
+                        smoke_source[j]=zep[i].o;
+                        smoke_source_intens[j]=3000;
                     }
                     zep[i].vit *= 10.;
                 }

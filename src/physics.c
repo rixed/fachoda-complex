@@ -302,12 +302,12 @@ void physics_plane(int b, float dt_sec)
             }
             if (vz < VZ_MIN_FOR_SMOKE) {
                 int fum;
-                for (fum=0; rayonfumee[fum] && fum<MAX_SMOKES; fum++);
+                for (fum=0; smoke_radius[fum] && fum<MAX_SMOKES; fum++);
                 if (fum<MAX_SMOKES) {
-                    rayonfumee[fum]=1;
-                    typefumee[fum]=1;   // type poussière jaune
-                    obj[firstfumee+fum].pos = *wheel_pos;
-                    obj_check_pos(firstfumee+fum);
+                    smoke_radius[fum]=1;
+                    smoke_type[fum]=1;   // type poussière jaune
+                    obj[smoke_start+fum].pos = *wheel_pos;
+                    obj_check_pos(smoke_start+fum);
                 }
             }
         }
@@ -326,7 +326,7 @@ void physics_plane(int b, float dt_sec)
         else kx = MAX(kx2, kx3);
         if (kx < 0) kx = 0;
 
-        if (Easy || b>=NbHosts) kx*=1.2;
+        if (easy_mode || b>=NbHosts) kx*=1.2;
 
         // les ailes aiment bien etre de front (girouette)
         double const prof = .001*vz + bot[b].yctl * kx;
@@ -348,7 +348,7 @@ void physics_plane(int b, float dt_sec)
 #       endif
 
         // So we hit the ground. With what speed?
-        bool const easy = Easy || b>=NbHosts;
+        bool const easy = easy_mode || b>=NbHosts;
         float const vz_min = easy ? -150. : -100.;
         float const vz_min_rough = easy ? -100. : -70.;
         if (
@@ -562,7 +562,7 @@ void physics_plane(int b, float dt_sec)
 
     // shots, which frequency is given by the number of canons
     gtime const min_shot_period = SHOT_PERIOD / plane_desc[bot[b].navion].nbcanon;
-    if (bot[b].but.canon && nbtir<MAX_SHOTS && bot[b].bullets>0 && gtime_age(bot[b].last_shot) > min_shot_period) {
+    if (bot[b].but.canon && nb_shot<MAX_SHOTS && bot[b].bullets>0 && gtime_age(bot[b].last_shot) > min_shot_period) {
         if (++bot[b].alterc>=4) bot[b].alterc=0;
         if (bot[b].alterc<plane_desc[bot[b].navion].nbcanon) {
             copyv(&v, &obj[bot[b].vion].rot.x);
@@ -571,10 +571,10 @@ void physics_plane(int b, float dt_sec)
             addv(&v, canon);
             if (b == viewed_bot) playsound(VOICE_SHOT, SAMPLE_SHOT, 1+(drand48()-.5)*.08, &v, false, false);
             else drand48();
-            gunner[nbobj-debtir]=b;
-            vieshot[nbobj-debtir]=80;
+            gunner[nb_obj-shot_start]=b;
+            shot_ttl[nb_obj-shot_start]=80;
             object_add(0, &v, &obj[bot[b].vion].rot, -1, 0);
-            nbtir++;
+            nb_shot++;
             bot[b].bullets--;
             bot[b].last_shot = gtime_last();
         }
@@ -637,17 +637,17 @@ void physics_tank(int v, float dt_sec)
     for (i=o+3; i<tank[v].o2; i++) calcposrigide(i);
 
     gtime const min_shot_period = SHOT_PERIOD / 4;
-    if (tank[v].tir && nbtir < MAX_SHOTS && gtime_age(tank[v].last_shot) > min_shot_period) {
+    if (tank[v].tir && nb_shot < MAX_SHOTS && gtime_age(tank[v].last_shot) > min_shot_period) {
         tank[v].last_shot = gtime_last();
         p = obj[o+3+tank[v].ocanon].rot.x;
         mulv(&p, 90.);
         u = obj[o+3+tank[v].ocanon].pos;
         addv(&p, &u);
-        gunner[nbobj-debtir] = v|(1<<NTANKMARK);
-        vieshot[nbobj-debtir] = 70;
+        gunner[nb_obj-shot_start] = v|(1<<NTANKMARK);
+        shot_ttl[nb_obj-shot_start] = 70;
         object_add(0, &p, &obj[o+3+tank[v].ocanon].rot, -1, 0);
         if (++tank[v].ocanon >= 4) tank[v].ocanon = 0;
-        nbtir ++;
+        nb_shot ++;
     }
 }
 
@@ -657,7 +657,7 @@ static void zep_shot(int z, struct vector *c, int i)
     struct matrix m;
     float s;
     gtime const min_shot_period = SHOT_PERIOD / 6; // 6 cannons per Zeppelin
-    if (nbtir < MAX_SHOTS && gtime_age(zep[z].last_shot) > min_shot_period) {
+    if (nb_shot < MAX_SHOTS && gtime_age(zep[z].last_shot) > min_shot_period) {
         zep[z].last_shot = gtime_last();
         copyv(&p,c);
         renorme(&p);
@@ -671,10 +671,10 @@ static void zep_shot(int z, struct vector *c, int i)
         prodvect(&m.x,&m.y,&m.z);
         mulv(&p,40);
         addv(&p,&obj[zep[z].o+5+i].pos);
-        gunner[nbobj-debtir]=-1;    // passe inapercu (ie pas pris pour cible en retours)
-        vieshot[nbobj-debtir]=90;
+        gunner[nb_obj-shot_start]=-1;    // passe inapercu (ie pas pris pour cible en retours)
+        shot_ttl[nb_obj-shot_start]=90;
         object_add(0, &p, &m, -1, 0);
-        nbtir++;
+        nb_shot++;
     }
 }
 
@@ -701,8 +701,8 @@ void physics_zep(int z, float dt_sec)
         v = zep[z].nav;
         subv(&v, &obj[zep[z].o].pos);
         if (norme2(&v) < 2000) {
-            zep[z].nav.x=(MAP_LEN<<LOG_TILE_LEN)*drand48()*(SpaceInvaders?.1:.7);
-            zep[z].nav.y=(MAP_LEN<<LOG_TILE_LEN)*drand48()*(SpaceInvaders?.1:.7);
+            zep[z].nav.x=(MAP_LEN<<LOG_TILE_LEN)*drand48()*(killemall_mode?.1:.7);
+            zep[z].nav.y=(MAP_LEN<<LOG_TILE_LEN)*drand48()*(killemall_mode?.1:.7);
             zep[z].nav.z=1000+drand48()*3000+z_ground(v.x,v.y, false);
         } else {
             dir=cap(v.x,v.y)-zep[z].angz;

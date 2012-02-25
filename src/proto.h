@@ -56,7 +56,7 @@
 #define MAX_DEBRIS 1000
 #define MAX_SMOKE_SOURCES 40
 #define MAX_REWARDS (4*5)
-#define MAX_VILLAGES 10
+#define NB_VILLAGES 16
 
 enum obj_type {
     TYPE_CAMERA,
@@ -193,8 +193,8 @@ struct n_object {
     int firstpiece;
 };
 
-struct prime {
-    int reward;
+struct reward {
+    int amount;
     int dt;
     char *endmsg;
     int no;
@@ -343,17 +343,19 @@ struct car {
 #define NbHosts 1   // Later, will be the number of opened slots
 extern struct vector explosion_pos;
 extern bool explosion;  // Tru if explosion_pos is set with the location of an explosion in this frame, to use as an alternate light source
-extern int DebMoulins, FinMoulins;
+extern int mill_start, mill_stop, shot_start, smoke_start;
+extern int nb_obj, nb_shot;
 int akpos(struct vector *p);
 extern char (*playbotname)[30];
-extern int NBBOT, NBTANKBOTS, NBZEP, camp, AllowResurrect, Easy, Gruge, ViewAll, SpaceInvaders, monvion, lang, Dark, Fleuve, MouseCtl, Accident, Smooth;
+extern int NBBOT, NBTANKBOTS, NBZEP;
+extern int camp, enable_resurrection, easy_mode, cheat_mode, enable_view_enemy, killemall_mode, starting_plane, lang, night_mode, enable_mouse, hilly_level, smooth_level;
 extern float CtlSensitiv, CtlSensActu, CtlAmortis, CtlYequ;
 extern char myname[30];
-extern int fumeesource[], fumeesourceintens[];
+extern int smoke_source[], smoke_source_intens[];
 extern struct debris debris[];
 extern struct bomb *bomb;
 extern int bombidx;
-extern int babaseo[2][3][4];
+extern int airfield_obj[2][3][4];    // o1, o2 // base 1, base 2, base 3 // camp A,B,C,D
 extern enum view_type {
     // internal views
     VIEW_IN_PLANE,
@@ -369,39 +371,37 @@ extern enum view_type {
     NB_VIEWS,
 } view;
 enum view_type next_external_view(enum view_type);
-extern int viewed_bomb,map_mode, accelerated_mode, autopilot, controled_bot, game_paused, frame_count, viewed_obj;
+extern int viewed_bomb;
+extern bool map_mode, accelerated_mode, autopilot, game_paused;
+extern int controled_bot;
+extern int frame_count, viewed_obj;
 extern double extcam_dist, sight_teta, sight_phi;
 extern bool view_instruments, view_predef, prompt_quit, quit_game, draw_high_scores;
 extern int selected_weapon;
 extern struct matrix mat_id;
-extern struct vector vac_diag, vec_zero, vec_g;
+extern struct vector vec_zero, vec_g;
 extern struct matrix mat_id;
 extern struct model *mod;
 extern struct object obj[];
-extern int nbobj;
-extern int debtir;
-extern double focale;
-extern struct matrix Light;
-extern int _DX,_DY,SX,SY,SYTB,SXTB,SIZECERCLE,TBY;
-extern int nbtir;
+extern double z_near;
+extern struct matrix light;
+extern int win_center_x, win_center_y, win_width, win_height, pannel_width, pannel_height;
 void object_add(int, struct vector *, struct matrix *, int, uchar);
 extern int viewed_bot;
 extern int gold;
 extern int gunner[MAX_SHOTS];
-extern short int vieshot[MAX_SHOTS];
-extern uchar *rayonfumee;
-extern uchar *typefumee;
-extern int firstfumee;
+extern short int shot_ttl[MAX_SHOTS];
+extern uchar *smoke_radius;
+extern uchar *smoke_type;
 // video_interf
-extern int bank, size, width, BufVidOffset, depth;
 extern struct pixel32 *videobuffer;
-extern char *video;
 void buffer2video(void);
 char getscancode(void);
 void initvideo(bool fullscreen);
 bool kread(unsigned n);
 bool kreset(unsigned n);
 void xproceed(void);
+extern int xmouse, ymouse;
 // renderer.c
 void calcposrigide(int o);
 void calcposarti(int o, struct matrix *m);
@@ -455,13 +455,13 @@ extern struct n_object n_object[];
 void LoadModeles(void);
 int addnobjet(int na, struct vector *p, struct matrix *m, uchar);
 // radio.c
-extern struct prime prime[];
+extern struct reward reward[];
 extern struct village village[];
-void newprime(void);
-extern char *nomvillage[];
-extern char msgactu[1000];
-extern int msgactutime;
-extern int campactu;
+void reward_new(void);
+extern char *village_name[];
+extern char current_msg[1000];
+extern int current_msg_ttl;
+extern int current_msg_camp;
 // heightfield.c
 void polyclip(struct vecic *p1, struct vecic *p2, struct vecic *p3);
 extern struct pixel *colormap;
@@ -511,8 +511,6 @@ void polyphong(struct vect2dlum *p1, struct vect2dlum *p2, struct vect2dlum *p3,
 // control.c
 void next_dog_bot(void);
 void control(int b);
-extern uchar but1released,but2released;
-extern int xmouse,ymouse,bmouse;
 extern int DogBot;
 extern struct vector DogBotDir;
 extern float DogBotDist;
@@ -523,7 +521,7 @@ void affsoleil(struct vector *L);
 // ravages.c
 int collision(int p, int o);
 int kelkan(int o);
-// shot_idx: idx in objs list (substract debtir for index in gunner/vieshot)
+// shot_idx: idx in objs list (substract shot_start for index in gunner/shot_ttl)
 bool hitgun(int obj_idx, int shot_idx);
 void explose(int oc, int i);
 // present.c
@@ -573,15 +571,15 @@ static inline int add_sat(int a, int b, int max)
 }
 
 static inline float proj1(float p, float z) {
-    return (p * focale) / z;
+    return (p * z_near) / z;
 }
 static inline void proj(struct vect2d *e, struct vector *p) {
-    e->x = _DX + proj1(p->x, p->z);
-    e->y = _DY + proj1(p->y, p->z);
+    e->x = win_center_x + proj1(p->x, p->z);
+    e->y = win_center_y + proj1(p->y, p->z);
 }
 static inline void proji(struct vect2d *e, struct veci *p) {
-    e->x=_DX+p->x*focale/p->z;
-    e->y=_DY+p->y*focale/p->z;
+    e->x=win_center_x+p->x*z_near/p->z;
+    e->y=win_center_y+p->y*z_near/p->z;
 }
 static inline void addv(struct vector *r, struct vector const *a) { r->x+=a->x; r->y+=a->y; r->z+=a->z; }
 static inline void addvi(struct veci *r, struct veci const *a) { r->x+=a->x; r->y+=a->y; r->z+=a->z; }

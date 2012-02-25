@@ -114,7 +114,7 @@ void addbabase(int c) {
         p.x=(xb-(MAP_LEN>>1))*TILE_LEN+TILE_LEN/2;
         p.y=(yb-(MAP_LEN>>1))*TILE_LEN+TILE_LEN/2;
         p.z=0;
-        babaseo[0][x][c]=addnobjet(NB_PLANES, &p, &mat_id, 1);  // la piste
+        airfield_obj[0][x][c]=addnobjet(NB_PLANES, &p, &mat_id, 1);  // la piste
 
         copyv(&pp,&p);
         pp.x+=(drand48()-.5)*TILE_LEN*.4;
@@ -129,7 +129,7 @@ void addbabase(int c) {
             randomhm(&m);
             addnobjet(NB_PLANES+NB_AIRFIELDS+NB_HOUSES+drand48()*3, &pp, &m, 1); // des tank
         }
-        babaseo[1][x][c]=nbobj;
+        airfield_obj[1][x][c]=nb_obj;
         for (y=0; y<NB_PLANES; y++) {
             struct matrix mp = {
                 { cos(.3), 0, sin(.3) },
@@ -154,7 +154,7 @@ void randomvferme(struct vector *p) {
         p->z=z_ground(p->x,p->y, true);
         for (c=0; c<4; c++) for (i=0; i<3; i++) {
             struct vector pp;
-            copyv(&pp,&obj[babaseo[0][i][c]].pos);
+            copyv(&pp,&obj[airfield_obj[0][i][c]].pos);
             subv(&pp,p);
             if (norme(&pp)<TILE_LEN*10) ok=0;
         }
@@ -170,12 +170,12 @@ void affjauge(float j) {
     float nj=jauge+j;
     static int x=10;
     int nx,y,xx;
-    nx=10+(int)(nj*(SX-20.));
+    nx=10+(int)(nj*(win_width-20.));
     if (nx>x) {
-        for (y=_DY-(SY>>3); y<_DY+(SY>>3); y++)
+        for (y=win_center_y-(win_height>>3); y<win_center_y+(win_height>>3); y++)
             for (xx=x; xx<nx; xx++)
-                //*(int*)&videobuffer[y*SX+xx]=0x3060A0;
-                MMXAddSatC((int*)&videobuffer[y*SX+xx],0x001080);
+                //*(int*)&videobuffer[y*win_width+xx]=0x3060A0;
+                MMXAddSatC((int*)&videobuffer[y*win_width+xx],0x001080);
         buffer2video();
         x=nx;
     }
@@ -197,7 +197,7 @@ void initworld() {
     obj[0].prec=-1; obj[0].next=-1;
     map[0].first_obj = 0;
     obj[0].ak=0;
-    nbobj=1;
+    nb_obj=1;
     // babases
     printf("Adding airfields...\n");
     for (j=0; j<4; j++) addbabase(j);
@@ -217,7 +217,7 @@ void initworld() {
     }
     // installations au sol
     // des villages de pauvres inocents pour souffrir
-    for (i=0; i<MAX_VILLAGES; i++) {
+    for (i=0; i<NB_VILLAGES; i++) {
         int nbm=drand48()*20+5;
         int ok,k;
         struct vector pp;
@@ -247,7 +247,7 @@ void initworld() {
         map[a-MAP_LEN-1].submap=0;
         p.z=z_ground(p.x,p.y, true);
         copyv(&village[i].p,&p);
-        village[i].o1=nbobj;
+        village[i].o1=nb_obj;
         randomv(&pp);   // une église
         mulv(&pp,100);
         addv(&pp,&p);
@@ -265,12 +265,12 @@ void initworld() {
                 addv(&pp,&p);
                 posem(&m,&pp);
                 pp.z=48;
-                for (k=village[i].o1; k<nbobj; k++) if (collisionpoint(&pp,k,NB_PLANES+NB_AIRFIELDS+0)) {ok=0; break;}
+                for (k=village[i].o1; k<nb_obj; k++) if (collisionpoint(&pp,k,NB_PLANES+NB_AIRFIELDS+0)) {ok=0; break;}
             } while (!ok);
             addnobjet(NB_PLANES+NB_AIRFIELDS+0, &pp, &m, 1);
         }
-        village[i].o2=nbobj;
-        village[i].nom=nomvillage[i];
+        village[i].o2=nb_obj;
+        village[i].nom=village_name[i];
         for (j=0; j<nbm>>1; j++) {  // des reverberes
             struct matrix m;
             randomhm(&m);
@@ -281,7 +281,7 @@ void initworld() {
                 addv(&pp,&p);
                 posem(&m,&pp);
                 pp.z=34;
-                for (k=village[i].o1; k<nbobj; k++) if (collisionpoint(&pp,k,NB_PLANES+NB_AIRFIELDS+5)) {ok=0; break;}
+                for (k=village[i].o1; k<nb_obj; k++) if (collisionpoint(&pp,k,NB_PLANES+NB_AIRFIELDS+5)) {ok=0; break;}
             } while (!ok);
             addnobjet(NB_PLANES+NB_AIRFIELDS+5, &pp, &m, 1);
         }
@@ -289,7 +289,7 @@ void initworld() {
     // routes
     initroute();
     printf("Adding motorways...\n");
-    for (i=0; i<MAX_VILLAGES-1; i++) for (j=i+1; j<MAX_VILLAGES; j++) {
+    for (i=0; i<NB_VILLAGES-1; i++) for (j=i+1; j<NB_VILLAGES; j++) {
         int k;
         float cp;
         struct vector v;
@@ -312,11 +312,11 @@ void initworld() {
         if (k==j) {
             prospectroute(&village[i].p,&village[j].p);
         }
-        affjauge(.75/(1.5*((MAX_VILLAGES+1)*MAX_VILLAGES)));
+        affjauge(.75/(1.5*((NB_VILLAGES+1)*NB_VILLAGES)));
     }
     EndMotorways=routeidx;
     printf("Adding roads around cities...\n");
-    for (i=0; i<MAX_VILLAGES; i++) {
+    for (i=0; i<NB_VILLAGES; i++) {
         int nbr=drand48()*5+5;  // prop à la taille de la ville
         int r;
         for (r=0; r<nbr; r++) {
@@ -326,7 +326,7 @@ void initworld() {
             addv(&dest,&village[i].p);
             dest.z=z_ground(dest.x,dest.y, false);
             prospectroute(&village[i].p,&dest);
-            affjauge(.75/(3.*7.5*MAX_VILLAGES));
+            affjauge(.75/(3.*7.5*NB_VILLAGES));
         }
     }
     EndRoads=routeidx;
@@ -360,7 +360,7 @@ void initworld() {
     hashroute();
     printf("Adding villages...\n");
     // des fermes et des usines
-    for (i=0; i<(MAX_VILLAGES*10); i++) {
+    for (i=0; i<(NB_VILLAGES*10); i++) {
         struct vector pp;
         int ri;
         struct matrix m;
@@ -399,8 +399,8 @@ void initworld() {
     }
     printf("Adding mills...\n");
     // des moulins
-    DebMoulins=nbobj;
-    for (i=0; i<MAX_VILLAGES*2; i++) {
+    mill_start=nb_obj;
+    for (i=0; i<NB_VILLAGES*2; i++) {
         struct vector pp;
         int ri;
         struct matrix m;
@@ -415,12 +415,12 @@ void initworld() {
         posem(&m,&pp);
         addnobjet(NB_PLANES+NB_AIRFIELDS+4, &pp, &m, 1);
     }
-    FinMoulins=nbobj;
+    mill_stop=nb_obj;
     printf("Adding cows...\n");
     // des troupeaux de charolaises
-    for (i=0; i<MAX_VILLAGES*2; i++) {
+    for (i=0; i<NB_VILLAGES*2; i++) {
         int nbn=drand48()*5+2;
-        copyv(&p,&village[i%MAX_VILLAGES].p);
+        copyv(&p,&village[i%NB_VILLAGES].p);
         for (k=0; k<2; k++) {
             struct vector pt;
             randomv(&pt);
@@ -475,7 +475,7 @@ void initworld() {
         car[i].dist=-1;
         car[i].vit=80+80*drand48();
     }
-    car[i].o=nbobj;
+    car[i].o=nb_obj;
     printf("Adding tractors...\n");
     // des tracteurs dans les champs
     for (i=0; i<50; i++) {
@@ -507,15 +507,15 @@ void initworld() {
     // des vionvions
     if ((bot=calloc(sizeof(*bot),NBBOT))==NULL) { perror("bot"); exit(-1); }
     bot[controled_bot].camp=camp;
-    bot[controled_bot].navion=monvion-1;
+    bot[controled_bot].navion=starting_plane-1;
     //if (NetCamp()==-1) {printf("Net Error\n"); exit(-1); }
     printf("Playing with %d planes & %d tanks\nPlayers :\n",NBBOT,NBTANKBOTS);
     for (i=0; i<NbHosts; i++) printf("%s, camp %d, in a %s\n",playbotname[i],bot[i].camp+1, plane_desc[bot[i].navion].name);
     for (i=0; i<NBBOT; i++) {
         int c=i&3, b;
         if (i>=NbHosts) bot[i].camp=c;
-        bot[i].babase=b=babaseo[0][(int)(drand48()*3)][(int)bot[i].camp];
-        if (! SpaceInvaders) {
+        bot[i].babase=b=airfield_obj[0][(int)(drand48()*3)][(int)bot[i].camp];
+        if (! killemall_mode) {
             copyv(&p,&obj[b].pos);
             p.y+=i>=NbHosts?10:250;
             p.x+=300*(i>=NbHosts?(i>>2):i);
@@ -543,7 +543,7 @@ void initworld() {
         }
         if (i >= NbHosts) bot[i].navion = drand48()*NB_PLANES;
         bot[i].vion = addnobjet(bot[i].navion,&p,&m, 0);
-        bot[i].but.gear = !SpaceInvaders;
+        bot[i].but.gear = !killemall_mode;
         bot[i].but.canon = 0;
         bot[i].but.bomb = 0;
         bot[i].but.gearup = 0;
@@ -552,8 +552,8 @@ void initworld() {
         bot[i].anghel = 0;
         bot[i].anggear = 0;
         bot[i].xctl = bot[i].yctl = 0;
-        bot[i].thrust = SpaceInvaders ? 1.:0.;
-        bot[i].maneuver = SpaceInvaders ? NAVIG : PARKING;
+        bot[i].thrust = killemall_mode ? 1.:0.;
+        bot[i].maneuver = killemall_mode ? NAVIG : PARKING;
         bot[i].aerobatic = MANEUVER;
         bot[i].gunned = -1;
         bot[i].fiulloss = bot[i].bloodloss = bot[i].motorloss = bot[i].aeroloss = 0;
@@ -561,9 +561,9 @@ void initworld() {
         bot[i].bullets = plane_desc[bot[i].navion].bulletsmax;
         bot[i].cibv = bot[i].cibt = -1;
         bot[i].gold = i > NbHosts ? 30000:2000;
-        bot[i].is_flying = SpaceInvaders;
+        bot[i].is_flying = killemall_mode;
         armstate(i);
-        if (!SpaceInvaders) {
+        if (!killemall_mode) {
             bot[i].vionvit = vec_zero;
             bot[i].target_rel_alt = 100. * ONE_METER;
             bot[i].u.x = bot[i].u.y = 0.;
@@ -591,7 +591,7 @@ void initworld() {
         copyv(&tank[i].p,&p);
         p.z=20;
         tank[i].o1=addnobjet(NB_PLANES+NB_AIRFIELDS+NB_HOUSES, &p, &mat_id, 1);
-        tank[i].o2=nbobj;
+        tank[i].o2=nb_obj;
         tank[i].moteur=0;
         tank[i].cibt=-1;
         tank[i].ang0=tank[i].ang1=tank[i].ang2=0;
@@ -617,10 +617,10 @@ void initworld() {
     }
     printf("Adding smoke...\n");
     // et de la fumée
-    firstfumee=nbobj;
+    smoke_start=nb_obj;
     for (i=0; i<MAX_SMOKES; i++) {
         addnobjet(NB_PLANES+NB_AIRFIELDS+NB_HOUSES+NB_TANKS+1,&vec_zero,&mat_id,0);
     }
-    rayonfumee=(uchar*)calloc(MAX_SMOKES,sizeof(uchar));
-    typefumee=(uchar*)calloc(MAX_SMOKES,sizeof(uchar));
+    smoke_radius=(uchar*)calloc(MAX_SMOKES,sizeof(uchar));
+    smoke_type=(uchar*)calloc(MAX_SMOKES,sizeof(uchar));
 }

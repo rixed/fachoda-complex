@@ -39,7 +39,7 @@ unsigned char num[10][8]= {
 void pnumchar(int n, int x, int y, int c) {
     int i, l;
     for (l=0; l<8; l++, y++) {
-        for (i=128; i>=1; i>>=1, x++) if (num[n][l]&i) ((int*)videobuffer)[x+SX*y]=c;
+        for (i=128; i>=1; i>>=1, x++) if (num[n][l]&i) ((int*)videobuffer)[x+win_width*y]=c;
         x-=8;
     }
 }
@@ -55,7 +55,7 @@ void pnum(int n, int x, int y, int c, char just) {
         x-=8;
         n/=10;
     } while (n!=0);
-    if (sig==-1) for (m=x+2; m<x+6; m++) ((int*)videobuffer)[m+SX*(y+4)]=c;
+    if (sig==-1) for (m=x+2; m<x+6; m++) ((int*)videobuffer)[m+win_width*(y+4)]=c;
 }
 void pnumchara(int n, int x, int y, int c) {    // a = dans le mapping
     int i, l;
@@ -182,8 +182,8 @@ void pbignumchar(int n, int x, int y, int coul) {
     for (yy=0; yy<SizeBigCharY; yy++) {
         for (xx=0; xx<SizeBigCharX; xx++) {
             if (BigFont[n*SizeBigChar+yy*SizeBigCharX+xx]) {
-                if (x+xx>=0 && x+xx<SX && y+yy>=0 && y+yy<SY)
-                    MMXAddSatC((int*)videobuffer+x+xx+SX*(y+yy),coul);
+                if (x+xx>=0 && x+xx<win_width && y+yy>=0 && y+yy<win_height)
+                    MMXAddSatC((int*)videobuffer+x+xx+win_width*(y+yy),coul);
             }
         }
     }
@@ -231,9 +231,9 @@ void pcharlent(int m, int x, int y, int c) {
     assert(is_printable(m));
     for (l=0; l<10; l++, y++) {
         for (i=128; i>=1; i>>=1, x++) if (font[m-16][l]&i) {
-            if (x>=0 && x<SX-1 && y>=0 && y<SY-1) {
-                ((int*)videobuffer)[x+SX*y]=c;
-                ((int*)videobuffer)[x+SX*y+SX+1]=0;
+            if (x>=0 && x<win_width-1 && y>=0 && y<win_height-1) {
+                ((int*)videobuffer)[x+win_width*y]=c;
+                ((int*)videobuffer)[x+win_width*y+win_width+1]=0;
             }
         }
         x-=8;
@@ -244,8 +244,8 @@ void pchar(int m, int x, int y, int c) {
     assert(is_printable(m));
     for (l=0; l<10; l++, y++) {
         for (i=128; i>=1; i>>=1, x++) if (font[m-16][l]&i) {
-            ((int*)videobuffer)[x+SX*y]=c;
-            ((int*)videobuffer)[x+SX*y+SX+1]=TextColfont;
+            ((int*)videobuffer)[x+win_width*y]=c;
+            ((int*)videobuffer)[x+win_width*y+win_width+1]=TextColfont;
         }
         x-=8;
     }
@@ -269,7 +269,7 @@ void pwordlent(char const *m, int x, int y, int c) {
 void pstr(char const *m, int y, int c) {
     int l,ll,x;
     int sx1=TextClipX1?TextClipX1:0;
-    int sx2=TextClipX2?TextClipX2:SX;
+    int sx2=TextClipX2?TextClipX2:win_width;
     if ((l=strlen(m)*6)<(sx2-sx1)) x=sx1+((sx2-sx1-l)>>1);
     else {
         l=strlen(m);
@@ -312,7 +312,7 @@ void pstr(char const *m, int y, int c) {
 void pstrlent(char const *m, int y, int c) {
     int l,ll,x;
     int sx1=TextClipX1?TextClipX1:0;
-    int sx2=TextClipX2?TextClipX2:SX;
+    int sx2=TextClipX2?TextClipX2:win_width;
     if ((l=strlen(m)*6)<(sx2-sx1)) x=sx1+((sx2-sx1-l)>>1);
     else {
         l=strlen(m);

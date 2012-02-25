@@ -69,19 +69,19 @@ void jloadpresent() {
 
 void affpresent(int dx,int dy) {
     int y;
-    int xb=((SX-IMGX)>>1)+dx, yb=((SY-IMGY)>>1)+dy, clipx1=0, clipx2=0;
-    if (xb+IMGX>SX) clipx2=xb+IMGX-SX;
+    int xb=((win_width-IMGX)>>1)+dx, yb=((win_height-IMGY)>>1)+dy, clipx1=0, clipx2=0;
+    if (xb+IMGX>win_width) clipx2=xb+IMGX-win_width;
     if (xb<0) { clipx1=-xb; xb=0; }
-    memset32((int*)videobuffer,BACKCOLOR,SX*SY);
-    for (y=0; y<IMGY && y+yb<SY; y++) {
+    memset32((int*)videobuffer,BACKCOLOR,win_width*win_height);
+    for (y=0; y<IMGY && y+yb<win_height; y++) {
         if (y+yb>=0) {
-            memcpy(videobuffer+(y+yb)*SX+xb, presentimg+y*IMGX+clipx1, (IMGX-clipx1-clipx2)*sizeof(*videobuffer));
+            memcpy(videobuffer+(y+yb)*win_width+xb, presentimg+y*IMGX+clipx1, (IMGX-clipx1-clipx2)*sizeof(*videobuffer));
         }
     }
 }
 void affpresentanim(int d) {
     int y;
-    int xb=(SX-IMGX)>>1, yb=(SY-IMGY)>>1, clipx=0;
+    int xb=(win_width-IMGX)>>1, yb=(win_height-IMGY)>>1, clipx=0;
     if (xb<0) { clipx=-xb; xb=0; }
     for (y=0; y<IMGY; y++) {
         int yd;
@@ -92,7 +92,7 @@ void affpresentanim(int d) {
             yd=y-d*drand48();
             if (yd<1) yd=1;
         }
-        memcpy(videobuffer+(y+yb)*SX+xb, presentimg+yd*IMGX+clipx, (IMGX-clipx-clipx)*sizeof(*videobuffer));
+        memcpy(videobuffer+(y+yb)*win_width+xb, presentimg+yd*IMGX+clipx, (IMGX-clipx-clipx)*sizeof(*videobuffer));
     }
 }
 
@@ -124,11 +124,11 @@ void animpresent() {
         "How high can a penguin fly ?",
         "Wreak vengeance on Fachoda !"
     };*/
-    TextClipX1=(SX-IMGX)/2;
-    TextClipX2=(SX-IMGX)/2+250;
+    TextClipX1=(win_width-IMGX)/2;
+    TextClipX2=(win_width-IMGX)/2+250;
     TextColfont=0xD0D0D0;
     jloadpresent();
-    memset32((int*)videobuffer,*(int*)(presentimg+IMGX+1),SX*SY);
+    memset32((int*)videobuffer,*(int*)(presentimg+IMGX+1),win_width*win_height);
 //  gettimeofday(&GTime,NULL);
     playsound(VOICE_EXTER, SAMPLE_PRESENT, 1., &voices_in_my_head, true, false);
     while (d) {
@@ -190,28 +190,28 @@ int presentold() {
         switch(phaz) {
         case 0:
             TextClipX1=10;
-            TextClipX2=_DX-10;
+            TextClipX2=win_center_x-10;
             pstr("Sierra Freedom",10,0x80D0FF);
             pstr(!lang?"Volez dans la peau d'un envoye special intrepide au service de sa Majestee Britanique":"Get right inside a fearless envoy extraordinary at Her Majesty Queen of Britain' service",30,0x80D0FF);
-            pstr("Republique Unifiee",_DY+10,0xFFD090);
-            pstr(!lang?"Prenez l'air dans les rangos d'un courageux legionnaire du 1er regiment parachutistes d'infanterie de marine":"Take off in courageous legionnaire of the 1st RPIM's regulation shooes",_DY+30,0xFFD090);
-            TextClipX1=_DX+10;
-            TextClipX2=SX-10;
+            pstr("Republique Unifiee",win_center_y+10,0xFFD090);
+            pstr(!lang?"Prenez l'air dans les rangos d'un courageux legionnaire du 1er regiment parachutistes d'infanterie de marine":"Take off in courageous legionnaire of the 1st RPIM's regulation shooes",win_center_y+30,0xFFD090);
+            TextClipX1=win_center_x+10;
+            TextClipX2=win_width-10;
             pstr("Almouchie",10,0xFFFF70);
             pstr(!lang?"Defendez dans les airs l'honneur de votre mere patrie, la majestueuse Russie, victime de dangeureux terroristes":"Take in the air the defense of our mother country, the majestic Russia, victimized by dangerous terrorists",30,0xFFFF70);
-            pstr(!lang?"Bas-Wanana":"Low-Wanana",_DY+10,0x70FF70);
-            pstr(!lang?"Deguisez vous en digne guerrier fanatique pour tracer en lettres de feu dans le ciel les commandements de la morale de Dieu":"Turn into a fanatic warior and engrave commandments of God's true moral in the sky with glowing characters",_DY+30,0x70FF70);
+            pstr(!lang?"Bas-Wanana":"Low-Wanana",win_center_y+10,0x70FF70);
+            pstr(!lang?"Deguisez vous en digne guerrier fanatique pour tracer en lettres de feu dans le ciel les commandements de la morale de Dieu":"Turn into a fanatic warior and engrave commandments of God's true moral in the sky with glowing characters",win_center_y+30,0x70FF70);
             break;
         case 1 ... 4:
             TextClipX1=10;
-            TextClipX2=SX-10;
-            pstr(scenar[phaz-1][phaztxt][lang],_DY/3,colcamp[phaz-1]);
+            TextClipX2=win_width-10;
+            pstr(scenar[phaz-1][phaztxt][lang],win_center_y/3,colcamp[phaz-1]);
             break;
         case 5:
             TextClipX1=TextClipX2=0;
             pstr("FACHODA Complex v0.1",10,0xFFFFFF);
-            pstr("code, gfx & sfx : RiXed",SY-20,0xFFFFFF);
-            pstr(!lang?"Bonjour, Vous allez choisir en cliquant dessus le camp pour lequel vous desirez combattre. Ils sont tous les quatre tres recommandables. Puis vous lirez attentivement les instructions pour comprendre ce que l'on attend de vous. Mais pour l'instant, cliquez par ici s'il vous plait.":"Hello ? You are going to choose with your mouse the camp for wich you'd like to fight untill death. There are four of wich, all very recommendable. Then, you will mindfully read the instructions to understand what is expected from you. But for now, please click hereabout.",SY/3,0xFFFFFF);
+            pstr("code, gfx & sfx : RiXed",win_height-20,0xFFFFFF);
+            pstr(!lang?"Bonjour, Vous allez choisir en cliquant dessus le camp pour lequel vous desirez combattre. Ils sont tous les quatre tres recommandables. Puis vous lirez attentivement les instructions pour comprendre ce que l'on attend de vous. Mais pour l'instant, cliquez par ici s'il vous plait.":"Hello ? You are going to choose with your mouse the camp for wich you'd like to fight untill death. There are four of wich, all very recommendable. Then, you will mindfully read the instructions to understand what is expected from you. But for now, please click hereabout.",win_height/3,0xFFFFFF);
             break;
         }
         plotcursor(xmouse,ymouse);
@@ -223,8 +223,8 @@ int presentold() {
                 phaz=0;
                 break;
             case 0:
-                if (xmouse<_DX) i=0; else i=1;
-                if (ymouse<_DY) i+=2;
+                if (xmouse<win_center_x) i=0; else i=1;
+                if (ymouse<win_center_y) i+=2;
                 phaz=i+1;
                 phaztxt=0;
                 break;
@@ -249,7 +249,7 @@ int presentold() {
 void redefinekeys() {
     int i,jdep,j;
     char msg[200];
-    int nbl=SY/10;
+    int nbl=win_height/10;
 //  darkpresent();
     for (j=0; j<NBKEYS; j++) {
         affpresent(0,0);

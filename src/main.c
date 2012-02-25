@@ -39,60 +39,60 @@ void memset32(int *deb, int coul, int n) {
 }
 
 struct matrix mat_id={{1,0,0},{0,1,0},{0,0,1}};
-struct vector vac_diag={1,1,1}, vec_zero={0,0,0}, vec_g={0,0,-1};
+struct vector vec_zero={0,0,0};
 
 int NBBOT=30;
 int NBTANKBOTS=150;
 int NBZEP=20;
 struct model *mod;
-struct object obj[50000];   // All nbobj objects
-int nbobj;
-int debtir, firstfumee, fumeedispo, DebMoulins, FinMoulins;
+struct object obj[50000];   // All nb_obj objects
+int nb_obj;
+int shot_start, smoke_start, fumeedispo, mill_start, mill_stop;
 float AngleMoulin=0;
-uchar *rayonfumee;
-uchar *typefumee;
-int fumeesource[MAX_SMOKE_SOURCES], fumeesourceintens[MAX_SMOKE_SOURCES];
-double focale;
-int camp=1, AllowResurrect=1, Easy=0, Gruge=0, ViewAll=0, SpaceInvaders=0, monvion=1, lang=1, Dark=-1, Fleuve=1, MouseCtl=1, Accident=1500, Smooth=7;
+uchar *smoke_radius;
+uchar *smoke_type;
+int smoke_source[MAX_SMOKE_SOURCES], smoke_source_intens[MAX_SMOKE_SOURCES];
+double z_near;
+int camp=1, enable_resurrection=1, easy_mode=0, cheat_mode=0, enable_view_enemy=0, killemall_mode=0, starting_plane=1, lang=1, night_mode=-1, enable_mouse=1, hilly_level=1500, smooth_level=7;
 float CtlSensitiv=0.08, CtlSensActu=0, CtlAmortis=.9, CtlYequ=.1;
 char myname[30];
 struct matrix LightSol={ {-.7,0,-.7},{0,1,0},{.7,0,-.7}};
-struct matrix Light;
+struct matrix light;
 struct vector explosion_pos;
 bool explosion;
 //
-int babaseo[2][3][4];   // o1, o2 // base 1, base 2, base 3 // camp A,B,C,D
+int airfield_obj[2][3][4];   // o1, o2 // base 1, base 2, base 3 // camp A,B,C,D
 int gunner[MAX_SHOTS];
-short int vieshot[MAX_SHOTS];
+short int shot_ttl[MAX_SHOTS];
 struct bomb *bomb;
 int bombidx;
 char (*playbotname)[30];
 struct debris debris[MAX_DEBRIS];
 // options changeables à la ligne de com :
-int _DX,_DY,SX=400,SY=250,SYTB,SXTB,SIZECERCLE,TBY;
-int nbtir;
+int win_center_x, win_center_y, win_width=400, win_height=250, pannel_width, pannel_height;
+int nb_shot;
 
 // add an object to obj[]
 void object_add(int mo, struct vector *p, struct matrix *m, int or, uchar sol)
 {
     int xk,yk,ak;
-    assert(nbobj < (int)ARRAY_LEN(obj));
-    obj[nbobj].model=mo;
-    obj[nbobj].type=mod[mo].type;
-    obj[nbobj].aff=1;
-    copyv(&obj[nbobj].pos,p);
-    if (sol) obj[nbobj].pos.z+=z_ground(p->x,p->y, true);
-    copym(&obj[nbobj].rot,m);
-    obj[nbobj].objref=or;
+    assert(nb_obj < (int)ARRAY_LEN(obj));
+    obj[nb_obj].model=mo;
+    obj[nb_obj].type=mod[mo].type;
+    obj[nb_obj].aff=1;
+    copyv(&obj[nb_obj].pos,p);
+    if (sol) obj[nb_obj].pos.z+=z_ground(p->x,p->y, true);
+    copym(&obj[nb_obj].rot,m);
+    obj[nb_obj].objref=or;
     xk=(int)floor(p->x/TILE_LEN)+(MAP_LEN>>1);
     yk=(int)floor(p->y/TILE_LEN)+(MAP_LEN>>1);
     ak=xk+(yk<<LOG_MAP_LEN);
-    obj[nbobj].ak=ak;
-    obj[nbobj].next=map[ak].first_obj;
-    map[ak].first_obj=nbobj;
-    obj[nbobj].prec=-1;
-    if (obj[nbobj].next!=-1) obj[obj[nbobj].next].prec=nbobj;
-    nbobj++;
+    obj[nb_obj].ak=ak;
+    obj[nb_obj].next=map[ak].first_obj;
+    map[ak].first_obj=nb_obj;
+    obj[nb_obj].prec=-1;
+    if (obj[nb_obj].next!=-1) obj[obj[nb_obj].next].prec=nb_obj;
+    nb_obj++;
 }
 
 static void background_line(int *v,int sx,int dz,int z,int coul) {
@@ -102,7 +102,7 @@ static void background_line(int *v,int sx,int dz,int z,int coul) {
     if (coul==0) {
         if (z>64<<8) z=64<<8;
         else if (z<0) z=0;
-        if (!Dark) for (x=0; x<sx; x++) {
+        if (!night_mode) for (x=0; x<sx; x++) {
             uchar r;
             cz=z>>8;
             r=224-cz;
@@ -138,57 +138,59 @@ static void background(void)
     int *vid;
 
     // Compute position of the horizon (notice it's artificially lowered by 30 pixels)
-    z1=z2=(focale*obj[0].rot.z.z-_DY*obj[0].rot.y.z+30)*256;
-    z1-=(_DX*obj[0].rot.x.z)*256;
-    z2+=(_DX*obj[0].rot.x.z)*256;
+    z1=z2=(z_near*obj[0].rot.z.z-win_center_y*obj[0].rot.y.z+30)*256;
+    z1-=(win_center_x*obj[0].rot.x.z)*256;
+    z2+=(win_center_x*obj[0].rot.x.z)*256;
     dz1=obj[0].rot.y.z*256;
     dz2=obj[0].rot.y.z*256;
-    dz=(z2-z1)/SX;
-#   define ZFINSOL ((-SX/4)<<8)
-    for (vid=(int*)videobuffer; vid<(int*)videobuffer+SX*SY; vid+=SX, z1+=dz1, z2+=dz2) {
+    dz=(z2-z1)/win_width;
+#   define ZFINSOL ((-win_width/4)<<8)
+    for (vid=(int*)videobuffer; vid<(int*)videobuffer+win_width*win_height; vid+=win_width, z1+=dz1, z2+=dz2) {
         if (z1>z2) {
-            for (i=0, x=0; i<3 && x<SX; i++) {
+            for (i=0, x=0; i<3 && x<win_width; i++) {
                 if (z1>zfront[i]) {
                     if (z2>zfront[i]) {
-                        xfin=SX;
-                        background_line(vid+x,xfin-x,dz,z1,coulfront[Dark][i]);
+                        xfin=win_width;
+                        background_line(vid+x,xfin-x,dz,z1,coulfront[night_mode][i]);
                         x=xfin;
                     } else {
                         if (z1-z2!=0) {
-                            xfin=((z1-zfront[i])*SX)/(z1-z2);
-                            if (xfin>SX) xfin=SX;
-                        } else xfin=SX;
-                        background_line(vid+x,xfin-x,dz,z1,coulfront[Dark][i]);
+                            xfin=((z1-zfront[i])*win_width)/(z1-z2);
+                            if (xfin>win_width) xfin=win_width;
+                        } else xfin=win_width;
+                        background_line(vid+x,xfin-x,dz,z1,coulfront[night_mode][i]);
                         x=xfin;
                     }
                 }
             }
-            if (x<SX) background_line(vid+x,SX-x,dz,z1,coulfront[Dark][i]);
+            if (x<win_width) background_line(vid+x,win_width-x,dz,z1,coulfront[night_mode][i]);
         } else {
-            for (i=2, x=0; i>=0 && x<SX; i--) {
+            for (i=2, x=0; i>=0 && x<win_width; i--) {
                 if (z1<zfront[i]) {
                     if (z2<zfront[i]) {
-                        xfin=SX;
-                        background_line(vid+x,xfin-x,dz,z1,coulfront[Dark][i+1]);
+                        xfin=win_width;
+                        background_line(vid+x,xfin-x,dz,z1,coulfront[night_mode][i+1]);
                         x=xfin;
                     } else {
                         if (z1-z2!=0) {
-                            xfin=((z1-zfront[i])*SX)/(z1-z2);
-                            if (xfin>SX) xfin=SX;
-                        } else xfin=SX;
-                        background_line(vid+x,xfin-x,dz,z1,coulfront[Dark][i+1]);
+                            xfin=((z1-zfront[i])*win_width)/(z1-z2);
+                            if (xfin>win_width) xfin=win_width;
+                        } else xfin=win_width;
+                        background_line(vid+x,xfin-x,dz,z1,coulfront[night_mode][i+1]);
                         x=xfin;
                     }
                 }
             }
-            if (x<SX) background_line(vid+x,SX-x,dz,z1,coulfront[Dark][i+1]);
+            if (x<win_width) background_line(vid+x,win_width-x,dz,z1,coulfront[night_mode][i+1]);
         }
     }
 }
 
 int viewed_bot = 0, viewed_obj = 0;
 enum view_type view = VIEW_IN_PLANE;
-int viewed_bomb=0, map_mode=0, accelerated_mode=0, autopilot=0, game_paused=0, controled_bot, frame_count=0;
+int viewed_bomb=0;
+bool map_mode, accelerated_mode, autopilot, game_paused;
+int controled_bot, frame_count;
 double extcam_dist = 2. * ONE_METER;    // external camera distance (ie. "zoom")
 double sight_teta=0, sight_phi=0;   // direction of vision while in plane view
 bool view_instruments, view_predef, prompt_quit, quit_game, draw_high_scores;
@@ -213,7 +215,7 @@ static void setup_camera(float dt_sec)
             }
         }
     }
-    if (view == VIEW_ANYTHING_CHEAT && !Gruge) view = next_external_view(view);
+    if (view == VIEW_ANYTHING_CHEAT && !cheat_mode) view = next_external_view(view);
     if (view == VIEW_DOGFIGHT) {
         if (viewed_bot != controled_bot) view = VIEW_IN_PLANE;
         else {
@@ -300,7 +302,7 @@ static void setup_camera(float dt_sec)
             prev_vit = bot[viewed_bot].vionvit;
         }
 
-        /* Smooth this position with the previous one */
+        /* smooth_level this position with the previous one */
         static struct vector prev_cam_pos = { .0, .0, .0 };
         struct vector diff;
         subv3(&obj[0].pos, &prev_cam_pos, &diff);
@@ -433,32 +435,32 @@ int main(int narg, char **arg)
         int c=0;
         while (arg[i][c]=='-' || arg[i][c]==' ') c++;
         if (0 == strcasecmp(&arg[i][c], "fullscreen")) fullscreen = true;
-        else if (0 == strcasecmp(&arg[i][c],"night")) Dark=1;
+        else if (0 == strcasecmp(&arg[i][c],"night")) night_mode=1;
         else if (0 == strcasecmp(&arg[i][c],"x")) {
-            if (++i==narg || sscanf(arg[i],"%d",&SX)!=1) goto parse_error;
+            if (++i==narg || sscanf(arg[i],"%d",&win_width)!=1) goto parse_error;
         } else if (0 == strcasecmp(&arg[i][c],"y")) {
-            if (++i==narg || sscanf(arg[i],"%d",&SY)!=1) goto parse_error;
+            if (++i==narg || sscanf(arg[i],"%d",&win_height)!=1) goto parse_error;
         } else if (0 == strcasecmp(&arg[i][c],"camp")) {
             if (++i==narg || sscanf(arg[i],"%d",&camp)!=1 || camp<1 || camp>4) goto parse_error;
         } else if (0 == strcasecmp(&arg[i][c],"drone")) {
             if (++i==narg || sscanf(arg[i],"%d",&NBBOT)!=1 || NBBOT<0 || NBBOT>100) goto parse_error;
         } else if (0 == strcasecmp(&arg[i][c],"tank")) {
             if (++i==narg || sscanf(arg[i],"%d",&NBTANKBOTS)!=1 || NBTANKBOTS<1 || NBTANKBOTS>500) goto parse_error;
-        } else if (0 == strcasecmp(&arg[i][c],"mortal")) AllowResurrect=0;
+        } else if (0 == strcasecmp(&arg[i][c],"mortal")) enable_resurrection=0;
         else if (0 == strcasecmp(&arg[i][c],"name")) {
             if (++i==narg) goto parse_error; else {
                 for (j=0; j<(int)strlen(arg[i]) && j<29; j++) myname[j]=arg[i][j];
                 myname[j]='\0';
                 }
-        } else if (0 == strcasecmp(&arg[i][c],"easy")) Easy=1;
-        else if (0 == strcasecmp(&arg[i][c],"viewall")) ViewAll=1;
+        } else if (0 == strcasecmp(&arg[i][c],"easy")) easy_mode=1;
+        else if (0 == strcasecmp(&arg[i][c],"viewall")) enable_view_enemy=1;
         else if (0 == strcasecmp(&arg[i][c],"nosound")) with_sound=false;
-        else if (0 == strcasecmp(&arg[i][c],"nomouse")) MouseCtl=0;
-        else if (0 == strcasecmp(&arg[i][c],"killemall")) SpaceInvaders=1;
+        else if (0 == strcasecmp(&arg[i][c],"nomouse")) enable_mouse=0;
+        else if (0 == strcasecmp(&arg[i][c],"killemall")) killemall_mode=1;
         else if (0 == strcasecmp(&arg[i][c],"plane")) {
-            if (++i==narg || sscanf(arg[i],"%d",&monvion)!=1 || monvion<1 || monvion>NB_PLANES) goto parse_error;
+            if (++i==narg || sscanf(arg[i],"%d",&starting_plane)!=1 || starting_plane<1 || starting_plane>NB_PLANES) goto parse_error;
         } else if (0 == strcasecmp(&arg[i][c],"french")) lang=0;
-        else if (0 == strcasecmp(&arg[i][c],"gruge")) Gruge=1;
+        else if (0 == strcasecmp(&arg[i][c],"gruge")) cheat_mode=1;
         else {
 parse_error:
             printf("Something was wrong in your command line...\n");
@@ -467,16 +469,13 @@ parse_error:
     }
     camp--;
     initradio=4;
-    if (SX<200) SX=250;
-    if (SY<200) SY=200;
-//  TROPLOIN2=TROPLOIN*TROPLOIN;
-    SX&=0xFFFFFFF8; SY&=0xFFFFFFFE;
-    _DX=SX>>1; _DY=SY>>1;
-//  SIZECERCLE=MIN(SX,SY)/10;
-    SYTB=90;//SY/4;
-    TBY=SY-SYTB;
-    SXTB=SYTB*2; //SX>>1;
-    focale=_DX;
+    if (win_width<200) win_width=250;
+    if (win_height<200) win_height=200;
+    win_width&=0xFFFFFFF8; win_height&=0xFFFFFFFE;
+    win_center_x=win_width>>1; win_center_y=win_height>>1;
+    pannel_width=90;//win_height/4;
+    pannel_height=pannel_width*2; //win_width>>1;
+    z_near=win_center_x;
     // Read saved highscores (from home)
     if ((file = file_open_try(".fachoda-highscores", getenv("HOME"), "r")) != NULL) {
         fread(&highscore, sizeof(struct high_score), ARRAY_LEN(highscore), file);
@@ -498,16 +497,10 @@ parse_error:
     /*
         VIDEO
                */
-    videobuffer = malloc(SX*SY*sizeof(*videobuffer));
-    BufVidOffset = SX*sizeof(struct pixel32);
+    videobuffer = malloc(win_width*win_height*sizeof(*videobuffer));
     initvideo(fullscreen);
     //  printf("Img bpp=%d\n",depth);
     drawtbback();
-/*  fontname=XListFonts(disp,"-freefont-cooper-*-*-*-*-*-*-100-*-*-*-*-*",1,&i);
-    xfont=XLoadQueryFont(disp,fontname[0]);
-    XFreeFontNames(fontname);
-    XSetState(disp,gc,0xFFFF00,0,GXcopy,0xFFFFFF);
-    XSetFont(disp,gc,xfont->fid);*/
     // KEYS
     keys_load();
     // Load sound samples
@@ -539,12 +532,11 @@ parse_error:
     if (present() == -1) goto fin;
     affpresent(0,0);
     //
-    pstr("LOADING and CREATING THE WORLD",_DY+(SY>>3)+10,0xE5D510);
+    pstr("LOADING and CREATING THE WORLD",win_center_y+(win_height>>3)+10,0xE5D510);
     NBBOT+=NbHosts;
     playbotname = malloc(30*NbHosts);
     strcpy(&(playbotname[controled_bot])[0],myname);
-    if (Dark==-1) Dark=drand48()>.9;
-    Fleuve=drand48()>.01;
+    if (night_mode==-1) night_mode=drand48()>.9;
     /*
         Load 3D models
                            */
@@ -553,11 +545,11 @@ parse_error:
         Populate world
                         */
     initworld();
-    debtir = nbobj;
-    printf("World is now generated (%d objs) ; let it now degenerate !\n", nbobj);
-    for (i=0; i<MAX_SHOTS; i++) vieshot[i] = 0;
+    shot_start = nb_obj;
+    printf("World is now generated (%d objs) ; let it now degenerate !\n", nb_obj);
+    for (i=0; i<MAX_SHOTS; i++) shot_ttl[i] = 0;
     for (i=0; i<MAX_DEBRIS; i++) debris[i].o = -1;
-    for (i=0; i<MAX_SMOKE_SOURCES; i++) fumeesourceintens[i] = 0;
+    for (i=0; i<MAX_SMOKE_SOURCES; i++) smoke_source_intens[i] = 0;
     // Camera is obj[0]
     obj[0].pos = obj[bot[controled_bot].vion].pos;
     obj[0].rot = obj[bot[controled_bot].vion].rot;
@@ -592,13 +584,13 @@ parse_error:
         control(controled_bot);
 
         // PNJ
-        if (!game_paused) {
+        if (! game_paused) {
             // calcul les pos du sol
             for (i=0; i<NBBOT; i++) bot[i].zs=obj[bot[i].vion].pos.z-z_ground(obj[bot[i].vion].pos.x,obj[bot[i].vion].pos.y, true);
             for (i=NbHosts; i<NBBOT; i++) robot(i);
             for (i=0; i<NBTANKBOTS; i++) robotvehic(i);
             // vérifie que les playbots ne heurtent rien
-            if (!Easy) {
+            if (!easy_mode) {
                 for (j=0; j<NbHosts; j++) if (bot[j].camp!=-1) {
                     for (i=0; i<NBBOT; i++) if (i!=j && bot[i].camp!=-1 && collision(bot[j].vion,bot[i].vion)) break;
                     if (i<NBBOT) {
@@ -623,14 +615,14 @@ parse_error:
                 playsound(VOICE_ALERT, SAMPLE_ALERT, 1-n*.001, &voices_in_my_head, true, false);
             }
             // avance les shots
-            for (i=debtir; i<nbobj; i++) {
+            for (i=shot_start; i<nb_obj; i++) {
                 int oc;
-                if (!vieshot[i-debtir]) continue;
-                vieshot[i-debtir]--;
+                if (!shot_ttl[i-shot_start]) continue;
+                shot_ttl[i-shot_start]--;
                 // collision ?
                 for (oc=map[obj[i].ak].first_obj; oc!=-1; oc=obj[oc].next) {
                     if (obj[oc].type != TYPE_BOMB && collision(i, oc)) {
-                        if (hitgun(oc, i)) vieshot[i-debtir]=0;
+                        if (hitgun(oc, i)) shot_ttl[i-shot_start]=0;
                     }
                 }
                 v = obj[i].rot.x;
@@ -642,19 +634,19 @@ parse_error:
                 orthov(&obj[i].rot.y,&obj[i].rot.x);
                 prodvect(&obj[i].rot.x,&obj[i].rot.y,&obj[i].rot.z);
                 obj_check_pos(i);
-                if (vieshot[i-debtir]==0 || obj[i].pos.z<z_ground(obj[i].pos.x,obj[i].pos.y, true)) {
+                if (shot_ttl[i-shot_start]==0 || obj[i].pos.z<z_ground(obj[i].pos.x,obj[i].pos.y, true)) {
                     obj[i].aff=0;   // pour qu'il soit plus affiché
 #ifndef DEMO
-                    if (i==nbobj-1) do {
-                        nbobj--; nbtir--;
-                        if (obj[nbobj].next!=-1) obj[obj[nbobj].next].prec=obj[nbobj].prec;
-                        if (obj[nbobj].prec!=-1) obj[obj[nbobj].prec].next=obj[nbobj].next;
-                        else map[obj[nbobj].ak].first_obj = obj[nbobj].next;
+                    if (i==nb_obj-1) do {
+                        nb_obj--; nb_shot--;
+                        if (obj[nb_obj].next!=-1) obj[obj[nb_obj].next].prec=obj[nb_obj].prec;
+                        if (obj[nb_obj].prec!=-1) obj[obj[nb_obj].prec].next=obj[nb_obj].next;
+                        else map[obj[nb_obj].ak].first_obj = obj[nb_obj].next;
                         // comme ca on est sur que calcposa va pas venir
                         // mettre ce tir mort dans un autre ak s'il est à
                         // cheval sur une frontiere, puisqu'il ne bouclera
                         // plus jusqu'ici
-                    } while (obj[nbobj-1].aff==0 && nbobj>debtir);
+                    } while (obj[nb_obj-1].aff==0 && nb_obj>shot_start);
 #endif
                 }
             }
@@ -731,21 +723,21 @@ parse_error:
             }
             // avance la fumee
             for (fumeedispo=0, i=0; i<MAX_SMOKES; i++) {
-                if (rayonfumee[i]) {
+                if (smoke_radius[i]) {
                     uchar rlim;
                     randomv(&v);
-                    mulv(&v, rayonfumee[i]);
-                    v.z += rayonfumee[i]>>1;
-                    switch (typefumee[i]) {
+                    mulv(&v, smoke_radius[i]);
+                    v.z += smoke_radius[i]>>1;
+                    switch (smoke_type[i]) {
                         case 0: rlim=90; break;
                         default: rlim=6; break;
                     }
-                    if (++rayonfumee[i]>rlim) rayonfumee[i]=0;
+                    if (++smoke_radius[i]>rlim) smoke_radius[i]=0;
                     else {
 #                       define SMOKE_GROWING_SPEED (.3 * ONE_METER) // per seconds
                         mulv(&v, SMOKE_GROWING_SPEED * dt_sec);
-                        addv(&obj[firstfumee+i].pos,&v);
-                        obj_check_pos(firstfumee+i);
+                        addv(&obj[smoke_start+i].pos,&v);
+                        obj_check_pos(smoke_start+i);
                     }
                 } else fumeedispo=i;
             }
@@ -754,25 +746,25 @@ parse_error:
                 if (bot[i].burning) {
                     bot[i].burning--;
                     if (!(bot[i].burning&3)) {
-                        for (; rayonfumee[fumeedispo] && fumeedispo>=0; fumeedispo--);
+                        for (; smoke_radius[fumeedispo] && fumeedispo>=0; fumeedispo--);
                         if (fumeedispo>=0) {
-                            rayonfumee[fumeedispo]=1;
-                            typefumee[fumeedispo]=0;    // type noir
-                            copyv(&obj[firstfumee+fumeedispo].pos,&obj[bot[i].vion].pos);
-                            obj_check_pos(firstfumee+fumeedispo);
+                            smoke_radius[fumeedispo]=1;
+                            smoke_type[fumeedispo]=0;    // type noir
+                            copyv(&obj[smoke_start+fumeedispo].pos,&obj[bot[i].vion].pos);
+                            obj_check_pos(smoke_start+fumeedispo);
                         }
                     }
                 }
             }
             for (i=0; i<MAX_SMOKE_SOURCES; i++) {
-                if (fumeesourceintens[i]>0) {
-                    fumeesourceintens[i]--;
-                    if (!(fumeesourceintens[i]&1)) {
-                        for (; fumeedispo>=0 && rayonfumee[fumeedispo]; fumeedispo--);
+                if (smoke_source_intens[i]>0) {
+                    smoke_source_intens[i]--;
+                    if (!(smoke_source_intens[i]&1)) {
+                        for (; fumeedispo>=0 && smoke_radius[fumeedispo]; fumeedispo--);
                         if (fumeedispo>=0) {
-                            rayonfumee[fumeedispo]=1;
-                            copyv(&obj[firstfumee+fumeedispo].pos,&obj[fumeesource[i]].pos);
-                            obj_check_pos(firstfumee+fumeedispo);
+                            smoke_radius[fumeedispo]=1;
+                            copyv(&obj[smoke_start+fumeedispo].pos,&obj[smoke_source[i]].pos);
+                            obj_check_pos(smoke_start+fumeedispo);
                         }
                     }
                 }
@@ -803,19 +795,19 @@ parse_error:
                 for (j=car[i].o+1; j<car[i+1].o; j++) calcposrigide(j);
             }
             // new radio messages
-            if (msgactutime) msgactutime--;
+            if (current_msg_ttl) current_msg_ttl--;
             else if (initradio || !dtradio--) {
-                if (!SpaceInvaders && initradio) {
-                    campactu=camp;
-                    strcpy(msgactu,scenar[campactu][4-initradio][lang]);
+                if (!killemall_mode && initradio) {
+                    current_msg_camp=camp;
+                    strcpy(current_msg,scenar[current_msg_camp][4-initradio][lang]);
                     initradio--;
                     playsound(VOICE_GEAR, SAMPLE_MESSAGE, 1., &voices_in_my_head, true, false);
-                    msgactutime=40;
+                    current_msg_ttl=40;
                 } else {
-                    newprime();
-                    if (campactu==bot[viewed_bot].camp) playsound(VOICE_GEAR, SAMPLE_MESSAGE, 1., &voices_in_my_head, true, false);
+                    reward_new();
+                    if (current_msg_camp==bot[viewed_bot].camp) playsound(VOICE_GEAR, SAMPLE_MESSAGE, 1., &voices_in_my_head, true, false);
                     dtradio=10+drand48()*100;
-                    if (campactu==0) {
+                    if (current_msg_camp==0) {
                         dtradio+=10000;
                     }
                 }
@@ -827,7 +819,7 @@ parse_error:
             m.x.x=1; m.x.y=0; m.x.z=0;
             m.y.x=0; m.y.y=cos(AngleMoulin); m.y.z=sin(AngleMoulin);
             m.z.x=0; m.z.y=-sin(AngleMoulin); m.z.z=cos(AngleMoulin);
-            for (i=DebMoulins+1; i<FinMoulins; i+=10){
+            for (i=mill_start+1; i<mill_stop; i+=10){
                 if (obj[i].type!=TYPE_DECO) {
                     calcposarti(i,&m);
                     for (j=i+1; j<i+5; j++) calcposrigide(j);
@@ -849,17 +841,17 @@ parse_error:
             if (!accelerated_mode || 0 == (frame_count&31)) {
                 // RENDU
                 // La lumière vient d'où ?
-                copym(&Light,&LightSol);
+                copym(&light,&LightSol);
                 if (explosion) {
                     subv3(&obj[0].pos,&explosion_pos,&u);
                     if (renorme(&u)<TILE_LEN) {
-                        copyv(&Light.z,&u);
-                        Light.x.x=u.y;
-                        Light.x.y=u.z;
-                        Light.x.z=u.x;
-                        orthov(&Light.x,&Light.z);
-                        renorme(&Light.x);
-                        prodvect(&Light.z,&Light.x,&Light.y);
+                        copyv(&light.z,&u);
+                        light.x.x=u.y;
+                        light.x.y=u.z;
+                        light.x.z=u.x;
+                        orthov(&light.x,&light.z);
+                        renorme(&light.x);
+                        prodvect(&light.z,&light.x,&light.y);
                     }
                 }
                 animsoleil();
@@ -867,8 +859,8 @@ parse_error:
                     map_draw();
                 } else {
                     background();
-                    affsoleil(&Light.z);
-                    mulmtv(&obj[bot[viewed_bot].vion].rot,&Light.z,&v);
+                    affsoleil(&light.z);
+                    mulmtv(&obj[bot[viewed_bot].vion].rot,&light.z,&v);
                     lx=-127*v.y; ly=-127*v.z; lz=50*v.x+77;
                     if (plane_desc[bot[viewed_bot].navion].oldtb) tbback=tbback1;
                     else tbback=tbback2;
@@ -879,15 +871,15 @@ parse_error:
 #                   ifdef VEC_DEBUG
                     draw_debug();
 #                   endif
-                    if (!Dark) {
+                    if (!night_mode) {
                         double i;
                         uchar u;
-                        if ((i=scalaire(&obj[0].rot.z,&Light.z))<-.9) {
+                        if ((i=scalaire(&obj[0].rot.z,&light.z))<-.9) {
                             u=(exp(-i-.9)-1)*2200;
-                            MMXAddSatInt((int*)videobuffer,(u<<16)+(u<<8)+u,SX*SY);
+                            MMXAddSatInt((int*)videobuffer,(u<<16)+(u<<8)+u,win_width*win_height);
                         }
                     }
-                    if (Easy) {
+                    if (easy_mode) {
                         if (bot[viewed_bot].cibt != -1) {
                             draw_target(obj[bot[viewed_bot].cibt].pos, 0xC02080);
                             fall_min_dist2(viewed_bot);
@@ -900,7 +892,7 @@ parse_error:
                     }
                 }
                 if (view == VIEW_DOGFIGHT && bot[controled_bot].camp!=-1) cercle(0,0,10,colcamp[(int)bot[controled_bot].camp]);
-                plotmouse(_DX*bot[viewed_bot].xctl,_DY*bot[viewed_bot].yctl);
+                plotmouse(win_center_x*bot[viewed_bot].xctl,win_center_y*bot[viewed_bot].yctl);
 #               ifdef PRINT_DEBUG
                 if (bot[viewed_bot].aerobatic != MANEUVER) {
                     pstr(aerobatic_2_str(bot[viewed_bot].aerobatic), 20, 0xFF8080);
@@ -909,7 +901,7 @@ parse_error:
                 }
 #               endif
                 // HUD
-                if (Easy) {
+                if (easy_mode) {
                     int const b = viewed_bot; // controled_bot;
                     pword("Sz:", 10, 10, 0x406040);
                     pnum(bot[b].vionvit.z, 40, 10, 0xAFDF10, 1);
@@ -932,9 +924,9 @@ parse_error:
                     if (bot[b].but.frein) pword("brakes",10,80,0xD0D0D0);
                     if (autopilot) pword("auto", 10, 90, 0xD0D0D0);
                 }
-                if (accelerated_mode) pstr("ACCELERATED MODE",_DY/3,0xFFFFFF);
-                if (prompt_quit) pstr("Quit ? Yes/No",_DY/2-8,0xFFFFFF);
-                if (msgactutime && bot[viewed_bot].camp==campactu) pstr(msgactu,10,0xFFFF00);
+                if (accelerated_mode) pstr("ACCELERATED MODE",win_center_y/3,0xFFFFFF);
+                if (prompt_quit) pstr("Quit ? Yes/No",win_center_y/2-8,0xFFFFFF);
+                if (current_msg_ttl && bot[viewed_bot].camp==current_msg_camp) pstr(current_msg,10,0xFFFF00);
                 if (view == VIEW_DOGFIGHT && bot[DogBot].camp!=-1) {
                     char vn[100];
                     snprintf(vn, sizeof(vn), "%s%s%s%s",
@@ -942,7 +934,7 @@ parse_error:
                         DogBot < NbHosts ? " (" : "",
                         DogBot < NbHosts ? playbotname[DogBot] : "",
                         DogBot < NbHosts ? ")" : "");
-                    pstr(vn, SY-12, colcamp[(int)bot[DogBot].camp]);
+                    pstr(vn, win_height-12, colcamp[(int)bot[DogBot].camp]);
                 }
                 // Display current balance
                 if (bot[controled_bot].gold - 2000 > maxgold) {
@@ -969,7 +961,7 @@ parse_error:
                     caissetot=0;
                 }
                 if (dtcaisse) {
-                    pbignum(caisse,_DX,SY/3,2,caissetot,1);
+                    pbignum(caisse,win_center_x,win_height/3,2,caissetot,1);
                     dtcaisse--;
                     if (!dtcaisse) {
                         if (!caissetot) {
@@ -986,7 +978,7 @@ parse_error:
                 oldgold=bot[controled_bot].gold;
 
                 if (draw_high_scores) {
-                    int y=(SY-(ARRAY_LEN(highscore)+2)*9)>>1;
+                    int y=(win_height-(ARRAY_LEN(highscore)+2)*9)>>1;
                     pstr("Hall of Shame",y,0xFFFFFF);
                     for (unsigned i = 0; i < ARRAY_LEN(highscore); i++) {
                         char fonom[36];
@@ -1004,7 +996,7 @@ fin:
     sound_fini();
     system("xset r on");    // FIXME
     // save highscores
-    if (!Easy && !ViewAll && plane_desc[monvion-1].prix<=plane_desc[0].prix && (file=file_open(".fachoda-highscores", getenv("HOME"), "w+"))!=NULL) {
+    if (!easy_mode && !enable_view_enemy && plane_desc[starting_plane-1].prix<=plane_desc[0].prix && (file=file_open(".fachoda-highscores", getenv("HOME"), "w+"))!=NULL) {
         fwrite(&highscore, sizeof(struct high_score), ARRAY_LEN(highscore), file);
         fclose(file);
     }

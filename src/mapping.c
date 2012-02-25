@@ -60,10 +60,10 @@ void polymap(struct vect2dm *p1, struct vect2dm *p2, struct vect2dm *p3) {
                 yi=0;
             }
         }
-        vid=(int*)videobuffer+yi*SX;
-        while (dy>0 && yi<SY) {
+        vid=(int*)videobuffer+yi*win_width;
+        while (dy>0 && yi<win_height) {
             i=xi>>vf; ilim=i+(lx>>vf);
-            if (ilim>=SX) ilim=SX-1;
+            if (ilim>=win_width) ilim=win_width-1;
             xxm=xm;
             yym=ym;
             if (i<0) {
@@ -82,7 +82,7 @@ void polymap(struct vect2dm *p1, struct vect2dm *p2, struct vect2dm *p3) {
             lx+=ql;
             xm+=qmx;
             ym+=qmy;
-            vid+=SX;
+            vid+=win_width;
             dy--;
             yi++;
         }
@@ -90,14 +90,14 @@ void polymap(struct vect2dm *p1, struct vect2dm *p2, struct vect2dm *p3) {
     if (p2->v.y<p1->v.y) { tmp=p1; p1=p2; p2=tmp; }
     if (p3->v.y<p1->v.y) { tmp=p1; p1=p3; p3=tmp; }
     if (p3->v.y<p2->v.y) { tmp=p2; p2=p3; p3=tmp; }
-    if (p3->v.y<0 || p1->v.y>SY) return;
+    if (p3->v.y<0 || p1->v.y>win_height) return;
     pmin=pmax=p1;
     if (p2->v.x>pmax->v.x) pmax=p2;
     if (p3->v.x>pmax->v.x) pmax=p3;
     if (pmax->v.x<0) return;
     if (p2->v.x<pmin->v.x) pmin=p2;
     if (p3->v.x<pmin->v.x) pmin=p3;
-    if (pmin->v.x>SX) return;
+    if (pmin->v.x>win_width) return;
     yi=p1->v.y;
     if (p1->v.y!=p2->v.y) {
         xi=p1->v.x<<vf;
@@ -215,7 +215,7 @@ void polyphong(struct vect2dlum *p1, struct vect2dlum *p2, struct vect2dlum *p3,
     if (p3->v.y<p1->v.y) { tmp=p1; p1=p3; p3=tmp; }
     if (p3->v.y<p2->v.y) { tmp=p2; p2=p3; p3=tmp; }
     if (p1->v.y==p2->v.y && p1->v.x>p2->v.x) { tmp=p1; p1=p2; p2=tmp; }
-    if (p3->v.y<0 || p1->v.y>SY) return;
+    if (p3->v.y<0 || p1->v.y>win_height) return;
 
 //  if (p1->v.y==p2->v.y) p1->v.y--;    // de l'avantage d'une grosse rézo...
 //  if (p3->v.y==p2->v.y) p3->v.y++;
@@ -308,10 +308,10 @@ void polyphong(struct vect2dlum *p1, struct vect2dlum *p2, struct vect2dlum *p3,
         yi=0;
     }
 debtrace:
-    vid=videobuffer+(yi)*SX;
+    vid=videobuffer+(yi)*win_width;
 
     for (i=0; i<2; i++, yfin=p3->v.y, ql=ql2, qx=qx2, px=px2, py=py2){
-        while (yi<yfin && yi<SY) {
+        while (yi<yfin && yi<win_height) {
             k=(dx*(x>>vf)+dy*(y>>vf))<<1;
             l=x*(x>>vf)+y*(y>>vf);
             atmp=a;
@@ -322,7 +322,7 @@ debtrace:
                 atmp += -j*aa;
                 j=0;
             }
-            if (jlim>SX-1) jlim=SX-1;
+            if (jlim>win_width-1) jlim=win_width-1;
             if (j<jlim) {
                 for (; j!=jlim; j++) {
                     unsigned const cc = l <= 0 ? MAX_PRECA : l >= (1<<24) ? 0 : preca[l>>16];
@@ -336,7 +336,7 @@ debtrace:
             xi+=qx; yi++;
             lx+=ql;
             x+=px; y+=py;
-            vid+=SX;
+            vid+=win_width;
         }
     }
 }

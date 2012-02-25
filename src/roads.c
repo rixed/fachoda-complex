@@ -294,7 +294,7 @@ static void drawroadline(int x1, int y1, int x2, int y2, int l, struct pixel c1,
         tmp = y1; y1 = y2; y2 = tmp;
         struct pixel tmpp = c1; c1 = c2; c2 = tmpp;
     }
-    if (x2<0 || x1>=SX) return;
+    if (x2<0 || x1>=win_width) return;
     // clip...
     if (x2-x1) {
         if (x1<0) {
@@ -304,12 +304,12 @@ static void drawroadline(int x1, int y1, int x2, int y2, int l, struct pixel c1,
             c1.b+=((c1.b-c2.b)*x1)/(x2-x1);
             x1=0;
         }
-        if (x2>=SX) {
-            y2-=(y2-y1)*(x2-SX)/(x2-x1);
-            c2.r-=(x2-SX)*(c2.r-c1.r)/(x2-x1);
-            c2.g-=(x2-SX)*(c2.g-c1.g)/(x2-x1);
-            c2.b-=(x2-SX)*(c2.b-c1.b)/(x2-x1);
-            x2=SX-1;
+        if (x2>=win_width) {
+            y2-=(y2-y1)*(x2-win_width)/(x2-x1);
+            c2.r-=(x2-win_width)*(c2.r-c1.r)/(x2-x1);
+            c2.g-=(x2-win_width)*(c2.g-c1.g)/(x2-x1);
+            c2.b-=(x2-win_width)*(c2.b-c1.b)/(x2-x1);
+            x2=win_width-1;
         }
     }
     if (y2-y1) {
@@ -320,19 +320,19 @@ static void drawroadline(int x1, int y1, int x2, int y2, int l, struct pixel c1,
             c1.b+=((c1.b-c2.b)*y1)/(y2-y1);
             y1=0;
         }
-        if (y2>=SY) {
-            x2-=(x2-x1)*(y2-SY)/(y2-y1);
-            c2.r-=(y2-SY)*(c2.r-c1.r)/(y2-y1);
-            c2.g-=(y2-SY)*(c2.g-c1.g)/(y2-y1);
-            c2.b-=(y2-SY)*(c2.b-c1.b)/(y2-y1);
-            y2=SY-1;
+        if (y2>=win_height) {
+            x2-=(x2-x1)*(y2-win_height)/(y2-y1);
+            c2.r-=(y2-win_height)*(c2.r-c1.r)/(y2-y1);
+            c2.g-=(y2-win_height)*(c2.g-c1.g)/(y2-y1);
+            c2.b-=(y2-win_height)*(c2.b-c1.b)/(y2-y1);
+            y2=win_height-1;
         }
     }
     if ((dy=y2-y1)>0) {
-        if (y2<0 || y1>=SY) return;
+        if (y2<0 || y1>=win_height) return;
         s=1;
     } else {
-        if (y1<0 || y2>=SY) return;
+        if (y1<0 || y2>=win_height) return;
         dy=-dy;
         s=-1;
     }
@@ -353,14 +353,14 @@ static void drawroadline(int x1, int y1, int x2, int y2, int l, struct pixel c1,
         medline=l>5;
         if (ss) for (y=y1; dy>=0; dy--, y+=s) {
             for (xi=x>>vf; xi<1+((x+q)>>vf); xi++) {
-                for (ss=ssi; ss<ssf; ss++) plot(xi-_DX,y-_DY+ss,(!ss && medline)?0x909030:(((cr>>vf)<<16)&0xFF0000)+(((cg>>vf)<<8)&0xFF00)+((cb>>vf)&0xFF));
+                for (ss=ssi; ss<ssf; ss++) plot(xi-win_center_x,y-win_center_y+ss,(!ss && medline)?0x909030:(((cr>>vf)<<16)&0xFF0000)+(((cg>>vf)<<8)&0xFF00)+((cb>>vf)&0xFF));
                 cr+=qcr;
                 cg+=qcg;
                 cb+=qcb;
             }
             x+=q;
         } else for (y=y1; dy>=0; dy--, y+=s) {
-            for (ss=ssi; ss<ssf; ss++) plot((x>>vf)-_DX+ss,y-_DY,(!ss && medline)?0x909030:(((cr>>vf)<<16)&0xFF0000)+(((cg>>vf)<<8)&0xFF00)+((cb>>vf)&0xFF));
+            for (ss=ssi; ss<ssf; ss++) plot((x>>vf)-win_center_x+ss,y-win_center_y,(!ss && medline)?0x909030:(((cr>>vf)<<16)&0xFF0000)+(((cg>>vf)<<8)&0xFF00)+((cb>>vf)&0xFF));
             cr+=qcr;
             cg+=qcg;
             cb+=qcb;
@@ -369,14 +369,14 @@ static void drawroadline(int x1, int y1, int x2, int y2, int l, struct pixel c1,
     } else {
         if (ss) for (y=y1; dy>=0; dy--, y+=s) {
             for (xi=x>>vf; xi<1+((x+q)>>vf); xi++) {
-                plot(xi-_DX,y-_DY,(((cr>>vf)<<16)&0xFF0000)+(((cg>>vf)<<8)&0xFF00)+((cb>>vf)&0xFF));
+                plot(xi-win_center_x,y-win_center_y,(((cr>>vf)<<16)&0xFF0000)+(((cg>>vf)<<8)&0xFF00)+((cb>>vf)&0xFF));
                 cr+=qcr;
                 cg+=qcg;
                 cb+=qcb;
             }
             x+=q;
         } else for (y=y1; dy>=0; dy--, y+=s) {
-            plot((x>>vf)-_DX,y-_DY,(((cr>>vf)<<16)&0xFF0000)+(((cg>>vf)<<8)&0xFF00)+((cb>>vf)&0xFF));
+            plot((x>>vf)-win_center_x,y-win_center_y,(((cr>>vf)<<16)&0xFF0000)+(((cg>>vf)<<8)&0xFF00)+((cb>>vf)&0xFF));
             cr+=qcr;
             cg+=qcg;
             cb+=qcb;
@@ -428,7 +428,7 @@ void drawroute(int k)
                 subv3(&route[r+i].i,&obj[0].pos,&v);
                 mulmtv(&obj[0].rot,&v,&pt3d[i]);
             }
-            larg=(int)((largroute[typ]*focale)/norme(&v));
+            larg=(int)((largroute[typ]*z_near)/norme(&v));
             if (larg<1) {
                 if (pt3d[0].z>H) {
                     proj(&route[r].e.v,&pt3d[0]);
