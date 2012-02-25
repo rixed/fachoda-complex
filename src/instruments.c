@@ -133,11 +133,11 @@ void loadtbtile(char *fn) {
     fseek(f,-sxtbtile*sytbtile*sizeof(struct pixel),SEEK_END);
     tbtile = malloc(sxtbtile*sytbtile*sizeof(*tbtile));
     for (y=0; y<sytbtile; y++) for (x=0; x<sxtbtile; x++) {
-            struct pixel p;
-            fread(&p, sizeof(p), 1, f);
-            tbtile[x+y*sxtbtile].r=p.r;
-            tbtile[x+y*sxtbtile].g=p.g;
-            tbtile[x+y*sxtbtile].b=p.b;
+        struct pixel p;
+        fread(&p, sizeof(p), 1, f);
+        tbtile[x+y*sxtbtile].r=p.r;
+        tbtile[x+y*sxtbtile].g=p.g;
+        tbtile[x+y*sxtbtile].b=p.b;
     }
     fclose(f);
     tbz=(uchar*)malloc(SXTB*SYTB*sizeof(uchar));
@@ -193,7 +193,7 @@ void loadtbtile(char *fn) {
     }
     a=0;
     do {
-        gradutb(xspeed,yspeed,M_PI/2-a,rspeed-6,rspeed-4,a<1.5?0xD0D0D0:(a<4.5?0x20E020:0xE02020));
+        gradutb(xspeed,yspeed,M_PI/2-a,rspeed-6,rspeed-4,a<2.5?0xD0D0D0:(a<4.5?0x20E020:0xE02020));
         a+=.01;
     } while (a<M_PI*1.9);
 
@@ -263,7 +263,9 @@ void loadtbtile(char *fn) {
 }
 void drawtbback() {
     int y;
-    for (y=0; y<SYTB; y++) memcpy(mapping+((MAP_MARGIN+y)<<8)+MAP_MARGIN, tbback+SXTB*y, SXTB*sizeof(*mapping));
+    for (y=0; y<SYTB; y++) {
+        memcpy(mapping+((MAP_MARGIN+y)<<8)+MAP_MARGIN, tbback+SXTB*y, SXTB*sizeof(*mapping));
+    }
 }
 
 int lx,ly,lz,lumdec=6;
