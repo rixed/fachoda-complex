@@ -49,8 +49,8 @@ static int resurrect(void)
         snd_thrust=-1;
         autopilot=1;
         accelerated_mode=0;
-        map_x=obj[bot[controled_bot].vion].pos.x/ECHELLE;
-        map_y=obj[bot[controled_bot].vion].pos.y/ECHELLE;
+        map_x=obj[bot[controled_bot].vion].pos.x/TILE_LEN;
+        map_y=obj[bot[controled_bot].vion].pos.y/TILE_LEN;
         return 1;
     }
     return 0;
@@ -107,8 +107,8 @@ void control(int b)
         if ((MouseCtl && kreset(0)) || kreset(gkeys[kc_fire].kc)) bot[b].but.bomb=1;
         break;
     } else if ((MouseCtl && kread(0)) || kread(gkeys[kc_fire].kc)) {
-        bot[b].u.x = ((xmouse-_DX)*(WMAP/2)*ECHELLE)/zoom+map_x*ECHELLE;
-        bot[b].u.y = ((_DY-ymouse)*(WMAP/2)*ECHELLE)/zoom+map_y*ECHELLE;
+        bot[b].u.x = ((xmouse-_DX)*(MAP_LEN/2)*TILE_LEN)/zoom+map_x*TILE_LEN;
+        bot[b].u.y = ((_DY-ymouse)*(MAP_LEN/2)*TILE_LEN)/zoom+map_y*TILE_LEN;
         bot[b].u.z = z_ground(bot[b].u.x, bot[b].u.y, true);
     }
     // Right button
@@ -231,29 +231,29 @@ void control(int b)
         if (kread(gkeys[kc_riseview].kc)) {
             if (! map_mode) {
                 if ((sight_teta -= .2) < -M_PI) sight_teta += 2*M_PI;
-            } else if ((map_y += 1 + (3*SX)/zoom) > WMAP/2) {
-                map_y = WMAP/2;
+            } else if ((map_y += 1 + (3*SX)/zoom) > MAP_LEN/2) {
+                map_y = MAP_LEN/2;
             }
         }
         if (kread(gkeys[kc_lowerview].kc)) {
             if (! map_mode) {
                 if ((sight_teta += .2) > M_PI) sight_teta -= 2*M_PI;
-            } else if ((map_y -= 1 + (3*SX)/zoom) < -WMAP/2) {
-                map_y = -WMAP/2;
+            } else if ((map_y -= 1 + (3*SX)/zoom) < -MAP_LEN/2) {
+                map_y = -MAP_LEN/2;
             }
         }
         if (kread(gkeys[kc_rightenview].kc)) {
             if (! map_mode) {
                 if ((sight_phi -= .2) < -M_PI) sight_phi += 2*M_PI;
-            } else if ((map_x += 1 + (3*SX)/zoom) > WMAP/2) {
-                map_x = WMAP/2;
+            } else if ((map_x += 1 + (3*SX)/zoom) > MAP_LEN/2) {
+                map_x = MAP_LEN/2;
             }
         }
         if (kread(gkeys[kc_leftenview].kc)) {
             if (! map_mode) {
                 if ((sight_phi += .2) > M_PI) sight_phi -= 2*M_PI;
-            } else if ((map_x -= 1 + (3*SX)/zoom) < -WMAP/2) {
-                map_x = -WMAP/2;
+            } else if ((map_x -= 1 + (3*SX)/zoom) < -MAP_LEN/2) {
+                map_x = -MAP_LEN/2;
             }
         }
     }

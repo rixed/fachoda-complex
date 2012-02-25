@@ -30,14 +30,14 @@
 #define SUBMAP_LEN_N 3
 #define SUBMAP_LEN (1 << SUBMAP_LEN_N)
 
-#define MASK_W(a) ((a) & (WMAP-1))
+#define MASK_W(a) ((a) & (MAP_LEN-1))
 
 /* The map is the central structure of the game.
  * It's a simple square heightfield of unsigned bytes
  * which side length is a power of 2.
  *
  * There are 11 of these maps.
- * The most important one is the global map, of side length WMAP (128).
+ * The most important one is the global map, of side length MAP_LEN (128).
  * The other ones are the submaps, of length SUBMAP_LEN (16), representing the height of
  * each world map tile.
  * We have 10 of them, 9 is for water (animated), while 0
@@ -49,7 +49,7 @@
  * So all in all we need very few memory for the world map (less than 20Kb).
  */
 
-struct tile *map;   // The global map: a square of WMAP*WMAP tiles.
+struct tile *map;   // The global map: a square of MAP_LEN*MAP_LEN tiles.
 
 /* The submaps (same structure as the global map, only smaller: SUBMAP_LEN*SUBMAP_LEN).
  * These (positive) heights are added to the main map heights, so that submaped tiles
@@ -156,19 +156,19 @@ static void make_map(uchar *m, int smooth_factor, int mapzmax, int map_length, s
 static void dig(int dy) {
     float a,ai,xx,yy;
     int x,y;
-    a=0; ai=.02; xx=0; yy=WMAP/3;
+    a=0; ai=.02; xx=0; yy=MAP_LEN/3;
     do {
         x=xx;
         y=yy;
-        map[x+(y+dy)*WMAP].z=1;
+        map[x+(y+dy)*MAP_LEN].z=1;
         x=xx-sin(a);
         y=yy+cos(a);
-        map[x+(y+dy)*WMAP].z=1;
+        map[x+(y+dy)*MAP_LEN].z=1;
         xx+=cos(a);
         yy+=sin(a);
         a+=ai;
         if ((ai>0 && a>M_PI/3) || (ai<0 && a<-M_PI/3)) ai=-ai;
-    } while (x<WMAP-2 && y>2 && y<WMAP-2);
+    } while (x<MAP_LEN-2 && y>2 && y<MAP_LEN-2);
 }
 
 void initmap(void) {
@@ -202,26 +202,26 @@ void initmap(void) {
     }
 
     // Global map
-    map = calloc(WMAP*WMAP,sizeof(*map));   // starts from 0
+    map = calloc(MAP_LEN*MAP_LEN,sizeof(*map));   // starts from 0
     if (Fleuve) dig(0); // digging in 0?
-    make_map(&map[0].z, 0, 255, WMAP, sizeof(*map));
+    make_map(&map[0].z, 0, 255, MAP_LEN, sizeof(*map));
     for (i=0;i<Smooth; i++) {   // Instead of using make_map smooth_factor, we smooth (and dig) several times.
-        smooth_map(&map[0].z, WMAP, 1, sizeof(*map));
+        smooth_map(&map[0].z, MAP_LEN, 1, sizeof(*map));
         if (Fleuve) dig(0);
     }
-    for (y=0; y<WMAP; y++) {
-        for (x=0; x<WMAP; x++) {
-            map[x+y*WMAP].has_road = 0;
-            map[x+y*WMAP].first_obj = -1;
+    for (y=0; y<MAP_LEN; y++) {
+        for (x=0; x<MAP_LEN; x++) {
+            map[x+y*MAP_LEN].has_road = 0;
+            map[x+y*MAP_LEN].first_obj = -1;
             // init submap according to z
-            int const z = map[x+y*WMAP].z;
+            int const z = map[x+y*MAP_LEN].z;
             if (z > 200) {  // submaps 4 and 5 are for high lands
-                map[x+y*WMAP].submap = 4+drand48()*2;
+                map[x+y*MAP_LEN].submap = 4+drand48()*2;
             } else if (z < 100) { // submaps 6, 7, 8 are for middle lands
-                if (z > 15) map[x+y*WMAP].submap = 6+drand48()*3;
-                else map[x+y*WMAP].submap = 9;
+                if (z > 15) map[x+y*MAP_LEN].submap = 6+drand48()*3;
+                else map[x+y*MAP_LEN].submap = 9;
             } else { // submaps 1, 2, 3 are for low lands
-                map[x+y*WMAP].submap = 1+drand48()*3;
+                map[x+y*MAP_LEN].submap = 1+drand48()*3;
             }
         }
     }
@@ -544,7 +544,7 @@ static void get_submap_z(int x, int y, int *params)
         m_y = MASK_W(m_y + 1);
     }
 
-    int const smap = submap_get(m_x + (m_y << NWMAP));
+    int const smap = submap_get(m_x + (m_y << LOG_MAP_LEN));
     int const sm = x + (y << SUBMAP_LEN_N);
     int const z = submap[smap][sm];
     params[6] = params[0] + ((mz.x * z) >> 10);
@@ -561,8 +561,8 @@ static void get_submap_z(int x, int y, int *params)
 
 static void get_map_z(int x, int y, int *params)
 {
-    int const z      = map[MASK_W(x) + (MASK_W(y)<<NWMAP)].z;
-    int const z_next = map[MASK_W(x-1) + (MASK_W(y)<<NWMAP)].z;
+    int const z      = map[MASK_W(x) + (MASK_W(y)<<LOG_MAP_LEN)].z;
+    int const z_next = map[MASK_W(x-1) + (MASK_W(y)<<LOG_MAP_LEN)].z;
 
     int intens = ((z-z_next))+32+64;
     if (intens<64) intens=64;
@@ -610,7 +610,7 @@ static void render_map_tile(int x, int y, struct orient_param const *orient, int
 {
     submap_x = x + orient->dmx;
     submap_y = y + orient->dmy;
-    int const m = MASK_W(submap_x) + (MASK_W(submap_y)<<NWMAP);
+    int const m = MASK_W(submap_x) + (MASK_W(submap_y)<<LOG_MAP_LEN);
     int const dx = abs(submap_x - camera_x);
     int const dy = abs(submap_y - camera_y);
 
@@ -664,7 +664,7 @@ static void render_map_tile(int x, int y, struct orient_param const *orient, int
 // Return the coordinates of map[x,y] relative to camera
 static void cam_to_tile(int *v, int x, int y)
 {
-    struct vector v_ = { (x-WMAP/2)<<NECHELLE, (y-WMAP/2)<<NECHELLE, 0. };
+    struct vector v_ = { (x-MAP_LEN/2)<<LOG_TILE_LEN, (y-MAP_LEN/2)<<LOG_TILE_LEN, 0. };
     subv(&v_, &obj[0].pos);
     mulmtv(&obj[0].rot, &v_, &v_);
     v[0] = v_.x*256.;
@@ -693,19 +693,19 @@ void draw_ground_and_objects(void)
     };
     struct orient_param const *orient = orient_param+o;
 
-    mx.x = obj[0].rot.x.x * (ECHELLE<<8);
-    mx.y = obj[0].rot.y.x * (ECHELLE<<8);
-    mx.z = obj[0].rot.z.x * (ECHELLE<<8);
-    my.x = obj[0].rot.x.y * (ECHELLE<<8);
-    my.y = obj[0].rot.y.y * (ECHELLE<<8);
-    my.z = obj[0].rot.z.y * (ECHELLE<<8);
-    mz.x = obj[0].rot.x.z * (ECHELLE<<8);
-    mz.y = obj[0].rot.y.z * (ECHELLE<<8);
-    mz.z = obj[0].rot.z.z * (ECHELLE<<8);
+    mx.x = obj[0].rot.x.x * (TILE_LEN<<8);
+    mx.y = obj[0].rot.y.x * (TILE_LEN<<8);
+    mx.z = obj[0].rot.z.x * (TILE_LEN<<8);
+    my.x = obj[0].rot.x.y * (TILE_LEN<<8);
+    my.y = obj[0].rot.y.y * (TILE_LEN<<8);
+    my.z = obj[0].rot.z.y * (TILE_LEN<<8);
+    mz.x = obj[0].rot.x.z * (TILE_LEN<<8);
+    mz.y = obj[0].rot.y.z * (TILE_LEN<<8);
+    mz.z = obj[0].rot.z.z * (TILE_LEN<<8);
 
     // On what tile are we ? (beware that obj[0].pos might be < 0)
-    camera_x = (int)((obj[0].pos.x + (WMAP<<(NECHELLE-1)))/ ECHELLE);
-    camera_y = (int)((obj[0].pos.y + (WMAP<<(NECHELLE-1)))/ ECHELLE);
+    camera_x = (int)((obj[0].pos.x + (MAP_LEN<<(LOG_TILE_LEN-1)))/ TILE_LEN);
+    camera_y = (int)((obj[0].pos.y + (MAP_LEN<<(LOG_TILE_LEN-1)))/ TILE_LEN);
 
     // Position of the lowest corner of the square to render
     int const corner_x = camera_x - (VIEW_LEN>>1);
@@ -940,19 +940,19 @@ float z_ground(float x, float y, bool with_submap)
 {
     // This starts as above
     // xx, yy: 28:4 fixed prec coordinates
-    int const xx = x*16. + (((WMAP<<NECHELLE)>>1)<<4);
-    int const yy = y*16. + (((WMAP<<NECHELLE)>>1)<<4);
+    int const xx = x*16. + (((MAP_LEN<<LOG_TILE_LEN)>>1)<<4);
+    int const yy = y*16. + (((MAP_LEN<<LOG_TILE_LEN)>>1)<<4);
     // xi, yi: the tile we're in
-    int const xi = xx>>(NECHELLE+4);
-    int const yi = yy>>(NECHELLE+4);
+    int const xi = xx>>(LOG_TILE_LEN+4);
+    int const yi = yy>>(LOG_TILE_LEN+4);
     // medx, medy: location within the tile, in 0:16 fixed prec
-    int const medx = xx & ((ECHELLE<<4)-1);
-    int const medy = yy & ((ECHELLE<<4)-1);
+    int const medx = xx & ((TILE_LEN<<4)-1);
+    int const medy = yy & ((TILE_LEN<<4)-1);
     // z1, z2, z3, z4: the altitudes of the 4 corner of this tile, in 8:0 fixed prec
-    int const i = xi + (yi<<NWMAP);
+    int const i = xi + (yi<<LOG_MAP_LEN);
     int const z1 = (int)map[i].z;
-    int const z2 = (int)map[i+WMAP].z;
-    int const z3 = (int)map[i+WMAP+1].z;
+    int const z2 = (int)map[i+MAP_LEN].z;
+    int const z3 = (int)map[i+MAP_LEN+1].z;
     int const z4 = (int)map[i+1].z;
     // zi, zj: the altitudes in the left and right edges of the tile when y=medy, in 0:16*8:0=8:16 fixed prec
     int const zi = medy*(z2-z1) + (z1<<16);
@@ -964,8 +964,8 @@ float z_ground(float x, float y, bool with_submap)
 
     // iix, iiy: coord within the tile in 0:3 fixed prec, ie subtile we are in in submap si
     unsigned const si = submap_get(i);
-    int const iix = (medx<<SUBMAP_LEN_N)>>(NECHELLE+4);
-    int const iiy = (medy<<SUBMAP_LEN_N)>>(NECHELLE+4);
+    int const iix = (medx<<SUBMAP_LEN_N)>>(LOG_TILE_LEN+4);
+    int const iiy = (medy<<SUBMAP_LEN_N)>>(LOG_TILE_LEN+4);
     int const ii = iix+(iiy<<SUBMAP_LEN_N);
     // mz1 is the nord-west corner of the submap, the only one we can fetch for sure from si, in 8:0 fixed prec
     int const mz1 = submap[si][ii];
@@ -981,21 +981,21 @@ float z_ground(float x, float y, bool with_submap)
             mz4 = submap[si1][iiy<<SUBMAP_LEN_N];
         }
     } else {    // last row
-        unsigned const siw = submap_get(i+WMAP);
+        unsigned const siw = submap_get(i+MAP_LEN);
         mz2 = submap[siw][iix];
         if (iix!=SUBMAP_LEN-1) {
             mz3 = submap[siw][iix+1];
             mz4 = submap[si][ii+1];
         } else {
             unsigned const si1 = submap_get(i+1);
-            unsigned const siw1 = submap_get(i+WMAP+1);
+            unsigned const siw1 = submap_get(i+MAP_LEN+1);
             mz3 = submap[siw1][0];
             mz4 = submap[si1][iiy<<SUBMAP_LEN_N];
         }
     }
     // minx, miny: our location within the subtile, in 0:13
-    int const minx = medx & (((ECHELLE<<4)>>SUBMAP_LEN_N)-1);
-    int const miny = medy & (((ECHELLE<<4)>>SUBMAP_LEN_N)-1);
+    int const minx = medx & (((TILE_LEN<<4)>>SUBMAP_LEN_N)-1);
+    int const miny = medy & (((TILE_LEN<<4)>>SUBMAP_LEN_N)-1);
     // mzi, mzj: altitudes of the left and right edge of the submap, in 0:13*8:0 = 8:13 fixed prec
     int const mzi = miny*(mz2-mz1) + (mz1<<13);
     int const mzj = miny*(mz3-mz4) + (mz4<<13);

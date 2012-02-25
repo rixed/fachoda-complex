@@ -43,6 +43,7 @@ struct vector vac_diag={1,1,1}, vec_zero={0,0,0}, vec_g={0,0,-1};
 
 int NBBOT=30;
 int NBTANKBOTS=150;
+int NBZEP=20;
 struct model *mod;
 struct object obj[50000];   // All nbobj objects
 int nbobj;
@@ -50,7 +51,7 @@ int debtir, firstfumee, fumeedispo, DebMoulins, FinMoulins;
 float AngleMoulin=0;
 uchar *rayonfumee;
 uchar *typefumee;
-int fumeesource[NBFUMEESOURCE], fumeesourceintens[NBFUMEESOURCE];
+int fumeesource[MAX_SMOKE_SOURCES], fumeesourceintens[MAX_SMOKE_SOURCES];
 double focale;
 int camp=1, AllowResurrect=1, Easy=0, Gruge=0, ViewAll=0, SpaceInvaders=0, monvion=1, lang=1, Dark=-1, Fleuve=1, MouseCtl=1, Accident=1500, Smooth=7;
 float CtlSensitiv=0.08, CtlSensActu=0, CtlAmortis=.9, CtlYequ=.1;
@@ -61,12 +62,12 @@ struct vector explosion_pos;
 bool explosion;
 //
 int babaseo[2][3][4];   // o1, o2 // base 1, base 2, base 3 // camp A,B,C,D
-int gunner[NBMAXTIR];
-short int vieshot[NBMAXTIR];
+int gunner[MAX_SHOTS];
+short int vieshot[MAX_SHOTS];
 struct bomb *bomb;
 int bombidx;
 char (*playbotname)[30];
-struct debris debris[NBGRAVMAX];
+struct debris debris[MAX_DEBRIS];
 // options changeables à la ligne de com :
 int _DX,_DY,SX=400,SY=250,SYTB,SXTB,SIZECERCLE,TBY;
 int nbtir;
@@ -83,9 +84,9 @@ void object_add(int mo, struct vector *p, struct matrix *m, int or, uchar sol)
     if (sol) obj[nbobj].pos.z+=z_ground(p->x,p->y, true);
     copym(&obj[nbobj].rot,m);
     obj[nbobj].objref=or;
-    xk=(int)floor(p->x/ECHELLE)+(WMAP>>1);
-    yk=(int)floor(p->y/ECHELLE)+(WMAP>>1);
-    ak=xk+(yk<<NWMAP);
+    xk=(int)floor(p->x/TILE_LEN)+(MAP_LEN>>1);
+    yk=(int)floor(p->y/TILE_LEN)+(MAP_LEN>>1);
+    ak=xk+(yk<<LOG_MAP_LEN);
     obj[nbobj].ak=ak;
     obj[nbobj].next=map[ak].first_obj;
     map[ak].first_obj=nbobj;
@@ -137,11 +138,11 @@ static void background(void)
     int *vid;
 
     // Compute position of the horizon (notice it's artificially lowered by 30 pixels)
-    z1=z2=(focale*cam.rot.z.z-_DY*cam.rot.y.z+30)*256;
-    z1-=(_DX*cam.rot.x.z)*256;
-    z2+=(_DX*cam.rot.x.z)*256;
-    dz1=cam.rot.y.z*256;
-    dz2=cam.rot.y.z*256;
+    z1=z2=(focale*obj[0].rot.z.z-_DY*obj[0].rot.y.z+30)*256;
+    z1-=(_DX*obj[0].rot.x.z)*256;
+    z2+=(_DX*obj[0].rot.x.z)*256;
+    dz1=obj[0].rot.y.z*256;
+    dz2=obj[0].rot.y.z*256;
     dz=(z2-z1)/SX;
 #   define ZFINSOL ((-SX/4)<<8)
     for (vid=(int*)videobuffer; vid<(int*)videobuffer+SX*SY; vid+=SX, z1+=dz1, z2+=dz2) {
@@ -455,7 +456,7 @@ int main(int narg, char **arg)
         else if (0 == strcasecmp(&arg[i][c],"nomouse")) MouseCtl=0;
         else if (0 == strcasecmp(&arg[i][c],"killemall")) SpaceInvaders=1;
         else if (0 == strcasecmp(&arg[i][c],"plane")) {
-            if (++i==narg || sscanf(arg[i],"%d",&monvion)!=1 || monvion<1 || monvion>NBNAVIONS) goto parse_error;
+            if (++i==narg || sscanf(arg[i],"%d",&monvion)!=1 || monvion<1 || monvion>NB_PLANES) goto parse_error;
         } else if (0 == strcasecmp(&arg[i][c],"french")) lang=0;
         else if (0 == strcasecmp(&arg[i][c],"gruge")) Gruge=1;
         else {
@@ -491,7 +492,7 @@ parse_error:
     tbback2=tbback;
     initmapping();
     initsol();
-    for (i=0; i<NBREPMAX; i++) mark[i].x=MAXFLOAT;
+    for (i=0; i<NB_MARKS; i++) mark[i].x=MAXFLOAT;
     if (sound_init(with_sound)==-1) printf("Ce sera le monde du silence...\n");
 
     /*
@@ -554,9 +555,9 @@ parse_error:
     initworld();
     debtir = nbobj;
     printf("World is now generated (%d objs) ; let it now degenerate !\n", nbobj);
-    for (i=0; i<NBMAXTIR; i++) vieshot[i] = 0;
-    for (i=0; i<NBGRAVMAX; i++) debris[i].o = -1;
-    for (i=0; i<NBFUMEESOURCE; i++) fumeesourceintens[i] = 0;
+    for (i=0; i<MAX_SHOTS; i++) vieshot[i] = 0;
+    for (i=0; i<MAX_DEBRIS; i++) debris[i].o = -1;
+    for (i=0; i<MAX_SMOKE_SOURCES; i++) fumeesourceintens[i] = 0;
     // Camera is obj[0]
     obj[0].pos = obj[bot[controled_bot].vion].pos;
     obj[0].rot = obj[bot[controled_bot].vion].rot;
@@ -604,8 +605,12 @@ parse_error:
                         explose(bot[i].vion, bot[j].vion);
                         explose(bot[j].vion, bot[i].vion);
                     }
-                    for (i=0; i<NBZEPS; i++) if (collision(bot[j].vion,zep[i].o)) break;
-                    if (i<NBZEPS) explose(bot[j].vion, zep[i].o);
+                    for (i=0; i<NBZEP; i++) {
+                        if (collision(bot[j].vion, zep[i].o)) {
+                            explose(bot[j].vion, zep[i].o);
+                            break;
+                        }
+                    }
                 }
             }
             // message d'alerte ?
@@ -683,7 +688,7 @@ parse_error:
                 }
             }
             // avance les débris
-            for (i=0; i<NBGRAVMAX; i++) {
+            for (i=0; i<MAX_DEBRIS; i++) {
                 if (debris[i].o!=-1) {
                     double zs;
                     v = debris[i].vit;
@@ -725,7 +730,7 @@ parse_error:
                 }
             }
             // avance la fumee
-            for (fumeedispo=0, i=0; i<NBMAXFUMEE; i++) {
+            for (fumeedispo=0, i=0; i<MAX_SMOKES; i++) {
                 if (rayonfumee[i]) {
                     uchar rlim;
                     randomv(&v);
@@ -759,7 +764,7 @@ parse_error:
                     }
                 }
             }
-            for (i=0; i<NBFUMEESOURCE; i++) {
+            for (i=0; i<MAX_SMOKE_SOURCES; i++) {
                 if (fumeesourceintens[i]>0) {
                     fumeesourceintens[i]--;
                     if (!(fumeesourceintens[i]&1)) {
@@ -773,7 +778,7 @@ parse_error:
                 }
             }
             // Animate cars
-            for (i=0; i<NBVOITURES; i++) {
+            for (i=0; i<NB_CARS; i++) {
                 int dist;
                 if (obj[car[i].o].type==TYPE_DECO) continue;
                 subv3(&route[car[i].r].i,&obj[car[i].o].pos,&u);
@@ -831,7 +836,7 @@ parse_error:
 
             for (i = 0; i < NBBOT; i++) physics_plane(i, dt_sec);
             for (i = 0; i < NBTANKBOTS; i++) physics_tank(i, dt_sec);
-            for (i = 0; i < NBZEPS; i++) physics_zep(i, dt_sec);
+            for (i = 0; i < NBZEP; i++) physics_zep(i, dt_sec);
 
             // Now that we know the location of all objects, setup the camera.
             setup_camera(dt_sec);
@@ -847,7 +852,7 @@ parse_error:
                 copym(&Light,&LightSol);
                 if (explosion) {
                     subv3(&obj[0].pos,&explosion_pos,&u);
-                    if (renorme(&u)<ECHELLE) {
+                    if (renorme(&u)<TILE_LEN) {
                         copyv(&Light.z,&u);
                         Light.x.x=u.y;
                         Light.x.y=u.z;

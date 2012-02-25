@@ -597,7 +597,7 @@ struct part piecefumee[] = {
 struct part piecegrav0[] = {
     { "sol/Debris0","sol/Debris0", 0,1,0,0,1 }
 };
-struct plane_desc plane_desc[NBNAVIONS] = {
+struct plane_desc plane_desc[NB_PLANES] = {
     //                                    motor,lift,drag
     {"dewoitine",5,1000,1,0,0,50,55,2,0,0,1,0.85,1.2,1.1, 600,200000, { 7, 8, 9}},
     {"corsair",  0,5000,1,2,0,49,50,4,0,0,0,1.07,1.0,1.0, 800,500000, {24,25,23}},
@@ -616,7 +616,7 @@ struct n_object n_object[] = {
 };
 
 // load les modèles en les hierarchisant
-void loadmodele(int n, char *fn, char *fnlight, int type, int pere, int plat, int plat2, int no, int fixe) {
+void loadmodele(int n, char *fn, char *fnlight, int type, int pere, int plat, int plat2, int no, int mobil) {
     FILE *in;
     int i, j;
     struct face_light ftmp;
@@ -720,7 +720,8 @@ void loadmodele(int n, char *fn, char *fnlight, int type, int pere, int plat, in
     mod[n].type=type;
     mod[n].pere=pere;
     mod[n].n_object=no;
-    mod[n].fixe=fixe;
+    mod[n].fix = mobil < 1;
+    mod[n].anchored = mobil >= 1;   // FIXME: both concepts are merged in the modele description
     mod[n].rayon=0;
     for (i=0; i<mod[n].nbpts[0]; i++) if (norme(&mod[n].pts[0][i])>mod[n].rayon) mod[n].rayon=norme(&mod[n].pts[0][i]);
     if (mod[n].type==TYPE_BOMB) mod[n].rayoncollision=Easy?400:250;
@@ -733,21 +734,28 @@ void loadmodele(int n, char *fn, char *fnlight, int type, int pere, int plat, in
 void LoadModeles() {
     int i, s, nbmod=0, n;
 //  printf("Loading objects...\n");
-    for (i=0; i<NBNAVIONS+NBBASES+NBMAISONS+NBVEHICS+NBDECOS+NBZEPPELINS; i++) nbmod+=n_object[i].nbpieces;
+    for (i=0; i<NB_PLANES+NB_AIRFIELDS+NB_HOUSES+NB_TANKS+NB_DECOS+NB_ZEPPELINS; i++) nbmod+=n_object[i].nbpieces;
     mod = malloc((1+nbmod+1)*sizeof(*mod));
     // MODELE 0 : TYPE_SHOT
     copyv(&mod[0].offset,&vec_zero);
-    for (i=0; i<NBNIVOLISS; i++) {
-        static struct vector ptstir[]={{-40,0,0},{40,0,0}};
-        mod[0].nbpts[i]=2; mod[0].nbfaces[i]=0;
-        mod[0].pts[i]=mod[0].norm[i]=ptstir;
-        mod[0].fac[i]=NULL;
+    for (unsigned l = 0; l < ARRAY_LEN(mod[0].nbpts); l++) {
+        static struct vector ptstir[] = {{-40,0,0},{40,0,0}};
+        mod[0].nbpts[l] = 2;
+        mod[0].nbfaces[l] = 0;
+        mod[0].pts[l] = mod[0].norm[l] = ptstir;
+        mod[0].fac[l] = NULL;
     }
-    mod[0].rayoncarac=0; mod[0].rayoncollision=Easy?10:3; mod[0].rayon=60; mod[0].type=TYPE_SHOT; mod[0].fixe=0; mod[0].pere=0;
-    nbtir=0;
-    s=1;
+    mod[0].rayoncarac = 0;
+    mod[0].rayoncollision = Easy ? 10:3;
+    mod[0].rayon = 60;
+    mod[0].type = TYPE_SHOT;
+    mod[0].fix = false;
+    mod[0].anchored = false;
+    mod[0].pere = 0;
+    nbtir = 0;
+    s = 1;
     // LOAD NAVIONS
-    for (n=0; n<NBNAVIONS; n++) {
+    for (n=0; n<NB_PLANES; n++) {
         n_object[n].firstpiece=s;
         for (i=0; i<n_object[n].nbpieces; i++) {
             int t=TYPE_PLANE;
@@ -759,7 +767,7 @@ void LoadModeles() {
         }
     }
     // LOAD BABASES
-    for (; n<NBNAVIONS+NBBASES; n++) {
+    for (; n<NB_PLANES+NB_AIRFIELDS; n++) {
         n_object[n].firstpiece=s;
         for (i=0; i<n_object[n].nbpieces; i++) {
             int t=TYPE_DECO;
@@ -770,7 +778,7 @@ void LoadModeles() {
         }
     }
     // LOAD MAISONS
-    for (; n<NBNAVIONS+NBBASES+NBMAISONS; n++) {
+    for (; n<NB_PLANES+NB_AIRFIELDS+NB_HOUSES; n++) {
         n_object[n].firstpiece=s;
         for (i=0; i<n_object[n].nbpieces; i++) {
             int t=TYPE_DECO;
@@ -781,7 +789,7 @@ void LoadModeles() {
         }
     }
     // LOAD VEHICS
-    for (; n<NBNAVIONS+NBBASES+NBMAISONS+NBVEHICS; n++) {
+    for (; n<NB_PLANES+NB_AIRFIELDS+NB_HOUSES+NB_TANKS; n++) {
         n_object[n].firstpiece=s;
         for (i=0; i<n_object[n].nbpieces; i++) {
             int t=TYPE_TANK;
@@ -791,32 +799,25 @@ void LoadModeles() {
         }
     }
     // LOAD DECOS
-    for (; n<NBNAVIONS+NBBASES+NBMAISONS+NBVEHICS+NBDECOS; n++) {
+    for (; n<NB_PLANES+NB_AIRFIELDS+NB_HOUSES+NB_TANKS+NB_DECOS; n++) {
         n_object[n].firstpiece=s;
         for (i=0; i<n_object[n].nbpieces; i++) {
             int t;
-            if (n==NBNAVIONS+NBBASES+NBMAISONS+NBVEHICS) t=TYPE_CLOUD;
-            else if (n==NBNAVIONS+NBBASES+NBMAISONS+NBVEHICS+1) t=TYPE_SMOKE;
+            if (n==NB_PLANES+NB_AIRFIELDS+NB_HOUSES+NB_TANKS) t=TYPE_CLOUD;
+            else if (n==NB_PLANES+NB_AIRFIELDS+NB_HOUSES+NB_TANKS+1) t=TYPE_SMOKE;
             else t=TYPE_DECO;
             loadmodele(s++, n_object[n].piece[i].fn,n_object[n].piece[i].fnlight, t, n_object[n].firstpiece+n_object[n].piece[i].pere, n_object[n].piece[i].plat,n_object[n].piece[i].platlight,n,n_object[n].piece[i].mobil);
             affjauge(.25/nbmod);
         }
     }
     // LOAD ZEPPELINS
-    for (; n<NBNAVIONS+NBBASES+NBMAISONS+NBVEHICS+NBDECOS+NBZEPPELINS; n++) {
+    for (; n<NB_PLANES+NB_AIRFIELDS+NB_HOUSES+NB_TANKS+NB_DECOS+NB_ZEPPELINS; n++) {
         n_object[n].firstpiece=s;
         for (i=0; i<n_object[n].nbpieces; i++) {
             loadmodele(s++, n_object[n].piece[i].fn,n_object[n].piece[i].fnlight, TYPE_ZEPPELIN, n_object[n].firstpiece+n_object[n].piece[i].pere, n_object[n].piece[i].plat,n_object[n].piece[i].platlight,n,n_object[n].piece[i].mobil);
             affjauge(.25/nbmod);
         }
     }
-/*  // LOAD GRAVS
-    for (; n<NBNAVIONS+NBBASES+NBMAISONS+NBVEHICS+NBDECOS+NBGRAVS; n++) {
-        n_object[n].firstpiece=s;
-        for (i=0; i<n_object[n].nbpieces; i++) {
-            loadmodele(s++, n_object[n].piece[i].fn,n_object[n].piece[i].fnlight, TYPE_GRAV, n_object[n].firstpiece+n_object[n].piece[i].pere, n_object[n].piece[i].plat,n_object[n].piece[i].platlight,n,n_object[n].piece[i].mobil);
-        }
-    }*/
     for (s--; s>=0; s--) subv(&mod[s].offset,&mod[mod[s].pere].offset);
 }
 int addnobjet(int na, struct vector *p, struct matrix *m, uchar sol) {
@@ -829,10 +830,10 @@ int addnobjet(int na, struct vector *p, struct matrix *m, uchar sol) {
         else {
             mulmv(m,&mod[i].offset,&pp);
             addv(&pp,&obj[firstobj+mod[i].pere-n_object[na].firstpiece].pos);
-            object_add(i, &pp, m, mod[i].fixe<1?-1:firstobj+mod[i].pere-n_object[na].firstpiece, 0);
+            object_add(i, &pp, m, mod[i].anchored ? firstobj+mod[i].pere-n_object[na].firstpiece : -1, 0);
         }
     }
-    if (na<NBNAVIONS) { // ne pas afficher les poscam
+    if (na<NB_PLANES) { // ne pas afficher les poscam
         obj[nbobj-1].aff=0;
     }
     return firstobj;

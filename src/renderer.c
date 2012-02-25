@@ -21,9 +21,9 @@
 #include <stdbool.h>
 #include <math.h>
 #include <values.h>
+#include <assert.h>
 #include "heightfield.h"
 
-#define cam obj[0]
 struct vect2dlum *pts2d;
 struct matrix *oL;
 void initrender() {
@@ -256,10 +256,10 @@ void drawline2(struct vect2d *p1, struct vect2d *p2, int col) {
     x = (p1->x)<<vf;
     for (y=p1->y; dy>=0; dy--, y+=s) {
         for (xi=x>>vf; xi<1+((x+q)>>vf); xi++) {
-            mapping[xi+MARGE+((y+MARGE)<<8)]=col+0x0F0F0F;
-            mapping[xi+1+MARGE+((y+MARGE)<<8)]=col;
-            mapping[xi+1+MARGE+((y+1+MARGE)<<8)]=col;
-            mapping[xi+MARGE+((y+1+MARGE)<<8)]=col+0x0F0F0F;
+            mapping[xi+MAP_MARGIN+((y+MAP_MARGIN)<<8)]=col+0x0F0F0F;
+            mapping[xi+1+MAP_MARGIN+((y+MAP_MARGIN)<<8)]=col;
+            mapping[xi+1+MAP_MARGIN+((y+1+MAP_MARGIN)<<8)]=col;
+            mapping[xi+MAP_MARGIN+((y+1+MAP_MARGIN)<<8)]=col+0x0F0F0F;
         }
         x+=q;
     }
@@ -279,7 +279,7 @@ void drawlinetb(struct vect2d *p1, struct vect2d *p2, int col) {
     }
     x = (p1->x)<<vf;
     for (y=p1->y; dy>=0; dy--, y+=s) {
-        for (xi=x>>vf; xi<1+((x+q)>>vf); xi++) *((int*)tbback+xi+MARGE+(y+MARGE)*SXTB)=col;
+        for (xi=x>>vf; xi<1+((x+q)>>vf); xi++) *((int*)tbback+xi+MAP_MARGIN+(y+MAP_MARGIN)*SXTB)=col;
         x+=q;
     }
 }
@@ -297,19 +297,11 @@ void calcposarti(int o, struct matrix *m) {
 }
 void calcposaind(int i) {
     int xk,yk,ak;
-/*  if (obj[i].objref!=-1 && obj[i].objref<i) {
-        mulmv(&obj[obj[i].objref].rota,&obj[i].pos,&obj[i].posa);
-        addv(&obj[i].posa,&obj[obj[i].objref].posa);    // que deux passes possibles !
-        mulm3(&obj[i].rota,&obj[obj[i].objref].rota,&obj[i].rot);
-    } else {
-        copyv(&obj[i].posa,&obj[i].pos);
-        copym(&obj[i].rota,&obj[i].rot);
-    }*/
-    xk=(int)floor(obj[i].pos.x/ECHELLE)+(WMAP>>1);
-    yk=(int)floor(obj[i].pos.y/ECHELLE)+(WMAP>>1);
-    if (xk<0 || xk>=WMAP || yk<0 || yk>=WMAP) {
+    xk=(int)floor(obj[i].pos.x/TILE_LEN)+(MAP_LEN>>1);
+    yk=(int)floor(obj[i].pos.y/TILE_LEN)+(MAP_LEN>>1);
+    if (xk<0 || xk>=MAP_LEN || yk<0 || yk>=MAP_LEN) {
         printf("HS!\n"); exit(-1);}
-    ak=xk+(yk<<NWMAP);
+    ak=xk+(yk<<LOG_MAP_LEN);
     if (ak!=obj[i].ak) {
         if (obj[i].next!=-1) obj[obj[i].next].prec=obj[i].prec;
         if (obj[i].prec!=-1) obj[obj[i].prec].next=obj[i].next;
@@ -325,20 +317,11 @@ void calcposa() {
     // calcule les pos et les rot absolues des objets du monde réel
     int xk, yk, ak;
     for (int i=0; i<nbobj; i++) {
-/*      if (obj[i].objref!=-1 && obj[i].objref<i) {
-            mulmv(&obj[obj[i].objref].rota,&obj[i].pos,&obj[i].posa);
-            addv(&obj[i].posa,&obj[obj[i].objref].posa);    // que deux passes possibles !
-            if (mod[obj[i].model].fixe==1) copym(&obj[i].rota,&obj[obj[i].objref].rota);    // rigide?
-            else mulm3(&obj[i].rota,&obj[obj[i].objref].rota,&obj[i].rot);  // articulé
-        } else {
-        //  memcpy(&obj[i].posa,&obj[i].pos,sizeof(struct vector)+sizeof(struct matrix));
-        }*/
-        if (mod[obj[i].model].fixe!=-1) {   // immobile ?
-            xk=(int)floor(obj[i].pos.x/ECHELLE)+(WMAP>>1);
-            yk=(int)floor(obj[i].pos.y/ECHELLE)+(WMAP>>1);
-            if (xk<0 || xk>=WMAP || yk<0 || yk>=WMAP) {
-                printf("HS!\n"); exit(-1);}
-            ak=xk+(yk<<NWMAP);
+        if (! mod[obj[i].model].fix) {
+            xk=(int)floor(obj[i].pos.x/TILE_LEN)+(MAP_LEN>>1);
+            yk=(int)floor(obj[i].pos.y/TILE_LEN)+(MAP_LEN>>1);
+            assert(xk>=0 && xk<MAP_LEN && yk>=0 && yk<MAP_LEN);
+            ak=xk+(yk<<LOG_MAP_LEN);
             if (ak!=obj[i].ak) {
                 if (obj[i].next!=-1) obj[obj[i].next].prec=obj[i].prec;
                 if (obj[i].prec!=-1) obj[obj[i].prec].next=obj[i].next;
@@ -493,7 +476,7 @@ void renderer(int ak, enum render_part fast) {
     double rayonapparent=0;
     struct matrix co;
     struct vect2d e;
-    //cam=light
+    //obj[0]=light
     if (map[ak].first_obj==-1) return;
     // boucler sur tous les objets
     for (o=map[ak].first_obj; o!=-1; o=obj[o].next) {
@@ -501,8 +484,8 @@ void renderer(int ak, enum render_part fast) {
         // calcul la position de l'objet dans le repère de la caméra, ie CamT*(objpos-campos)
 //      if (obj[o].model==0) continue;  // une roue effacée
 //      copyv(&obj[o].t,&obj[o].pos);
-        subv3(&obj[o].pos,&cam.pos,&obj[o].t);
-        mulmtv(&cam.rot,&obj[o].t,&obj[o].posc);
+        subv3(&obj[o].pos,&obj[0].pos,&obj[o].t);
+        mulmtv(&obj[0].rot,&obj[o].t,&obj[o].posc);
         obj[o].distance = norme2(&obj[o].posc);
     }
     // reclasser les objets en R2
@@ -533,8 +516,8 @@ void renderer(int ak, enum render_part fast) {
     o=map[ak].first_obj; no=0;
     if (fast!=1) do {
         float z;
-        char aff=norme2(&obj[o].t)<ECHELLE*ECHELLE*4;
-        if (obj[o].aff && (fast==3 || (fast==0 && (obj[o].type==TYPE_CAR || obj[o].type==TYPE_TANK || obj[o].type==TYPE_LIGHT || obj[o].type==TYPE_DECO || obj[o].type==TYPE_GRAV)) || (fast==2 && (obj[o].type==TYPE_PLANE || obj[o].type==TYPE_ZEPPELIN || obj[o].type==TYPE_INSTRUMENTS || obj[o].type==TYPE_BOMB)))) {
+        char aff=norme2(&obj[o].t)<TILE_LEN*TILE_LEN*4;
+        if (obj[o].aff && (fast==3 || (fast==0 && (obj[o].type==TYPE_CAR || obj[o].type==TYPE_TANK || obj[o].type==TYPE_LIGHT || obj[o].type==TYPE_DECO || obj[o].type==TYPE_DEBRIS)) || (fast==2 && (obj[o].type==TYPE_PLANE || obj[o].type==TYPE_ZEPPELIN || obj[o].type==TYPE_INSTRUMENTS || obj[o].type==TYPE_BOMB)))) {
             mulmt3(&oL[no], &obj[o].rot, &Light);
 #define DISTLUM 300.
             mulv(&oL[no].x,DISTLUM);
@@ -545,8 +528,8 @@ void renderer(int ak, enum render_part fast) {
                     addv(&pts3d,&obj[o].pos);
                     pts3d.x+=pts3d.z-z;
                     pts3d.z=z;
-                    subv(&pts3d,&cam.pos);
-                    mulmtv(&cam.rot,&pts3d,&pts3d);
+                    subv(&pts3d,&obj[0].pos);
+                    mulmtv(&obj[0].rot,&pts3d,&pts3d);
                     if (pts3d.z >0) proj(&pts2d[p].v,&pts3d);
                     else pts2d[p].v.x = MAXINT;
                 }
@@ -570,7 +553,7 @@ void renderer(int ak, enum render_part fast) {
     o=map[ak].first_obj; no=0;
     if (fast!=1) while (obj[o].next!=-1 /*&& (viewall || obj[obj[o].next].distance<TL2)*/) { o=obj[o].next; no++; }
     do {
-        if (fast==3 || (fast==1 && obj[o].type==TYPE_CLOUD) || (fast==0 && (obj[o].type==TYPE_CAR || obj[o].type==TYPE_TANK || obj[o].type==TYPE_LIGHT || obj[o].type==TYPE_DECO || obj[o].type==TYPE_GRAV)) || (fast==2 && (obj[o].type==TYPE_PLANE || obj[o].type==TYPE_ZEPPELIN || obj[o].type==TYPE_SMOKE || obj[o].type==TYPE_SHOT || obj[o].type==TYPE_BOMB || obj[o].type==TYPE_INSTRUMENTS || obj[o].type==TYPE_CLOUD))) {
+        if (fast==3 || (fast==1 && obj[o].type==TYPE_CLOUD) || (fast==0 && (obj[o].type==TYPE_CAR || obj[o].type==TYPE_TANK || obj[o].type==TYPE_LIGHT || obj[o].type==TYPE_DECO || obj[o].type==TYPE_DEBRIS)) || (fast==2 && (obj[o].type==TYPE_PLANE || obj[o].type==TYPE_ZEPPELIN || obj[o].type==TYPE_SMOKE || obj[o].type==TYPE_SHOT || obj[o].type==TYPE_BOMB || obj[o].type==TYPE_INSTRUMENTS || obj[o].type==TYPE_CLOUD))) {
             if (obj[o].aff && obj[o].posc.z>-mod[obj[o].model].rayon) { // il faut déjà que l'objet soit un peu devant la caméra et que ce soit pas un objet à passer...
                 int visu;
                 if (obj[o].posc.z>0) {
@@ -599,12 +582,12 @@ void renderer(int ak, enum render_part fast) {
                         if (rayonapparent>.3) {
                             if (rayonapparent<.5) plot(e.x-_DX,e.y-_DY,0x0);
                             else {
-                                int mo = obj[o].distance<(ECHELLE*ECHELLE*.14) ? 0 : 1;
-                                // on calcule alors la pos de la cam dans le repère de l'objet, ie ObjT*(campos-objpos)
+                                int mo = obj[o].distance<(TILE_LEN*TILE_LEN*.14) ? 0 : 1;
+                                // on calcule alors la pos de la obj[0] dans le repère de l'objet, ie ObjT*(campos-objpos)
                                 mulmtv(&obj[o].rot,&obj[o].t,&c);
                                 neg(&c);
                                 // on calcule aussi la position de tous les points de l'objet dans le repere de la camera, ie CamT*Obj*u
-                                mulmt3(&co,&cam.rot,&obj[o].rot);
+                                mulmt3(&co,&obj[0].rot,&obj[o].rot);
                                 for (p=0; p<mod[obj[o].model].nbpts[mo]; p++) {
                                     mulmv(&co, &mod[obj[o].model].pts[mo][p], &pts3d);
                                     addv(&pts3d,&obj[o].posc);
@@ -621,7 +604,7 @@ void renderer(int ak, enum render_part fast) {
                                     if (pts2d[0].v.x!=MAXINT && pts2d[1].v.x!=MAXINT) drawline(&pts2d[0].v, &pts2d[1].v, 0xFFA0F0);
                                 } else {
                                     for (p=0; p<mod[obj[o].model].nbfaces[mo]; p++) {
-                                        // test de visibilité entre cam et normale
+                                        // test de visibilité entre obj[0] et normale
                                         copyv(&t,&mod[obj[o].model].pts[mo][mod[obj[o].model].fac[mo][p].p[0]]);
                                         subv(&t,&c);
                                         if (scalaire(&t,&mod[obj[o].model].fac[mo][p].norm)<=0) {
@@ -636,19 +619,19 @@ void renderer(int ak, enum render_part fast) {
                                                         pt[i].v.y=pts2d[mod[obj[o].model].fac[mo][p].p[i]].v.y;
                                                     }
                                                     if (p-(mod[obj[o].model].nbfaces[mo]-2)) {
-                                                        pt[2].mx=MARGE;
-                                                        pt[2].my=SYTB+MARGE;
-                                                        pt[0].mx=SXTB+MARGE;
-                                                        pt[0].my=MARGE;
-                                                        pt[1].mx=SXTB+MARGE;
-                                                        pt[1].my=SYTB+MARGE;
+                                                        pt[2].mx=MAP_MARGIN;
+                                                        pt[2].my=SYTB+MAP_MARGIN;
+                                                        pt[0].mx=SXTB+MAP_MARGIN;
+                                                        pt[0].my=MAP_MARGIN;
+                                                        pt[1].mx=SXTB+MAP_MARGIN;
+                                                        pt[1].my=SYTB+MAP_MARGIN;
                                                     } else {
-                                                        pt[0].mx=MARGE;
-                                                        pt[0].my=SYTB+MARGE;
-                                                        pt[1].mx=MARGE;
-                                                        pt[1].my=MARGE;
-                                                        pt[2].mx=SXTB+MARGE;
-                                                        pt[2].my=MARGE;
+                                                        pt[0].mx=MAP_MARGIN;
+                                                        pt[0].my=SYTB+MAP_MARGIN;
+                                                        pt[1].mx=MAP_MARGIN;
+                                                        pt[1].my=MAP_MARGIN;
+                                                        pt[2].mx=SXTB+MAP_MARGIN;
+                                                        pt[2].my=MAP_MARGIN;
                                                     }
                                                     polymap(&pt[0],&pt[1],&pt[2]);
                                                 } else {
@@ -694,8 +677,8 @@ static bool to_camera(struct vector const *v3d, struct vect2d *v2d)
 {
     struct vector vc = *v3d;
     struct vector vc_c;
-    subv(&vc, &cam.pos);
-    mulmtv(&cam.rot, &vc, &vc_c);
+    subv(&vc, &obj[0].pos);
+    mulmtv(&obj[0].rot, &vc, &vc_c);
     if (vc_c.z > 0.) {
         proj(v2d, &vc_c);
         return true;

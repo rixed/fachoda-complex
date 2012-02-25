@@ -22,11 +22,11 @@
 #include <math.h>
 #include "proto.h"
 
-struct prime prime[NBPRIMES];
-struct village village[NBVILLAGES];
+struct prime prime[MAX_REWARDS];
+struct village village[MAX_VILLAGES];
 
 #define NBRADIO 1
-char *nomvillage[NBVILLAGES] = { "Mokolo", "Badagadir", "Mokassaville", "Miditana", "Zawabi", "Bogomips", "Osk", "Homene", "Joytown", "Peacetown" };
+char *nomvillage[MAX_VILLAGES] = { "Mokolo", "Badagadir", "Mokassaville", "Miditana", "Zawabi", "Bogomips", "Osk", "Homene", "Joytown", "Peacetown" };
 char msgactu[1000];
 int msgactutime=0;
 int campactu;
@@ -143,8 +143,8 @@ char *botvehicmsg[2][NBMSG][4][2] = {
 void newprime() {
     int j, i, k;
     char botname[200];
-    for (i=0; i<NBPRIMES && prime[i].reward!=0; i++);
-    if (i<NBPRIMES) {
+    for (i=0; i<MAX_REWARDS && prime[i].reward!=0; i++);
+    if (i<MAX_REWARDS) {
         campactu=(campactu+1)&3;
         msgactutime=300;
         strcpy(msgactu,lang?"Try to make more collateral victims":"Essayez de faire davantage de dommages colateraux");
@@ -154,7 +154,7 @@ void newprime() {
             k=0;
             do {
                 k++;
-                j=NBVILLAGES*drand48();
+                j=MAX_VILLAGES*drand48();
                 prime[i].no=village[j].o1+(village[j].o2-village[j].o1)*drand48();
             } while (k<10 && obj[prime[i].no].type==TYPE_DECO);
             if (k<10) {

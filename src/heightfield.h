@@ -16,11 +16,18 @@
  * You should have received a copy of the GNU General Public License
  * along with Fachoda.  If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef MAP_H_120115
-#define MAP_H_120115
+#ifndef HEIGHTFIELD_H_120115
+#define HEIGHTFIELD_H_120115
 
 #include <stdbool.h>
 #include "proto.h"
+
+// Total world map length
+#define LOG_MAP_LEN 7
+#define MAP_LEN (1<<LOG_MAP_LEN)
+// Length of 1 world tile
+#define LOG_TILE_LEN 12
+#define TILE_LEN (1<<LOG_TILE_LEN)
 
 struct tile {
     unsigned char z;    // The altitude of the map

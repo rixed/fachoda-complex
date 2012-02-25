@@ -38,19 +38,19 @@ short (*map2route)[NBREPHASH];  // table de hash
 int akpos(struct vector *p)
 {
     int x,y;
-    x=p->x+((WMAP<<NECHELLE)>>1);
-    y=p->y+((WMAP<<NECHELLE)>>1);
-    x>>=NECHELLE;
-    y>>=NECHELLE;
-    return x+(y<<NWMAP);
+    x=p->x+((MAP_LEN<<LOG_TILE_LEN)>>1);
+    y=p->y+((MAP_LEN<<LOG_TILE_LEN)>>1);
+    x>>=LOG_TILE_LEN;
+    y>>=LOG_TILE_LEN;
+    return x+(y<<LOG_MAP_LEN);
 }
 
 static void akref(int ak,struct vector *r)
 {
-    int x=(ak&(WMAP-1))-(WMAP>>1);
-    int y=(ak>>NWMAP)-(WMAP>>1);
-    r->x=(x<<NECHELLE);
-    r->y=(y<<NECHELLE);
+    int x=(ak&(MAP_LEN-1))-(MAP_LEN>>1);
+    int y=(ak>>LOG_MAP_LEN)-(MAP_LEN>>1);
+    r->x=(x<<LOG_TILE_LEN);
+    r->y=(y<<LOG_TILE_LEN);
     r->z=z_ground(r->x,r->y, true);
 }
 
@@ -61,7 +61,7 @@ void hashroute() {
     short hi;
     for (i=0; i<routeidx; i++) {
         if (route[i].ak==-1) continue;
-        hi=(route[i].ak&(3<<NWMAP))>>(NWMAP-2);
+        hi=(route[i].ak&(3<<LOG_MAP_LEN))>>(LOG_MAP_LEN-2);
         hi|=(route[i].ak&3);
         if (!(map[route[i].ak].has_road)) { // première route dans cette kase
             // on peut donc fixer arbitrairement le code nk
@@ -120,7 +120,7 @@ float note(struct vector *a, struct vector *f, struct vector *i) {
             if (n<-M_PI) n+=2*M_PI;
             else if (n>M_PI) n-=2*M_PI;
             n=fabs(n);
-            n+=(dist>ECHELLE*10?.0015:.0025)*fabs(zs-z_ground(i->x,i->y, false));
+            n+=(dist>TILE_LEN*10?.0015:.0025)*fabs(zs-z_ground(i->x,i->y, false));
             n+=0.003*fabs(zs-z_ground(f->x,f->y, false))/(dist+100);
             if (oldcap!=MAXFLOAT) {
                 float dc=curcap-oldcap;
@@ -144,7 +144,7 @@ void nxtrt(struct vector i, struct vector *f, int lastd) {
     copyv(&r,f);
     subv(&r,&i);
     dist=norme(&r);
-    if (NbElmLim<0 || dist<ECHELLE || routeidx>=NBMAXROUTE-1) {
+    if (NbElmLim<0 || dist<TILE_LEN || routeidx>=NBMAXROUTE-1) {
         routeidx++;
         route[routeidx].ak=-1;  // mark fin de route
         routeidx++;
@@ -157,8 +157,8 @@ void nxtrt(struct vector i, struct vector *f, int lastd) {
     for (d=0; d<4; d++) {
         // d=coté parcouru : 0=sud, 1=ouest, 2=nord, 3=ouest
         if (d==(lastd^2)) continue;
-        for (s=ECHELLE/5; s<ECHELLE*4/5; s+=ECHELLE/10) {
-            float ll=d>1?ECHELLE:0;
+        for (s=TILE_LEN/5; s<TILE_LEN*4/5; s+=TILE_LEN/10) {
+            float ll=d>1?TILE_LEN:0;
             struct vector a;
             a.x=(d&1?ll:s)+r.x;
             a.y=(d&1?s:ll)+r.y;
@@ -189,18 +189,18 @@ void nxtrt(struct vector i, struct vector *f, int lastd) {
     *((int*)&route[routeidx-1].e.c)=0x4A6964;   // couleur par défaut
     switch (bestd) {
     case 0:
-        route[routeidx].ak-=WMAP;
-        d=route[routeidx].ak<WMAP;
+        route[routeidx].ak-=MAP_LEN;
+        d=route[routeidx].ak<MAP_LEN;
         break;
     case 1:
         route[routeidx].ak-=2;
     case 3:
         route[routeidx].ak+=1;
-        d=(route[routeidx].ak&WMAP)!=(route[routeidx-1].ak&WMAP);
+        d=(route[routeidx].ak&MAP_LEN)!=(route[routeidx-1].ak&MAP_LEN);
         break;
     case 2:
-        route[routeidx].ak+=WMAP;
-        d=route[routeidx].ak>=WMAP<<(NWMAP-1);
+        route[routeidx].ak+=MAP_LEN;
+        d=route[routeidx].ak>=MAP_LEN<<(LOG_MAP_LEN-1);
         break;
     }
     if (d) {
@@ -210,7 +210,7 @@ void nxtrt(struct vector i, struct vector *f, int lastd) {
         return;
     }
     // colore la route
-    intens=((map[route[routeidx].ak].z-map[(route[routeidx].ak-1)&((WMAP<<NWMAP)-1)].z))+32+64;
+    intens=((map[route[routeidx].ak].z-map[(route[routeidx].ak-1)&((MAP_LEN<<LOG_MAP_LEN)-1)].z))+32+64;
     if (intens<80) intens=80;
     else if (intens>117) intens=117;
     if (EndMotorways==-1) {coul.r=120; coul.g=150; coul.b=130; }
@@ -245,18 +245,18 @@ void prospectroute(struct vector *i, struct vector *f) {
     copyv(&p2,f);
     copyv(&v,f);
     subv(&v,i);
-    nbelmlim=8.*norme(&v)/ECHELLE;
+    nbelmlim=8.*norme(&v)/TILE_LEN;
     if (EndMotorways==-1) actutype=0;
     else if (EndRoads==-1) actutype=1;
     else actutype=2;
     for (j=0; j<10; j++) {
         if (j) {
             randomv(&v);
-            mulv(&v,ECHELLE*(EndRoads==-1?2:0.00001));
+            mulv(&v,TILE_LEN*(EndRoads==-1?2:0.00001));
             addv(&p1,&v);
             p1.z=z_ground(p1.x,p1.y, false);
             randomv(&v);
-            mulv(&v,ECHELLE*(EndRoads==-1?2:3));
+            mulv(&v,TILE_LEN*(EndRoads==-1?2:3));
             addv(&p2,&v);
             p2.z=z_ground(p2.x,p2.y, false);
         }
@@ -269,7 +269,7 @@ void prospectroute(struct vector *i, struct vector *f) {
             subv(&v, f);
             if (
                 routeidx < bestfin &&
-                norme(&v) < 2.*ECHELLE
+                norme(&v) < 2.*TILE_LEN
             ) {
                 bestp1 = p1;
                 bestp2 = p2;
@@ -403,7 +403,7 @@ void drawroute(int k)
     struct vecic pt[4];
     assert(map[k].has_road);
     nk = map[k].submap;
-    hi=(k&(3<<NWMAP))>>(NWMAP-2);
+    hi=(k&(3<<LOG_MAP_LEN))>>(LOG_MAP_LEN-2);
     hi|=k&3;
     hi|=nk<<4;
     for (j=0; j<4; j++) {

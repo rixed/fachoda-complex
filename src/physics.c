@@ -72,14 +72,14 @@ static void obj_rotate_y(int o, float a)
 void obj_check_pos(int i)
 {
     int xk,yk,ak;
-    xk=(int)floor(obj[i].pos.x/ECHELLE)+(WMAP>>1);
-    yk=(int)floor(obj[i].pos.y/ECHELLE)+(WMAP>>1);
-    if (xk<0) {obj[i].pos.x=-(WMAP<<(NECHELLE-1))+10; xk=0;}
-    else if (xk>=WMAP) {obj[i].pos.x=(WMAP<<(NECHELLE-1))-10; xk=WMAP-1;}
-    if (yk<10) {obj[i].pos.y=-((WMAP/2-10)<<NECHELLE)+10; yk=10;}
-    else if (yk>=WMAP-10) {obj[i].pos.y=((WMAP/2-10)<<NECHELLE)-10; yk=WMAP-1-10;}
-    if (mod[obj[i].model].fixe!=-1) {   // immobile ?
-        ak=xk+(yk<<NWMAP);
+    xk=(int)floor(obj[i].pos.x/TILE_LEN)+(MAP_LEN>>1);
+    yk=(int)floor(obj[i].pos.y/TILE_LEN)+(MAP_LEN>>1);
+    if (xk<0) {obj[i].pos.x=-(MAP_LEN<<(LOG_TILE_LEN-1))+10; xk=0;}
+    else if (xk>=MAP_LEN) {obj[i].pos.x=(MAP_LEN<<(LOG_TILE_LEN-1))-10; xk=MAP_LEN-1;}
+    if (yk<10) {obj[i].pos.y=-((MAP_LEN/2-10)<<LOG_TILE_LEN)+10; yk=10;}
+    else if (yk>=MAP_LEN-10) {obj[i].pos.y=((MAP_LEN/2-10)<<LOG_TILE_LEN)-10; yk=MAP_LEN-1-10;}
+    if (! mod[obj[i].model].fix) {   // immobile ?
+        ak=xk+(yk<<LOG_MAP_LEN);
         if (ak!=obj[i].ak) {
             if (obj[i].next!=-1) obj[obj[i].next].prec=obj[i].prec;
             if (obj[i].prec!=-1) obj[obj[i].prec].next=obj[i].next;
@@ -302,8 +302,8 @@ void physics_plane(int b, float dt_sec)
             }
             if (vz < VZ_MIN_FOR_SMOKE) {
                 int fum;
-                for (fum=0; rayonfumee[fum] && fum<NBMAXFUMEE; fum++);
-                if (fum<NBMAXFUMEE) {
+                for (fum=0; rayonfumee[fum] && fum<MAX_SMOKES; fum++);
+                if (fum<MAX_SMOKES) {
                     rayonfumee[fum]=1;
                     typefumee[fum]=1;   // type poussière jaune
                     obj[firstfumee+fum].pos = *wheel_pos;
@@ -361,7 +361,7 @@ void physics_plane(int b, float dt_sec)
             // nice landing !
             if (b==controled_bot && bot[b].is_flying && fabs(obj[bot[b].vion].rot.x.x)>.8) {
                 subv3(&obj[bot[b].babase].pos,&obj[bot[b].vion].pos, &v);
-                if (norme2(&v) < ECHELLE*ECHELLE*1.5) {
+                if (norme2(&v) < TILE_LEN*TILE_LEN*1.5) {
                     bot[b].gold += 300;
                     playsound(VOICE_EXTER, SAMPLE_BRAVO, 1, &voices_in_my_head, true, false);
                 }
@@ -393,7 +393,7 @@ void physics_plane(int b, float dt_sec)
         if (touchdown_mask && vx < .05 * ONE_METER) {
             v = obj[bot[b].babase].pos;
             subv(&v, &obj[bot[b].vion].pos);
-            if (norme2(&v) < ECHELLE*ECHELLE*.1) {
+            if (norme2(&v) < TILE_LEN*TILE_LEN*.1) {
                 int prix, amo;
                 amo = bot[b].gold;
                 if (amo+bot[b].bullets > plane_desc[bot[b].navion].bulletsmax) {
@@ -453,14 +453,14 @@ void physics_plane(int b, float dt_sec)
                         do {
                             i=obj[i].next;
                             if (i==-1) i=map[obj[bot[b].vion].ak].first_obj;
-                        } while (obj[i].type!=TYPE_PLANE || mod[obj[i].model].fixe!=0);
-                        bot[b].navion = mod[obj[i].model].n_object;
+                        } while (obj[i].type!=TYPE_PLANE || !mod[obj[i].model].fix || mod[obj[i].model].anchored);
                         bot[b].gold -= plane_desc[bot[b].navion].prix;
                         for (j=v=0; v<NBBOT; v++) {
                             if (v!=b && bot[v].vion==i) { j=1; break; }
                         }
                     } while (j || bot[b].gold<0);
                     if (i != bot[b].vion) {
+                        bot[b].navion = mod[obj[i].model].n_object;
                         bot[b].vion = i;
                         armstate(b);
                         playsound(VOICE_EXTER, SAMPLE_TARATATA, 1+(bot[b].navion-1)*.1, &voices_in_my_head, true, false);
@@ -562,7 +562,7 @@ void physics_plane(int b, float dt_sec)
 
     // shots, which frequency is given by the number of canons
     gtime const min_shot_period = SHOT_PERIOD / plane_desc[bot[b].navion].nbcanon;
-    if (bot[b].but.canon && nbtir<NBMAXTIR && bot[b].bullets>0 && gtime_age(bot[b].last_shot) > min_shot_period) {
+    if (bot[b].but.canon && nbtir<MAX_SHOTS && bot[b].bullets>0 && gtime_age(bot[b].last_shot) > min_shot_period) {
         if (++bot[b].alterc>=4) bot[b].alterc=0;
         if (bot[b].alterc<plane_desc[bot[b].navion].nbcanon) {
             copyv(&v, &obj[bot[b].vion].rot.x);
@@ -596,7 +596,7 @@ void physics_plane(int b, float dt_sec)
 
     if (bot[b].but.mark && bot[b].camp==bot[controled_bot].camp) {
         mark[next_mark_set] = obj[bot[b].vion].pos;
-        if (++next_mark_set>NBREPMAX) next_mark_set=0;
+        if (++next_mark_set>NB_MARKS) next_mark_set=0;
     }
 
     bot[b].but.bomb = bot[b].but.canon = bot[b].but.business = bot[b].but.mark = 0;
@@ -637,7 +637,7 @@ void physics_tank(int v, float dt_sec)
     for (i=o+3; i<tank[v].o2; i++) calcposrigide(i);
 
     gtime const min_shot_period = SHOT_PERIOD / 4;
-    if (tank[v].tir && nbtir < NBMAXTIR && gtime_age(tank[v].last_shot) > min_shot_period) {
+    if (tank[v].tir && nbtir < MAX_SHOTS && gtime_age(tank[v].last_shot) > min_shot_period) {
         tank[v].last_shot = gtime_last();
         p = obj[o+3+tank[v].ocanon].rot.x;
         mulv(&p, 90.);
@@ -657,7 +657,7 @@ static void zep_shot(int z, struct vector *c, int i)
     struct matrix m;
     float s;
     gtime const min_shot_period = SHOT_PERIOD / 6; // 6 cannons per Zeppelin
-    if (nbtir < NBMAXTIR && gtime_age(zep[z].last_shot) > min_shot_period) {
+    if (nbtir < MAX_SHOTS && gtime_age(zep[z].last_shot) > min_shot_period) {
         zep[z].last_shot = gtime_last();
         copyv(&p,c);
         renorme(&p);
@@ -686,7 +686,7 @@ void physics_zep(int z, float dt_sec)
     float dir;
     float cx,cy,cz,sx,sy,sz, zs, angcap=0, angprof=0;
     static float phazx=0, phazy=0, phazz=0, balot=0;
-    balot += .04/NBZEPS;    // since this function will be called for each zep. how lame!
+    balot += .04/NBZEP;    // since this function will be called for each zep. how lame!
     if (obj[zep[z].o].pos.z>50000) return;
     zs=z_ground(obj[zep[z].o].pos.x,obj[zep[z].o].pos.y, true);
 #   define ZEP_SPEED (1.5 * ONE_METER)  // per seconds
@@ -701,8 +701,8 @@ void physics_zep(int z, float dt_sec)
         v = zep[z].nav;
         subv(&v, &obj[zep[z].o].pos);
         if (norme2(&v) < 2000) {
-            zep[z].nav.x=(WMAP<<NECHELLE)*drand48()*(SpaceInvaders?.1:.7);
-            zep[z].nav.y=(WMAP<<NECHELLE)*drand48()*(SpaceInvaders?.1:.7);
+            zep[z].nav.x=(MAP_LEN<<LOG_TILE_LEN)*drand48()*(SpaceInvaders?.1:.7);
+            zep[z].nav.y=(MAP_LEN<<LOG_TILE_LEN)*drand48()*(SpaceInvaders?.1:.7);
             zep[z].nav.z=1000+drand48()*3000+z_ground(v.x,v.y, false);
         } else {
             dir=cap(v.x,v.y)-zep[z].angz;
@@ -774,7 +774,7 @@ void physics_zep(int z, float dt_sec)
             int nc=NBBOT*drand48();
             copyv(&v,&obj[bot[nc].vion].pos);
             subv(&v,&obj[zep[z].o].pos);
-            if (norme2(&v)<ECHELLE*ECHELLE*0.5) zep[z].cib[i]=nc;
+            if (norme2(&v)<TILE_LEN*TILE_LEN*0.5) zep[z].cib[i]=nc;
         }
     }
 
@@ -782,7 +782,7 @@ void physics_zep(int z, float dt_sec)
     for (i=5; i<5+6; i++) {
         if (zep[z].cib[i-5]!=-1) {
             subv3(&obj[bot[zep[z].cib[i-5]].vion].pos,&obj[zep[z].o+i].pos,&v);
-            if (norme2(&v)>ECHELLE*ECHELLE*0.5) zep[z].cib[i-5]=-1;
+            if (norme2(&v)>TILE_LEN*TILE_LEN*0.5) zep[z].cib[i-5]=-1;
             else if ((i+frame_count)&1) zep_shot(z,&v,i-5);        //dans gunner, laisser -1 ?
         }
     }

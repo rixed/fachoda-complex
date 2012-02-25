@@ -114,7 +114,7 @@ static int vehic_new_ground_target(int v)
         double r = drand48();
         if (r < .3) {
             // go for a village
-            int a = NBVILLAGES*drand48();
+            int a = MAX_VILLAGES*drand48();
             for (int i = 0; i < 10; i++) {
                 int cib = village[a].o1 + (village[a].o2 - village[a].o1)*drand48();
                 if (obj[cib].type == TYPE_CAR) return cib;
@@ -259,7 +259,7 @@ choiz:
         r=drand48();
         if (r<.5) {
             // attaque un village
-            bot[b].a=NBVILLAGES*drand48();
+            bot[b].a=MAX_VILLAGES*drand48();
             i=0;
             do {
                 bot[b].cibt=village[bot[b].a].o1+(village[bot[b].a].o2-village[bot[b].a].o1)*drand48();
@@ -505,7 +505,7 @@ void robot(int b)
             int cib = drand48()*NBBOT;
             if (bot[cib].camp!=-1 && bot[cib].camp!=bot[b].camp) {
                 subv3(&obj[bot[cib].vion].pos,&obj[bot[b].vion].pos,&u);
-                if (norme2(&u) < ECHELLE*ECHELLE*5.) {
+                if (norme2(&u) < TILE_LEN*TILE_LEN*5.) {
                     bot[b].cibv = bot[cib].vion;
                     bot[b].aerobatic = TAIL;
                     bot[b].gunned = cib;

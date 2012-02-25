@@ -263,7 +263,7 @@ void loadtbtile(char *fn) {
 }
 void drawtbback() {
     int y;
-    for (y=0; y<SYTB; y++) memcpy(mapping+((MARGE+y)<<8)+MARGE, tbback+SXTB*y, SXTB*sizeof(*mapping));
+    for (y=0; y<SYTB; y++) memcpy(mapping+((MAP_MARGIN+y)<<8)+MAP_MARGIN, tbback+SXTB*y, SXTB*sizeof(*mapping));
 }
 
 int lx,ly,lz,lumdec=6;
@@ -273,7 +273,7 @@ void rectangleL(int x,int y, int rx,int ry) {
     for (yy=y; yy<(y+ry); yy++) {
         for (xx=x; xx<x+rx; xx++) {
             int j = ((100+((lx*(tbz[xx+yy*SXTB+1]-tbz[xx+yy*SXTB])+ly*(tbz[xx+yy*SXTB+SXTB]-tbz[xx+yy*SXTB]))>>lumdec))*lz)>>lumdec;
-            MMXAddSat((int*)mapping+MARGE+((MARGE+yy)<<8)+xx,j);
+            MMXAddSat((int*)mapping+MAP_MARGIN+((MAP_MARGIN+yy)<<8)+xx,j);
         }
     }
 }
@@ -300,10 +300,10 @@ void drawtbcadrans(int b) {
     double a, ai, aj, ak;
     int i;
     // Cargo
-    pnuma(bot[b].bullets,MARGE+xsoute+1+20,MARGE+ysoute+1,0x403010,0);
-    pnuma(bot[b].nbomb,MARGE+xsoute+1+20,MARGE+ysoute+11, 0x403010,0);
-    pnuma(bot[b].bullets,MARGE+xsoute+20,MARGE+ysoute,b==controled_bot && selected_weapon==0?0xFFFFFF:0xFFFF10,0);
-    pnuma(bot[b].nbomb,MARGE+xsoute+20,MARGE+ysoute+10,b==controled_bot && selected_weapon==1?0xFFFFFF:0xFFFF10,0);
+    pnuma(bot[b].bullets,MAP_MARGIN+xsoute+1+20,MAP_MARGIN+ysoute+1,0x403010,0);
+    pnuma(bot[b].nbomb,MAP_MARGIN+xsoute+1+20,MAP_MARGIN+ysoute+11, 0x403010,0);
+    pnuma(bot[b].bullets,MAP_MARGIN+xsoute+20,MAP_MARGIN+ysoute,b==controled_bot && selected_weapon==0?0xFFFFFF:0xFFFF10,0);
+    pnuma(bot[b].nbomb,MAP_MARGIN+xsoute+20,MAP_MARGIN+ysoute+10,b==controled_bot && selected_weapon==1?0xFFFFFF:0xFFFF10,0);
     lumdec=7;
     rectangleL(xsoute-1,ysoute-1,32,22);    // regrouper à la fin et faire un seul MMXSAVEFPU
     // Thrust
@@ -382,27 +382,27 @@ void drawtbcadrans(int b) {
     i=(hinclin>>1)*(1.+a/amax);
     if (i<0) i=0;
     for (; i<hinclin; i++)
-        memset32((int*)mapping+MARGE+xinclin+((MARGE+yinclin+i)<<8),0xB04242,dxinclin);
+        memset32((int*)mapping+MAP_MARGIN+xinclin+((MAP_MARGIN+yinclin+i)<<8),0xB04242,dxinclin);
     lumdec=7;
     rectangleL(xinclin,yinclin,dxinclin,hinclin);
     // Gear
     if (bot[b].but.gear) {
-        disque(mapping+xgear+MARGE+((MARGE+ygear)<<8),rgear*.8,0xCC2020);
+        disque(mapping+xgear+MAP_MARGIN+((MAP_MARGIN+ygear)<<8),rgear*.8,0xCC2020);
     }
     disqueL(xgear,ygear,rgear);
     // Flap
     if (bot[b].but.flap) {
-        disque(mapping+xflap+MARGE+((MARGE+yflap)<<8),rflap*.8,0xCC2020);
+        disque(mapping+xflap+MAP_MARGIN+((MAP_MARGIN+yflap)<<8),rflap*.8,0xCC2020);
     }
     disqueL(xflap,yflap,rflap);
     // Brakes
     if (bot[b].but.frein) {
-        disque(mapping+xfrein+MARGE+((MARGE+yfrein)<<8),rfrein*.8,0xCC2020);
+        disque(mapping+xfrein+MAP_MARGIN+((MAP_MARGIN+yfrein)<<8),rfrein*.8,0xCC2020);
     }
     disqueL(xfrein,yfrein,rfrein);
     // Autopilot
     if (autopilot) {
-        disque(mapping+xauto+MARGE+((MARGE+yauto)<<8),rauto*.8,0x20CC20);
+        disque(mapping+xauto+MAP_MARGIN+((MAP_MARGIN+yauto)<<8),rauto*.8,0x20CC20);
     }
     disqueL(xauto,yauto,rauto);
     // Compas

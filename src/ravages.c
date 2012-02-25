@@ -99,7 +99,7 @@ void explose(int oc, int i) {
         copyv(&explosion_pos,&obj[i].pos);
         explosion = true;
         if (obj[o1].pos.z<z_ground(obj[o1].pos.x,obj[o1].pos.y, true)+50) {
-            obj[o1].model=n_object[NBNAVIONS+NBBASES+NBMAISONS+NBVEHICS+2].firstpiece;    // CRATERE
+            obj[o1].model=n_object[NB_PLANES+NB_AIRFIELDS+NB_HOUSES+NB_TANKS+2].firstpiece;    // CRATERE
             obj[o1].type=TYPE_DECO;
             obj[o1].pos.z=5+z_ground(obj[o1].pos.x,obj[o1].pos.y, true);
             obj[o1].objref=-1;
@@ -107,12 +107,12 @@ void explose(int oc, int i) {
             jk=o1+1;
         } else jk=o1;
         for (j=jk; j<o2; j++) {
-    //      obj[j].model=n_object[NBNAVIONS+NBBASES+NBMAISONS+NBVEHICS+6].firstpiece;
+    //      obj[j].model=n_object[NB_PLANES+NB_AIRFIELDS+NB_HOUSES+NB_TANKS+6].firstpiece;
         //  copyv(&obj[j].pos,&obj[o1].pos);
             obj[j].objref=-1;
             obj[j].type=TYPE_DECO;
         }
-        for (i=0, j=jk; i<NBGRAVMAX && j<o2; i++) {
+        for (i=0, j=jk; i<MAX_DEBRIS && j<o2; i++) {
             if (debris[i].o == -1) {
                 debris[i].o = j;
                 if (i != o1) {
@@ -137,12 +137,12 @@ void explose(int oc, int i) {
                 j++;
             }
         }
-        for (j=0; j<NBFUMEESOURCE && fumeesourceintens[j]; j++);
-        if (j<NBFUMEESOURCE) {
+        for (j=0; j<MAX_SMOKE_SOURCES && fumeesourceintens[j]; j++);
+        if (j<MAX_SMOKE_SOURCES) {
             fumeesource[j]=o1;
             fumeesourceintens[j]=drand48()*2000;
         }
-        for (j=0; j<NBPRIMES; j++) {
+        for (j=0; j<MAX_REWARDS; j++) {
             if (prime[j].no>=o1 && prime[j].no<o2 && prime[j].reward>0) {
                 if (cmoi<NBBOT) {
                     bot[cmoi].gold+=prime[j].reward;
@@ -220,10 +220,10 @@ bool hitgun(int oc, int i) {
             break;
         case TYPE_ZEPPELIN:
             if (drand48()<.004) {
-                for (i=0; i<NBZEPS && zep[i].o!=o1; i++);
-                if (i<NBZEPS) {
-                    for (j=0; j<NBFUMEESOURCE && fumeesourceintens[j]; j++);
-                    if (j<NBFUMEESOURCE) {
+                for (i=0; i<NBZEP && zep[i].o!=o1; i++) ;
+                if (i<NBZEP) {
+                    for (j=0; j<MAX_SMOKE_SOURCES && fumeesourceintens[j]; j++);
+                    if (j<MAX_SMOKE_SOURCES) {
                         fumeesource[j]=zep[i].o;
                         fumeesourceintens[j]=3000;
                     }

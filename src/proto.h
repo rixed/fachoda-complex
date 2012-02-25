@@ -29,54 +29,50 @@
 #define SQUARE(x) ((x)*(x))
 #define ARRAY_LEN(x) (sizeof(x)/sizeof((x)[0]))
 
-#define NBZEPS 20
-#define NBVOITURES 400
 #define BACKCOLOR 0xAC8DBD
 
-#define NBKEYS 45 //56
-
-#define NBMAXCLIENTS 100    // faire correspondre avec gate.c
-#define DOGDISTMAX 9000
-#define NBREPMAX 40
 #define ONE_METER 100.  // dist unit seams to be approx the cm
+#define DOGDISTMAX (90. * ONE_METER)    // Max distance at which one can spot a plane in dogfight view
 #define G (3. * ONE_METER)  // actual gravity is of course 10, but we like it smaller so that planes can fly slower
-#define G_FACTOR .5
 #define NTANKMARK 12    // 11 bits pour les No de tanks
 #define SHOT_SPEED (30. * ONE_METER) // in meters/secs
-#define vf 8    // 12
+
+// Fixed point use vf bits for decimals
+#define vf 8
 #define vfm (1<<vf)
 
-#define MARGE 1 // au bord de la texture de map
+#define MAP_MARGIN 1 // Margin around mapped textures
 
-#define NBPTSLISS 45
-#define NBDECOUPLISS 8
-#define NBNIVOLISS 4
-#define cam obj[0]
+#define NB_PLANES 6
+#define NB_AIRFIELDS 2
+#define NB_HOUSES 6
+#define NB_TANKS 5
+#define NB_DECOS 7
+#define NB_ZEPPELINS 1   // how many models
+#define NB_CARS 400
 
-#define NBNAVIONS 6
-#define NBBASES 2
-#define NBMAISONS 6
-#define NBVEHICS 5
-#define NBDECOS 7
-#define NBZEPPELINS 1
+#define MAX_SHOTS 1200
+#define MAX_SMOKES 400
+#define MAX_DEBRIS 1000
+#define MAX_SMOKE_SOURCES 40
+#define MAX_REWARDS (4*5)
+#define MAX_VILLAGES 10
 
-#define NBMAXTIR 1200
-#define NBMAXFUMEE 400
-#define NBGRAVMAX 1000
-#define NBFUMEESOURCE 40
-#define NBPRIMES (4*5)
-#define NBVILLAGES 10
-
-// Total world map length
-#define NWMAP 7
-#define WMAP (1<<NWMAP)
-// Length of 1 world tile
-#define NECHELLE 12
-#define ECHELLE (1<<NECHELLE)
-
-//#define NBNOMVILLAGE 5
-
-enum obj_type { TYPE_CAMERA, TYPE_SHOT, TYPE_PLANE, TYPE_CAR, TYPE_BOMB, TYPE_LIGHT, TYPE_TANK, TYPE_DECO, TYPE_GRAV, TYPE_CLOUD, TYPE_SMOKE, TYPE_INSTRUMENTS, TYPE_ZEPPELIN };
+enum obj_type {
+    TYPE_CAMERA,
+    TYPE_SHOT,
+    TYPE_PLANE,
+    TYPE_CAR,
+    TYPE_BOMB,
+    TYPE_LIGHT,
+    TYPE_TANK,
+    TYPE_DECO,
+    TYPE_DEBRIS,
+    TYPE_CLOUD,
+    TYPE_SMOKE,
+    TYPE_INSTRUMENTS,
+    TYPE_ZEPPELIN
+};
 
 typedef unsigned char uchar;
 
@@ -105,6 +101,7 @@ struct veci {
 
 #define PRIVECI "f,%f,%f"
 #define PVECI(v, p) ((float)v.x)/(1<<p), ((float)v.y)/(1<<p), ((float)v.z)/(1<<p)
+
 struct vecic{
     struct veci v;
     struct pixel c;
@@ -157,12 +154,14 @@ struct face_light {    // utilisé dans les fichiers de data
 
 struct model {
     struct vector offset;  // centre de l'objet avant recentrage par dxfcompi (utile pour positioner les fils)
-    int nbpts[NBNIVOLISS], nbfaces[NBNIVOLISS], pere, n_object;
+#   define NB_LOD 2
+    int nbpts[NB_LOD], nbfaces[NB_LOD], pere, n_object;
     enum obj_type type;
-    struct vector *(pts[NBNIVOLISS]), *(norm[NBNIVOLISS]);
-    struct face *(fac[NBNIVOLISS]);
+    struct vector *(pts[NB_LOD]), *(norm[NB_LOD]);
+    struct face *(fac[NB_LOD]);
     float rayoncarac, rayoncollision, rayon;
-    char fixe;
+    bool fix;   // immobile like ground decorations
+    bool anchored;  // relative to an objref
 };
 
 struct object {
@@ -321,10 +320,6 @@ struct debris {
     float a1,a2,ai1,ai2;
 };
 
-struct alien_pos {
-    int vague, camp, navion;
-};
-
 struct kc {
     char kc;
     char *name;
@@ -351,7 +346,7 @@ extern bool explosion;  // Tru if explosion_pos is set with the location of an e
 extern int DebMoulins, FinMoulins;
 int akpos(struct vector *p);
 extern char (*playbotname)[30];
-extern int NBBOT,NBTANKBOTS, camp, AllowResurrect, Easy, Gruge, ViewAll, SpaceInvaders, monvion, lang, Dark, Fleuve, MouseCtl, Accident, Smooth;
+extern int NBBOT, NBTANKBOTS, NBZEP, camp, AllowResurrect, Easy, Gruge, ViewAll, SpaceInvaders, monvion, lang, Dark, Fleuve, MouseCtl, Accident, Smooth;
 extern float CtlSensitiv, CtlSensActu, CtlAmortis, CtlYequ;
 extern char myname[30];
 extern int fumeesource[], fumeesourceintens[];
@@ -392,8 +387,8 @@ extern int nbtir;
 void object_add(int, struct vector *, struct matrix *, int, uchar);
 extern int viewed_bot;
 extern int gold;
-extern int gunner[NBMAXTIR];
-extern short int vieshot[NBMAXTIR];
+extern int gunner[MAX_SHOTS];
+extern short int vieshot[MAX_SHOTS];
 extern uchar *rayonfumee;
 extern uchar *typefumee;
 extern int firstfumee;
@@ -472,7 +467,8 @@ void polyclip(struct vecic *p1, struct vecic *p2, struct vecic *p3);
 extern struct pixel *colormap;
 extern uchar *mapcol;
 // map.c
-extern struct vector mark[NBREPMAX];
+#define NB_MARKS 40
+extern struct vector mark[NB_MARKS];
 extern int zoom, map_x, map_y, next_mark_set;
 void map_draw(void);
 extern int colcamp[4];
@@ -550,6 +546,7 @@ void MMXCopyToScreen(int *dest, int *src, int sx, int sy, int width);
 extern uchar *BigFont;
 extern uchar font[112][10];
 // keycodes
+#define NBKEYS 45 //56
 extern struct kc gkeys[NBKEYS];
 // roads
 extern int largroute[3];
