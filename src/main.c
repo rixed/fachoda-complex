@@ -546,9 +546,7 @@ parse_error:
     initworld();
     shot_start = nb_obj;
     printf("World is now generated (%d objs) ; let it now degenerate !\n", nb_obj);
-    for (i=0; i<MAX_SHOTS; i++) shot_ttl[i] = 0;
-    for (i=0; i<MAX_DEBRIS; i++) debris[i].o = -1;
-    for (i=0; i<MAX_SMOKE_SOURCES; i++) smoke_source_intens[i] = 0;
+    for (i = 0; i < MAX_DEBRIS; i++) debris[i].o = -1;
     // Camera is obj[0]
     obj[0].pos = obj[bot[controled_bot].vion].pos;
     obj[0].rot = obj[bot[controled_bot].vion].rot;
