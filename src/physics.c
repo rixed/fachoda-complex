@@ -302,10 +302,10 @@ void physics_plane(int b, float dt_sec)
             }
             if (vz < VZ_MIN_FOR_SMOKE) {
                 int fum;
-                for (fum=0; smoke_radius[fum] && fum<MAX_SMOKES; fum++);
+                for (fum=0; smoke_radius[fum] > 0. && fum < MAX_SMOKES; fum++);
                 if (fum<MAX_SMOKES) {
-                    smoke_radius[fum]=1;
-                    smoke_type[fum]=1;   // type poussière jaune
+                    smoke_radius[fum] = 1.;
+                    smoke_type[fum] = 1;   // type poussière jaune
                     obj[smoke_start+fum].pos = *wheel_pos;
                     obj_check_pos(smoke_start+fum);
                 }

@@ -69,7 +69,7 @@ gtime gtime_last(void)
 
 gtime gtime_age(gtime date)
 {
-    gtime now = gtime_now();
+    gtime now = gtime_last();
 #   ifdef DT_DEBUG
     printf("age(%"PRIuLEAST64") = %"PRIuLEAST64"\n", date, now-date);
 #   endif

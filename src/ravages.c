@@ -137,10 +137,12 @@ void explose(int oc, int i) {
                 j++;
             }
         }
+        // TODO: smoke_source_new
         for (j=0; j<MAX_SMOKE_SOURCES && smoke_source_intens[j]; j++);
         if (j<MAX_SMOKE_SOURCES) {
-            smoke_source[j]=o1;
-            smoke_source_intens[j]=drand48()*2000;
+            smoke_source[j] = o1;
+            smoke_source_intens[j] = drand48()*2000;
+            smoke_source_last_emit[j] = 0;
         }
         for (j=0; j<MAX_REWARDS; j++) {
             if (reward[j].no>=o1 && reward[j].no<o2 && reward[j].amount>0) {
@@ -198,11 +200,12 @@ bool hitgun(int oc, int i) {
                     playsound(VOICE_GEAR, SAMPLE_PAIN, 1+(drand48()-.2)*.1, &obj[o1].pos, false, false);
                 }
                 if (drand48()<bot[j].nbomb/1000. || drand48()<.05) {
-                    bot[j].burning+=drand48()*1000;
-                    if (bot[j].burning>900) explose(o1,i);
-                    bot[j].fiulloss+=drand48()*200;
-                    if ((bot[j].motorloss+=drand48()*100)<0) bot[j].motorloss=127;
-                    if ((bot[j].aeroloss+=drand48()*100)<0) bot[j].aeroloss=127;
+                    bot[j].burning += drand48()*1000;
+                    if (bot[j].burning > 900) explose(o1,i);
+                    bot[j].last_burnt = 0;
+                    bot[j].fiulloss += drand48()*200;
+                    if ((bot[j].motorloss += drand48()*100)<0) bot[j].motorloss=127;
+                    if ((bot[j].aeroloss += drand48()*100)<0) bot[j].aeroloss=127;
                 }
                 if (shooter>=0) bot[j].gunned=shooter;
                 tarif += bot[j].fiulloss/4 + bot[j].motorloss*8 + bot[j].aeroloss*8 + bot[j].bloodloss*2;
@@ -222,10 +225,12 @@ bool hitgun(int oc, int i) {
             if (drand48()<.004) {
                 for (i=0; i<NBZEP && zep[i].o!=o1; i++) ;
                 if (i<NBZEP) {
+                    // TODO: a smoke_source_new ?
                     for (j=0; j<MAX_SMOKE_SOURCES && smoke_source_intens[j]; j++);
                     if (j<MAX_SMOKE_SOURCES) {
-                        smoke_source[j]=zep[i].o;
-                        smoke_source_intens[j]=3000;
+                        smoke_source[j] = zep[i].o;
+                        smoke_source_intens[j] = 3000;
+                        smoke_source_last_emit[j] = 0;
                     }
                     zep[i].vit *= 10.;
                 }

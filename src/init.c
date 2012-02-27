@@ -621,6 +621,4 @@ void initworld() {
     for (i=0; i<MAX_SMOKES; i++) {
         addnobjet(NB_PLANES+NB_AIRFIELDS+NB_HOUSES+NB_TANKS+1,&vec_zero,&mat_id,0);
     }
-    smoke_radius=(uchar*)calloc(MAX_SMOKES,sizeof(uchar));
-    smoke_type=(uchar*)calloc(MAX_SMOKES,sizeof(uchar));
 }

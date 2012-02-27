@@ -262,6 +262,7 @@ struct bot {
     int gunned; // bot/tank number of the oponent (while cibv/cibt is the object number)
     float cap;
     int burning;    // amount of smoke we still have to blow
+    gtime last_burnt;   // when we last blown a smoke item
     int gold;
     bool is_flying;
 };
@@ -352,6 +353,7 @@ extern int camp, enable_resurrection, easy_mode, cheat_mode, enable_view_enemy, 
 extern float CtlSensitiv, CtlSensActu, CtlAmortis, CtlYequ;
 extern char myname[30];
 extern int smoke_source[], smoke_source_intens[];
+extern gtime smoke_source_last_emit[MAX_SMOKE_SOURCES];
 extern struct debris debris[];
 extern struct bomb *bomb;
 extern int bombidx;
@@ -391,8 +393,8 @@ extern int viewed_bot;
 extern int gold;
 extern int gunner[MAX_SHOTS];
 extern short int shot_ttl[MAX_SHOTS];
-extern uchar *smoke_radius;
-extern uchar *smoke_type;
+extern float smoke_radius[];
+extern uchar smoke_type[];
 // video_interf
 extern struct pixel32 *videobuffer;
 void buffer2video(void);

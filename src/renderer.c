@@ -583,8 +583,8 @@ void renderer(int ak, enum render_part fast) {
                         else plotnuage(e.x,e.y,rayonapparent);
                     }
                     else if (obj[o].type == TYPE_SMOKE) {
-                        if (smoke_radius[o-smoke_start]) {
-                            plotfumee(e.x,e.y,((int)rayonapparent*smoke_radius[o-smoke_start])>>9);
+                        if (smoke_radius[o-smoke_start] > 0.) {
+                            plotfumee(e.x, e.y, (int)(rayonapparent*smoke_radius[o-smoke_start]) >> 9);
                         }
                     } else {
                         if (rayonapparent>.3) {

@@ -33,7 +33,7 @@ typedef uint_least64_t gtime;   // how many usec since beginning of the simulati
 
 gtime gtime_now(void);  // return the current time (involve a syscall)
 gtime gtime_last(void); // return the last gtime returned by gtime_now()
-gtime gtime_age(gtime date);
+gtime gtime_age(gtime date);    // age relative to gtime_last()
 void gtime_accel(gtime how_much);
 void gtime_stop(void);
 void gtime_start(void);
