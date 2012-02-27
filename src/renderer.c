@@ -554,16 +554,21 @@ void renderer(int ak, enum render_part fast) {
     o=map[ak].first_obj; no=0;
     if (fast!=1) while (obj[o].next!=-1 /*&& (viewall || obj[obj[o].next].distance<TL2)*/) { o=obj[o].next; no++; }
     do {
-        if (fast==3 || (fast==1 && obj[o].type==TYPE_CLOUD) || (fast==0 && (obj[o].type==TYPE_CAR || obj[o].type==TYPE_TANK || obj[o].type==TYPE_LIGHT || obj[o].type==TYPE_DECO || obj[o].type==TYPE_DEBRIS)) || (fast==2 && (obj[o].type==TYPE_PLANE || obj[o].type==TYPE_ZEPPELIN || obj[o].type==TYPE_SMOKE || obj[o].type==TYPE_SHOT || obj[o].type==TYPE_BOMB || obj[o].type==TYPE_INSTRUMENTS || obj[o].type==TYPE_CLOUD))) {
+        if (
+            fast==3 ||
+            (fast==1 && obj[o].type==TYPE_CLOUD) ||
+            (fast==0 && (obj[o].type==TYPE_CAR || obj[o].type==TYPE_TANK || obj[o].type==TYPE_LIGHT || obj[o].type==TYPE_DECO || obj[o].type==TYPE_DEBRIS)) ||
+            (fast==2 && (obj[o].type==TYPE_PLANE || obj[o].type==TYPE_ZEPPELIN || obj[o].type==TYPE_SMOKE || obj[o].type==TYPE_SHOT || obj[o].type==TYPE_BOMB || obj[o].type==TYPE_INSTRUMENTS || obj[o].type==TYPE_CLOUD))
+        ) {
             if (obj[o].aff && obj[o].posc.z>-mod[obj[o].model].rayon) { // il faut déjà que l'objet soit un peu devant la caméra et que ce soit pas un objet à passer...
                 int visu;
-                if (obj[o].posc.z>0) {
+                if (obj[o].posc.z > 0) {
                     // on va projetter ce centre à l'écran
                     proj(&e,&obj[o].posc);
                     rayonapparent = proj1(mod[obj[o].model].rayon,obj[o].posc.z);
                     visu = e.x>-rayonapparent && e.x<win_width+rayonapparent && e.y>-rayonapparent && e.y<win_height+rayonapparent;
                 } else {    // verifier la formule qd meme...
-                    if (obj[o].type!=TYPE_CLOUD && obj[o].type!=TYPE_SMOKE && obj[o].type!=TYPE_LIGHT) {
+                    if (obj[o].type != TYPE_CLOUD && obj[o].type != TYPE_SMOKE && obj[o].type != TYPE_LIGHT) {
                         double r = mod[obj[o].model].rayon*sqrt(z_near*z_near+win_center_x*win_center_x)/win_center_x;
                         visu = obj[o].posc.z > z_near*fabs(obj[o].posc.x)/win_center_x - r;
                         r = mod[obj[o].model].rayon*sqrt(z_near*z_near+win_center_y*win_center_y)/win_center_y;
@@ -573,12 +578,14 @@ void renderer(int ak, enum render_part fast) {
                 }
                 // la sphère est-elle visible ?
                 if (visu) {
-                    if (obj[o].type==TYPE_CLOUD) {
+                    if (obj[o].type == TYPE_CLOUD) {
                         if (night_mode) plotfumee(e.x,e.y,rayonapparent);
                         else plotnuage(e.x,e.y,rayonapparent);
                     }
-                    else if (obj[o].type==TYPE_SMOKE) {
-                        if (smoke_radius[o-smoke_start]) plotfumee(e.x,e.y,((int)rayonapparent*smoke_radius[o-smoke_start])>>9);
+                    else if (obj[o].type == TYPE_SMOKE) {
+                        if (smoke_radius[o-smoke_start]) {
+                            plotfumee(e.x,e.y,((int)rayonapparent*smoke_radius[o-smoke_start])>>9);
+                        }
                     } else {
                         if (rayonapparent>.3) {
                             if (rayonapparent<.5) plot(e.x-win_center_x,e.y-win_center_y,0x0);

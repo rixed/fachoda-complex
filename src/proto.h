@@ -261,7 +261,7 @@ struct bot {
     int bloodloss;
     int gunned; // bot/tank number of the oponent (while cibv/cibt is the object number)
     float cap;
-    int burning;
+    int burning;    // amount of smoke we still have to blow
     int gold;
     bool is_flying;
 };

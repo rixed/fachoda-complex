@@ -47,7 +47,7 @@ int NBZEP=20;
 struct model *mod;
 struct object obj[50000];   // All nb_obj objects
 int nb_obj;
-int shot_start, smoke_start, fumeedispo, mill_start, mill_stop;
+int shot_start, smoke_start, mill_start, mill_stop;
 float AngleMoulin=0;
 uchar *smoke_radius;
 uchar *smoke_type;
@@ -492,14 +492,13 @@ parse_error:
     initmapping();
     initsol();
     for (i=0; i<NB_MARKS; i++) mark[i].x=MAXFLOAT;
-    if (sound_init(with_sound)==-1) printf("Ce sera le monde du silence...\n");
+    if (sound_init(with_sound)==-1) printf("No sound...\n");
 
     /*
         VIDEO
                */
     videobuffer = malloc(win_width*win_height*sizeof(*videobuffer));
     initvideo(fullscreen);
-    //  printf("Img bpp=%d\n",depth);
     drawtbback();
     // KEYS
     keys_load();
@@ -722,49 +721,54 @@ parse_error:
                 }
             }
             // avance la fumee
-            for (fumeedispo=0, i=0; i<MAX_SMOKES; i++) {
+            int avail_smoke = -1;   // first available smoke_radius
+            for (i=0; i<MAX_SMOKES; i++) {
                 if (smoke_radius[i]) {
                     uchar rlim;
                     randomv(&v);
                     mulv(&v, smoke_radius[i]);
-                    v.z += smoke_radius[i]>>1;
+                    v.z += smoke_radius[i] >> 1;
                     switch (smoke_type[i]) {
                         case 0: rlim=90; break;
                         default: rlim=6; break;
                     }
-                    if (++smoke_radius[i]>rlim) smoke_radius[i]=0;
-                    else {
+                    if (++smoke_radius[i] > rlim) {
+                        smoke_radius[i] = 0;
+                    } else {
 #                       define SMOKE_GROWING_SPEED (.3 * ONE_METER) // per seconds
                         mulv(&v, SMOKE_GROWING_SPEED * dt_sec);
-                        addv(&obj[smoke_start+i].pos,&v);
+                        addv(&obj[smoke_start+i].pos, &v);
                         obj_check_pos(smoke_start+i);
                     }
-                } else fumeedispo=i;
+                } else {
+                    // save this smoke_radius for later
+                    avail_smoke = i;
+                }
             }
             // fait fumer
             for (i=0; i<NBBOT; i++) {
                 if (bot[i].burning) {
                     bot[i].burning--;
-                    if (!(bot[i].burning&3)) {
-                        for (; smoke_radius[fumeedispo] && fumeedispo>=0; fumeedispo--);
-                        if (fumeedispo>=0) {
-                            smoke_radius[fumeedispo]=1;
-                            smoke_type[fumeedispo]=0;    // type noir
-                            copyv(&obj[smoke_start+fumeedispo].pos,&obj[bot[i].vion].pos);
-                            obj_check_pos(smoke_start+fumeedispo);
+                    if (!(bot[i].burning&3)) {  // FIXME: make this depends on dt_sec (ie use a last gtime)
+                        for (; smoke_radius[avail_smoke] && avail_smoke>=0; avail_smoke--);
+                        if (avail_smoke >= 0) {
+                            smoke_radius[avail_smoke] = 1;
+                            smoke_type[avail_smoke] = 0;    // type noir
+                            obj[smoke_start + avail_smoke].pos = obj[bot[i].vion].pos;
+                            obj_check_pos(smoke_start + avail_smoke);
                         }
                     }
                 }
             }
             for (i=0; i<MAX_SMOKE_SOURCES; i++) {
-                if (smoke_source_intens[i]>0) {
+                if (smoke_source_intens[i] > 0) {
                     smoke_source_intens[i]--;
-                    if (!(smoke_source_intens[i]&1)) {
-                        for (; fumeedispo>=0 && smoke_radius[fumeedispo]; fumeedispo--);
-                        if (fumeedispo>=0) {
-                            smoke_radius[fumeedispo]=1;
-                            copyv(&obj[smoke_start+fumeedispo].pos,&obj[smoke_source[i]].pos);
-                            obj_check_pos(smoke_start+fumeedispo);
+                    if (! (smoke_source_intens[i] & 1)) {
+                        for (; avail_smoke >= 0 && smoke_radius[avail_smoke]; avail_smoke--);   // if we used this smoke already, look for another one
+                        if (avail_smoke >= 0) {
+                            smoke_radius[avail_smoke] = 1;
+                            obj[smoke_start + avail_smoke].pos = obj[smoke_source[i]].pos;
+                            obj_check_pos(smoke_start + avail_smoke);
                         }
                     }
                 }
