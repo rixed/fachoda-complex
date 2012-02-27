@@ -78,7 +78,7 @@ void obj_check_pos(int i)
     else if (xk>=MAP_LEN) {obj[i].pos.x=(MAP_LEN<<(LOG_TILE_LEN-1))-10; xk=MAP_LEN-1;}
     if (yk<10) {obj[i].pos.y=-((MAP_LEN/2-10)<<LOG_TILE_LEN)+10; yk=10;}
     else if (yk>=MAP_LEN-10) {obj[i].pos.y=((MAP_LEN/2-10)<<LOG_TILE_LEN)-10; yk=MAP_LEN-1-10;}
-    if (! mod[obj[i].model].fix) {   // immobile ?
+    if (!mod[obj[i].model].fix || !mod[obj[i].model].anchored) {   // immobile ?
         ak=xk+(yk<<LOG_MAP_LEN);
         if (ak!=obj[i].ak) {
             if (obj[i].next!=-1) obj[obj[i].next].prec=obj[i].prec;

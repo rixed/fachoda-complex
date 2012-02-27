@@ -313,11 +313,12 @@ void calcposaind(int i) {
         obj[i].ak=ak;
     }
 }
-void calcposa() {
+void calcposa(void)
+{
     // calcule les pos et les rot absolues des objets du monde réel
     int xk, yk, ak;
     for (int i=0; i<nb_obj; i++) {
-        if (! mod[obj[i].model].fix) {
+        if (!mod[obj[i].model].fix || !mod[obj[i].model].anchored) {
             xk=(int)floor(obj[i].pos.x/TILE_LEN)+(MAP_LEN>>1);
             yk=(int)floor(obj[i].pos.y/TILE_LEN)+(MAP_LEN>>1);
             assert(xk>=0 && xk<MAP_LEN && yk>=0 && yk<MAP_LEN);
