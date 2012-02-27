@@ -15,6 +15,8 @@ SRCS = \
 
 OBJS = ${subst .c,.o,$(SRCS)}
 
+all: fachoda
+
 fachoda: $(OBJS)
 	$(CC) -o $@ $(CFLAGS) $^ $(LDFLAGS)
 
