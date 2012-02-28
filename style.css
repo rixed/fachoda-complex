@@ -13,6 +13,7 @@ body {
 	border-width: 0 2px 2px 0px;
 	border-color: #101010;
 	border-style: solid;
+	font: Parkavenue, cursive;
 }
 
 #container p {
@@ -21,6 +22,14 @@ body {
 
 #container img {
 	margin-left: 3em;
+}
+
+#container ul, #container ol {
+	margin-left: 4em;
+}
+
+#container table {
+	margin: auto;
 }
 
 h1 {
@@ -44,11 +53,12 @@ pre {
 	padding: 15px;
 	width: 500px;
 	margin: auto;
+	font-family: Fixed, monospace;
 }
 
 hr { border: 0; width: 80%; border-bottom: 1px solid #aaa}
 .footer { text-align:center; padding-top:30px; font-style: italic; }
-.code { font-family: mono; color: #111; }
+.code { font-family: Fixed, monospace; color: #111; }
 div.code { margin-left: 5em; }
 
 div#menu {

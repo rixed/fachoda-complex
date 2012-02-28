@@ -33,7 +33,7 @@
 -->
  <div id="container">
   <a href="https://github.com/rixed/fachoda-complex">
-   <img style="position: absolute; top: 0; right: 0; border: 0;" src="http://s3.amazonaws.com/github/ribbons/forkme_right_darkblue_121621.png" alt="Fork me on GitHub" />
+   <img style="position: fixed; top: 0; right: 0; border: 0;" src="http://s3.amazonaws.com/github/ribbons/forkme_right_darkblue_121621.png" alt="Fork me on GitHub" />
   </a>
   <h1>Fachoda-Complex</h1>
   <div id="menu">
@@ -42,13 +42,124 @@
    <a href="manual.html" id="manual_link">Manual</a>
    <a href="devlog.html" id="devlog_link">DevLog</a>
   </div>
- <p>Todo...</p>
+ <h2>Objective</h2>
+ <p>The objective is to make as much money as possible by destroying as many
+enemies as you can. From time to time rewards are offered for destruction of a
+given target (be it friend or foe), flagged in the map with a small magenta
+skull. As you have to pay for every bullet you'd better go for these before a
+computer controlled plane or tank does it.</p>
+ <p>You need to return to your home base and park to refuel and repair your plane.
+There you can also buy a better plane by parking your plane close to an unused
+one you can afford and press F11.</p>
+ <p>Each time you earn or lose money the new balance is written in front of the
+screen (blue for credits or red for debits, then white for the actual
+balance).</p>
+ <p>Your final score is the maximal return on investment achieved during the whole
+play.</p>
+ <p>Whenever your plane get shot down you will take the control of another plane
+that's flying on your side and which value is less or equal to the one you
+just left, until there's no more and the game is over. When respawning,
+though, the Lord takes all your money but $55.</p>
+ <h2>The planes</h2>
+ <p>You can fly six different warbirds:</p>
+ <ul>
+  <li>Snophill, a red biplane with no bombing facilities</li>
+  <li>Dewoitine, a green good old plane</li>
+  <li>Bogoplane, an ugly white war bird</li>
+  <li>Spitflame, a raced red acrobat</li>
+  <li>Corsair, escaped from the pacific</li>
+  <li>Moshito, an orange bi-propulsed gunner</li>
+ </ul>
+ <p>Each have various abilities and capacity.
+ You start the game in a Dewoitine.</p>
+ <h2>Price list</h2>
+ <table>
+  <tbody>
+   <tr><th colspan="2">Goods:</th></tr>
+   <tr><th>Bullet</th><td>$1</td></tr>
+   <tr><th>Bomb</th><td>$200</td></tr>
+   <tr><th>Fiul tank</th><td>$400 (approx)</td></tr>
+   <tr><th>Repairs</th><td>depends</td></tr>
+   <tr><th colspan="2">Planes:</th></tr>
+   <tr><th>Spotwill</th><td>$300</td></tr>
+   <tr><th>Dewoitine</th><td>$1000</td></tr>
+   <tr><th>Bogoplane</th><td>$2000</td></tr>
+   <tr><th>Corsair</th><td>$5000</td></tr>
+   <tr><th>Spitflame</th><td>$6000</td></tr>
+   <tr><th>Moshito</th><td>$7000</td></tr>
+  </tbody>
+ </table>
+ <h2>Controls</h2>
+ <h3>Mouse</h3>
+ <p>The mouse controls the flight stick. Left button fires the selected weapon,
+right button switches between guns and bombs.</p>
+ <p>You can play with keyboard instead ('-nomouse' option). The numeric keypad's
+`8`, `4`, `6` and `2` then works for up, left, right and down, while `5`
+centers the stick. You can also set keyboard sensitiveness in the option menu,
+and tune the neutral point of the flight stick during the play by the
+combinations `5`+`2` or `5`+`8` (that is : center+up and center+down) on the
+keypad.</p>
+ <p>In -nomouse mode, `space` fires and `control` switches between weapons.</p>
+ <h3>Keys</h3>
+ <p>Here are a key list. You can redefine all these in the option menu.</p>
+ <table>
+  <tbody>
+   <tr><th>`ESC`</th><td>Quit</td></tr>
+   <tr><th>`+`/`-`</th><td>throttle</td></tr>
+   <tr><th>`F7`/`F8`</th><td>zoom in map mode and external views</td></tr>
+   <tr><th>`F4`</th><td>swap between internal views (normal/dogfight)</td></tr>
+   <tr><th>`F6`</th><td>external view (traveling)</td></tr>
+   <tr><th>`F5`</th><td>swap between external views (around, satellite, pursuit, bomb)</td></tr>
+   <tr><th>`F2`/`F3`</th><td>cycle through other planes of your side, or through close planes in dogfight view</td></tr>
+   <tr><th>`F1`</th><td>view your own plane, or select the closest enemy plane in dogfight view</td></tr>
+   <tr><th>`F10`</th><td>in bomb view, cycle through bombs</td></tr>
+   <tr><th>`F9`</th><td>map view</td></tr>
+   <tr><th>`P`</th><td>autopilot</td></tr>
+   <tr><th>`G`</th><td>gears</td></tr>
+   <tr><th>`F`</th><td>flaps</td></tr>
+   <tr><th>`B`</th><td>wheel brakes</td></tr>
+   <tr><th>`X`</th><td>accelerated mode (make sure to set autopilot first!)</td></tr>
+   <tr><th>`S`</th><td>set a flag at plane's location on the map</td></tr>
+   <tr><th>`N`</th><td>set navpoint to home base</td></tr>
+   <tr><th>Arrows</th><td>watch in every direction in internal view ; move the map in map view</td></tr>
+   <tr><th>`Home`</th><td>back to front view (must be hold in dogfight view)</td></tr>
+   <tr><th>`End`</th><td>rear view (same)</td></tr>
+   <tr><th>`Delete`</th><td>left view</td></tr>
+   <tr><th>`PgDown`</th><td>right view</td></tr>
+   <tr><th>`PgUp`</th><td>up view</td></tr>
+   <tr><th>`Insert` (hold)</th><td>focus at the instrument panel</td></tr>
+   <tr><th>`Pause`</th><td>guess what</td></tr>
+   <tr><th>`F11`</th><td>sell your plane and by the closest one amongst those parked at your home base.</td></tr>
+   <tr><th>`Enter` (hold)</th><td>display the highs-cores</td></tr>
+   <tr><th>Mouse</th><td>move the command controls</td></tr>
+   <tr><th>Left click</th><td>fire with the active weapon</td></tr>
+   <tr><th>Right click</th><td>select the other weapon (guns/bombs)</td></tr>
+   <tr><th>`F12`</th><td>suicide</td></tr>
+  </tbody>
+ </table>
+ <h2>Instrument panel</h2>
+ <img src="panel.png"/>
+ <ol>
+  <li>elevating speed</li>
+  <li>speed meter</li>
+  <li>altimeter</li>
+  <li>ammunitions (bullets and bombs)</li>
+  <li>angle of attack</li>
+  <li>slope indicator</li>
+  <li>throttle on the above half, fiul gauge below</li>
+  <li>compass</li>
+  <li>gears</li>
+  <li>flaps</li>
+  <li>brakes</li>
+  <li>autopilot (green light instead of red)</li>
+ </ol>
 <!--
  vim: filetype=html
 -->
   <script type="text/javascript">
    $(document).ready(function() { $('#slider').coinslider({ width: 400, height: 250 }); });
   </script>
+  <br/>
   <g:plusone size="small"></g:plusone>
  </div><!-- container -->
 </body>

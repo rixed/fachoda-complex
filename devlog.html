@@ -33,7 +33,7 @@
 -->
  <div id="container">
   <a href="https://github.com/rixed/fachoda-complex">
-   <img style="position: absolute; top: 0; right: 0; border: 0;" src="http://s3.amazonaws.com/github/ribbons/forkme_right_darkblue_121621.png" alt="Fork me on GitHub" />
+   <img style="position: fixed; top: 0; right: 0; border: 0;" src="http://s3.amazonaws.com/github/ribbons/forkme_right_darkblue_121621.png" alt="Fork me on GitHub" />
   </a>
   <h1>Fachoda-Complex</h1>
   <div id="menu">
@@ -277,12 +277,39 @@ for, the site can offer you a list of similar sounds. I never found the right
 sound using this feature, but it has always been both funny and intriguing to
 discover how two completely unrelated sound sources actually produce sounds that
 are close enough for a soul-less algorithm to find them similar. Go try it!</p>
+
+<h2>Day 6</h2>
+
+<p>Having changed the flight model, the AI controlled bots where noised on the ground,
+unable to take off. Once again, the AI code was very messy, with lots of redundant or
+dead code (for instance, the code for autopilot was distinct from the AI although
+it clearly should have been a small particular case of it).</p>
+
+<p>I was faced with the alternative to merely make it work or reimplement it, and again
+I choose the later. So first I fixed the autopilot then used it to control the bots
+(with additional behavior for attacking, taking of and landing).</p>
+
+<p>Quickly, the AI was able to sustain a dogfight. It's not particularly deadly on
+1 vs 1 situations but as most encounters involves many planes the difficulty is
+more to figure out what's happening around you than to out-turn a particular
+opponent.</p>
+
+<p>The code is still very far from perfection but since most of this should be rewritten
+again for multi player mode there is no need to spend much time on it (ideally, in
+multi player mode the AI should be a usual player so that you could play the game
+by coding you own robot!)</p>
+
+<p>Try it out by running <span class="code">fachoda --killemall --drone 90</span> and
+see how long you last!</p>
+
+<img src="ss/ss4.png"/>
 <!--
  vim: filetype=html
 -->
   <script type="text/javascript">
    $(document).ready(function() { $('#slider').coinslider({ width: 400, height: 250 }); });
   </script>
+  <br/>
   <g:plusone size="small"></g:plusone>
  </div><!-- container -->
 </body>
