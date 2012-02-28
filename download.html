@@ -31,15 +31,14 @@
 <!--
  vim: filetype=html
 -->
- <a href="https://github.com/rixed/fachoda-complex">
-  <img style="position: fixed; top: 0; right: 0; border: 0;" src="http://s3.amazonaws.com/github/ribbons/forkme_right_darkblue_121621.png" alt="Fork me on GitHub" />
- </a>
  <div id="container">
+  <a href="https://github.com/rixed/fachoda-complex">
+   <img style="position: absolute; top: 0; right: 0; border: 0;" src="http://s3.amazonaws.com/github/ribbons/forkme_right_darkblue_121621.png" alt="Fork me on GitHub" />
+  </a>
   <h1>Fachoda-Complex</h1>
   <div id="menu">
    <a href="index.html" id="home_link">Home</a>
    <a href="download.html" id="download_link">Download</a>
-   <a href="build.html" id="build_link">Build</a>
    <a href="manual.html" id="manual_link">Manual</a>
    <a href="devlog.html" id="devlog_link">DevLog</a>
   </div>
@@ -51,11 +50,17 @@
  </p>
     <p>You can also clone the project with <a href="http://git-scm.com">Git</a>
       by running:
-      <pre>$ git clone git://github.com/rixed/fachoda-complex</pre>
+     <pre>$ git clone git://github.com/rixed/fachoda-complex</pre>
     </p>
-    <div class="footer">
-      get the source code on GitHub : <a href="https://github.com/rixed/fachoda-complex">rixed/fachoda-complex</a>
-    </div>
+ <p>To build Fachoda you need SDL, libjpeg and openAL (on
+ Debian distributions, I mean the `-dev` packages)</p>
+ <p>Then to build Fachoda:
+  <pre>$ cd fachoda-complex/src &amp;&amp; make</pre>
+ </p>
+ <p>You can then wither run the game from the build directory, or install
+ it with:
+  <pre>$ make install</pre>
+ </p>
 <!--
  vim: filetype=html
 -->

@@ -37,7 +37,15 @@ h3 { text-align: center; color: #547347; }
 a { color: #547347; }
 .description { font-size: 1.2em; margin-bottom: 30px; margin-top: 30px; text-align: center; font-style: italic; }
 .download { float: right; }
-pre { background: #000; color: #fff; padding: 15px;}
+
+pre {
+	background: #223;
+	color: #fff;
+	padding: 15px;
+	width: 500px;
+	margin: auto;
+}
+
 hr { border: 0; width: 80%; border-bottom: 1px solid #aaa}
 .footer { text-align:center; padding-top:30px; font-style: italic; }
 .code { font-family: mono; color: #111; }
@@ -45,7 +53,7 @@ div.code { margin-left: 5em; }
 
 div#menu {
 	display: block;
-	background-color: #100808;
+	background-color: #223;
 	color: #10e0ff;
 	margin: 0 0 50px 0;
 	border-bottom: 2px solid #888890;
@@ -53,7 +61,7 @@ div#menu {
 
 div#menu a {
 	display: inline-block;
-	width: 135px;
+	width: 170px;
 	margin: 0;
 	padding: 20px 0 20px 0;
 	text-align: center;
