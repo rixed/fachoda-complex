@@ -210,7 +210,7 @@ struct village {
 struct bot {
     short int navion,babase;    // Numéro de type d'avion, de base
     int vion;   // numéro de l'objet principal de l'avion
-    char camp;  // 1 ou 2 ou -1 si détruit
+    int camp;  // 1 ou 2 ou -1 si détruit
     int nbomb;
     struct button but;
     struct vector vionvit;
@@ -474,6 +474,7 @@ extern struct vector mark[NB_MARKS];
 extern int zoom, map_x, map_y, next_mark_set;
 void map_draw(void);
 extern int colcamp[4];
+extern char const *camp_name[4];
 
 // FIXME: defined in robot.c but should go elsewhere
 extern struct bot *bot;

@@ -375,6 +375,56 @@ static void setup_camera(float dt_sec)
     }
 }
 
+// Draw all text related to current view (dogfight mode, view description...)
+static void view_hud_draw(void)
+{
+    char vn[100];
+    switch (view) {
+        case VIEW_DOGFIGHT:
+            if (viewed_bot == controled_bot && bot[controled_bot].camp != -1 && bot[DogBot].camp != -1) {
+                cercle(0, 0, 10, colcamp[(int)bot[controled_bot].camp]);
+                if (DogBot < NbHosts) {
+                    snprintf(vn, sizeof(vn), "%s (%s)",
+                        plane_desc[bot[DogBot].navion].name,
+                        playbotname[DogBot]);
+                } else if (bot[DogBot].camp != bot[controled_bot].camp) {
+                    snprintf(vn, sizeof(vn), "%s (%s)",
+                        plane_desc[bot[DogBot].navion].name,
+                        camp_name[bot[DogBot].camp]);
+                } else {    // don't write friend side name for faster visual check
+                    snprintf(vn, sizeof(vn), "%s",
+                        plane_desc[bot[DogBot].navion].name);
+                }
+                pstr(vn, win_height-12, colcamp[bot[DogBot].camp]);
+            }
+            break;
+        case VIEW_ROTATING_BOMB:
+            pstr("Bomb view", win_height-12, 0xffffff);
+            break;
+        default:
+            if (viewed_bot != controled_bot) {
+                if (bot[viewed_bot].camp != bot[controled_bot].camp) {  // which should only be possible in viewall mode
+                    snprintf(vn, sizeof(vn), "Spying on %s (%s)",
+                        plane_desc[bot[viewed_bot].navion].name,
+                        bot[viewed_bot].camp != -1 ?
+                            camp_name[bot[viewed_bot].camp] : "dead");
+                } else {
+                    snprintf(vn, sizeof(vn), "Spying on %s",
+                        plane_desc[bot[viewed_bot].navion].name);
+                }
+                pstr(vn, win_height-12, 0xffffff);
+            }
+            break;
+    }
+#   ifdef PRINT_DEBUG
+    if (bot[viewed_bot].aerobatic != MANEUVER) {
+        pstr(aerobatic_2_str(bot[viewed_bot].aerobatic), 20, 0xFF8080);
+    } else {
+        pstr(maneuver_2_str(bot[viewed_bot].maneuver), 20, 0x80FF80);
+    }
+#   endif
+}
+
 int main(int narg, char **arg)
 {
     int i,j, dtradio=0;
@@ -845,21 +895,20 @@ parse_error:
 
             // Draw the frame
             if (!accelerated_mode || 0 == (frame_count&31)) {
-                // RENDU
-                // La lumière vient d'où ?
-                copym(&light,&LightSol);
+                // Where's the light?
                 if (explosion) {
-                    subv3(&obj[0].pos,&explosion_pos,&u);
-                    if (renorme(&u)<TILE_LEN) {
+                    subv3(&obj[0].pos, &explosion_pos, &u);
+                    if (renorme(&u) < TILE_LEN) {
                         copyv(&light.z,&u);
-                        light.x.x=u.y;
-                        light.x.y=u.z;
-                        light.x.z=u.x;
-                        orthov(&light.x,&light.z);
+                        light.x = u;
+                        orthov(&light.x, &light.z);
                         renorme(&light.x);
-                        prodvect(&light.z,&light.x,&light.y);
+                        prodvect(&light.z, &light.x, &light.y);
                     }
+                } else {
+                    light = LightSol;
                 }
+
                 animsoleil();
                 if (map_mode) {
                     map_draw();
@@ -877,7 +926,7 @@ parse_error:
 #                   ifdef VEC_DEBUG
                     draw_debug();
 #                   endif
-                    if (!night_mode) {
+                    if (! night_mode) {
                         double i;
                         uchar u;
                         if ((i=scalaire(&obj[0].rot.z,&light.z))<-.9) {
@@ -896,16 +945,9 @@ parse_error:
                         nav.z += bot[viewed_bot].target_rel_alt;
                         draw_target(nav, 0x20F830);
                     }
+                    view_hud_draw();
                 }
-                if (view == VIEW_DOGFIGHT && bot[controled_bot].camp!=-1) cercle(0,0,10,colcamp[(int)bot[controled_bot].camp]);
                 plotmouse(win_center_x*bot[viewed_bot].xctl,win_center_y*bot[viewed_bot].yctl);
-#               ifdef PRINT_DEBUG
-                if (bot[viewed_bot].aerobatic != MANEUVER) {
-                    pstr(aerobatic_2_str(bot[viewed_bot].aerobatic), 20, 0xFF8080);
-                } else {
-                    pstr(maneuver_2_str(bot[viewed_bot].maneuver), 20, 0x80FF80);
-                }
-#               endif
                 // HUD
                 if (easy_mode) {
                     int const b = viewed_bot; // controled_bot;
@@ -933,15 +975,6 @@ parse_error:
                 if (accelerated_mode) pstr("ACCELERATED MODE",win_center_y/3,0xFFFFFF);
                 if (prompt_quit) pstr("Quit ? Yes/No",win_center_y/2-8,0xFFFFFF);
                 if (current_msg_ttl && bot[viewed_bot].camp==current_msg_camp) pstr(current_msg,10,0xFFFF00);
-                if (view == VIEW_DOGFIGHT && bot[DogBot].camp!=-1) {
-                    char vn[100];
-                    snprintf(vn, sizeof(vn), "%s%s%s%s",
-                        plane_desc[bot[DogBot].navion].name,
-                        DogBot < NbHosts ? " (" : "",
-                        DogBot < NbHosts ? playbotname[DogBot] : "",
-                        DogBot < NbHosts ? ")" : "");
-                    pstr(vn, win_height-12, colcamp[(int)bot[DogBot].camp]);
-                }
                 // Display current balance
                 if (bot[controled_bot].gold - 2000 > maxgold) {
                     maxgold = bot[controled_bot].gold - 2000;

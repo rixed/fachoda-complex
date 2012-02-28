@@ -140,7 +140,13 @@ void animpresent() {
     TextClipX1=TextClipX2=0; TextColfont=0;
 }
 
-int colcamp[4]={0xFFD090,0x70FF70,0x80D0FF,0xFFFF70};
+int colcamp[4] = { 0xFFD090, 0x70FF70, 0x80D0FF, 0xFFFF70 };
+char const *camp_name[4] = {
+    "Rep.Dem.Indep. des T.V.U",
+    "U.S.E.",
+    "Sierra-Freedom",
+    "Ryssia"
+};
 
 char *scenar[4][4][2] = {
     {
