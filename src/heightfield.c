@@ -294,7 +294,8 @@ static int some_poly_were_visible;
 
 // Clip segment p1-p2 by the frustum zmin plan (p1->z is below FRUSTUM_ZMIN)
 #define FRUSTUM_ZMIN (32<<8)
-static void do_clip(struct vecic *p1, struct vecic *p2, struct vecic *pr) {
+static void do_clip(struct vecic const *p1, struct vecic const *p2, struct vecic *pr)
+{
     int const dz1 = FRUSTUM_ZMIN - p1->v.z;
     int const dz2 = p2->v.z - p1->v.z;
     pr->v.x = p1->v.x + ((dz1 * (((p2->v.x-p1->v.x)<<8)/dz2))>>8);
@@ -305,7 +306,8 @@ static void do_clip(struct vecic *p1, struct vecic *p2, struct vecic *pr) {
     pr->c.b = p1->c.b + ((dz1 * ((((int)p2->c.b-p1->c.b)<<8)/dz2))>>8);
 }
 
-static void poly(struct vecic *p1, struct vecic *p2, struct vecic *p3) {
+static void poly(struct vecic const *p1, struct vecic const *p2, struct vecic const *p3)
+{
     struct vect2dc l1,l2,l3;
     proji(&l1.v, &p1->v);   // FIXME: should not project the same pt several times!
     l1.c = p1->c;
@@ -325,7 +327,8 @@ static void poly(struct vecic *p1, struct vecic *p2, struct vecic *p3) {
 #   endif
 }
 
-void polyclip(struct vecic *p1, struct vecic *p2, struct vecic *p3) {
+void polyclip(struct vecic const *p1, struct vecic const *p2, struct vecic const *p3)
+{
     int i;
     struct vecic pp1, pp2;
     i  =  p1->v.z < FRUSTUM_ZMIN;

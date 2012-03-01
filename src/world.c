@@ -44,8 +44,8 @@ extern inline float orthov3(struct vector *a, struct vector *b, struct vector *r
 extern inline void mulmv(struct matrix *n, struct vector *v, struct vector *r);
 extern inline void mulmtv(struct matrix *n, struct vector *v, struct vector *r);
 extern inline void neg(struct vector *v);
-extern inline void proj(struct vect2d *e, struct vector *p);
-extern inline void proji(struct vect2d *e, struct veci *p);
+extern inline void proj(struct vect2d *e, struct vector const *p);
+extern inline void proji(struct vect2d *e, struct veci const *p);
 extern inline float proj1(float p, float z);
 extern inline void subv3(struct vector const *restrict a, struct vector const *restrict b, struct vector *restrict r);
 extern inline void addv3(struct vector *a, struct vector *b, struct vector *restrict r);

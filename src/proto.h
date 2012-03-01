@@ -465,9 +465,7 @@ extern char current_msg[1000];
 extern int current_msg_ttl;
 extern int current_msg_camp;
 // heightfield.c
-void polyclip(struct vecic *p1, struct vecic *p2, struct vecic *p3);
-extern struct pixel *colormap;
-extern uchar *mapcol;
+void polyclip(struct vecic const *p1, struct vecic const *p2, struct vecic const *p3);
 // map.c
 #define NB_MARKS 40
 extern struct vector mark[NB_MARKS];
@@ -577,7 +575,8 @@ static inline float proj1(float p, float z)
 {
     return (p * z_near) / z;
 }
-static inline void proj(struct vect2d *e, struct vector *p) {
+static inline void proj(struct vect2d *e, struct vector const *p)
+{
     e->x = win_center_x + proj1(p->x, p->z);
     e->y = win_center_y + proj1(p->y, p->z);
 }
