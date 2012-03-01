@@ -115,7 +115,8 @@ static void random_submap(
     random_submap(x + ss, y + ss, ss, z_off, m, smap);
 }
 
-static void smooth_map(uchar *m, int smap, int s, size_t z_off){
+static void smooth_map(uchar *m, int smap, int s, size_t z_off)
+{
     for (int i = 0; i < s; i++) {
         size_t yo = 0, yn;
         for (int y = 0; y < smap; y++, yo = yn) {
@@ -129,7 +130,8 @@ static void smooth_map(uchar *m, int smap, int s, size_t z_off){
     }
 }
 
-static void make_map(uchar *m, int smooth_factor, int mapzmax, int map_length, size_t z_off) {
+static void make_map(uchar *m, int smooth_factor, int mapzmax, int map_length, size_t z_off)
+{
     m[0] = 255; // ?
     random_submap(0, 0, map_length, z_off, m, map_length);
 
@@ -153,7 +155,8 @@ static void make_map(uchar *m, int smooth_factor, int mapzmax, int map_length, s
 
 // dig a wave in the map (in other words, a river)
 // looks alien
-static void dig(int dy) {
+static void dig(int dy)
+{
     float a,ai,xx,yy;
     int x,y;
     a=0; ai=.02; xx=0; yy=MAP_LEN/3;
@@ -171,7 +174,8 @@ static void dig(int dy) {
     } while (x<MAP_LEN-2 && y>2 && y<MAP_LEN-2);
 }
 
-void initmap(void) {
+void initmap(void)
+{
     int x,y,i;
     struct pixel colterrain[4] = {
         { 150,150,20 }, // glouglou
@@ -276,7 +280,7 @@ void animate_water(float dt_sec)
  */
 
 // Set to true for flat shadded landscape
-bool flat_shadding = false;
+//#define FLAT_SHADDING 1
 
 /* This is an awful hack to skip drawing of roads when the ground is seen from below
  * (for instance, roads on the other side of a hill). Problems:
@@ -309,16 +313,16 @@ static void poly(struct vecic *p1, struct vecic *p2, struct vecic *p3) {
     l2.c = p2->c;
     proji(&l3.v, &p3->v);
     l3.c = p3->c;
+#   ifdef FLAT_SHADDING
     struct pixel mix = {
         .r = (l1.c.r + l2.c.r + l3.c.r) / 3,
         .g = (l1.c.g + l2.c.g + l3.c.g) / 3,
         .b = (l1.c.b + l2.c.b + l3.c.b) / 3,
     };
-    if (flat_shadding) {
-        some_poly_were_visible = polyflat(&l1.v, &l2.v, &l3.v, mix);
-    } else {
-        some_poly_were_visible = poly_gouraud(&l1, &l2, &l3);
-    }
+    some_poly_were_visible = polyflat(&l1.v, &l2.v, &l3.v, mix);
+#   else
+    some_poly_were_visible = poly_gouraud(&l1, &l2, &l3);
+#   endif
 }
 
 void polyclip(struct vecic *p1, struct vecic *p2, struct vecic *p3) {
@@ -739,7 +743,8 @@ void draw_ground_and_objects(void)
 #define Gourovfm (1>>Gourovf)
 static int Gouroxi, Gouroyi, Gourolx, Gouroql, Gouroqx, Gouroqr, Gouroqg, Gouroqb, Gourocoulr, Gourocoulg, Gourocoulb, *Gourovid, Gourody, Gouroir, Gouroig, Gouroib;
 
-void gouraud_section(void) {
+static void gouraud_section(void)
+{
     int cr, cg, cb;
     if (Gouroyi<0) {
         if (Gouroyi<-Gourody) {
@@ -792,7 +797,8 @@ void gouraud_section(void) {
     }
 }
 
-bool poly_gouraud(struct vect2dc *p1, struct vect2dc *p2, struct vect2dc *p3) {
+bool poly_gouraud(struct vect2dc *p1, struct vect2dc *p2, struct vect2dc *p3)
+{
     struct vect2dc *tmp, *p_maxx, *p_minx;
     int q1, q2, q3=0, qxx, ql2;
     int qr1, qr2, qr3=0, qg1, qg2, qg3=0, qb1, qb2, qb3=0, qrr, qgg, qbb;

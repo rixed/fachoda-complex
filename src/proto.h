@@ -102,7 +102,7 @@ struct veci {
 #define PRIVECI "f,%f,%f"
 #define PVECI(v, p) ((float)v.x)/(1<<p), ((float)v.y)/(1<<p), ((float)v.z)/(1<<p)
 
-struct vecic{
+struct vecic {
     struct veci v;
     struct pixel c;
 };
@@ -573,16 +573,18 @@ static inline int add_sat(int a, int b, int max)
     return c;
 }
 
-static inline float proj1(float p, float z) {
+static inline float proj1(float p, float z)
+{
     return (p * z_near) / z;
 }
 static inline void proj(struct vect2d *e, struct vector *p) {
     e->x = win_center_x + proj1(p->x, p->z);
     e->y = win_center_y + proj1(p->y, p->z);
 }
-static inline void proji(struct vect2d *e, struct veci *p) {
-    e->x=win_center_x+p->x*z_near/p->z;
-    e->y=win_center_y+p->y*z_near/p->z;
+static inline void proji(struct vect2d *e, struct veci const *p)
+{
+    e->x = win_center_x + (p->x*z_near)/p->z;
+    e->y = win_center_y + (p->y*z_near)/p->z;
 }
 static inline void addv(struct vector *r, struct vector const *a) { r->x+=a->x; r->y+=a->y; r->z+=a->z; }
 static inline void addvi(struct veci *r, struct veci const *a) { r->x+=a->x; r->y+=a->y; r->z+=a->z; }
@@ -635,12 +637,14 @@ static inline void mulmt3(struct matrix *r, struct matrix const *c, struct matri
 float norme(struct vector *u);
 static inline float norme2(struct vector const *u){ return(u->x*u->x+u->y*u->y+u->z*u->z); }
 static inline float scalaire(struct vector const *u, struct vector const *v){ return(u->x*v->x+u->y*v->y+u->z*v->z); }
-static inline float renorme(struct vector *a) {
+static inline float renorme(struct vector *a)
+{
     float d = norme(a);
     if (d!=0) {a->x/=d; a->y/=d; a->z/=d; }
     return(d);
 }
-static inline void prodvect(struct vector const *a, struct vector const *b, struct vector *c) {
+static inline void prodvect(struct vector const *a, struct vector const *b, struct vector *c)
+{
     c->x = a->y*b->z-a->z*b->y;
     c->y = a->z*b->x-a->x*b->z;
     c->z = a->x*b->y-a->y*b->x;

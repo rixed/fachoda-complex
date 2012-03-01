@@ -72,7 +72,7 @@ static void draw_fg(void)
     drawline(&p1.v, &p2.v, c[(int)bot[viewed_bot].camp]);
 }
 
-void bpoint(struct vect2dc *p, int x, int y)
+static void bpoint(struct vect2dc *p, int x, int y)
 {
     int z, intens;
     z=map[x+(y<<LOG_MAP_LEN)].z;
