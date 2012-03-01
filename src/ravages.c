@@ -36,7 +36,8 @@ int kelkan(int o) {
     return c;
 }
 
-void explose(int oc, int i) {
+void explose(int oc, int i)
+{
     int o1,o2=0,j,v=0,jk;
     int cmoi=NBBOT;
     struct vector vit = vec_zero;

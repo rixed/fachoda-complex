@@ -192,16 +192,40 @@ enum view_type view = VIEW_IN_PLANE;
 int viewed_bomb=0;
 bool map_mode, accelerated_mode, autopilot, game_paused;
 int controled_bot, frame_count;
-double extcam_dist = 2. * ONE_METER;    // external camera distance (ie. "zoom")
-double sight_teta=0, sight_phi=0;   // direction of vision while in plane view
+float extcam_dist = 2. * ONE_METER;    // external camera distance (ie. "zoom")
+float sight_teta=0, sight_phi=0;   // direction of vision while in plane view
 bool view_instruments, view_predef, prompt_quit, quit_game, draw_high_scores;
 int selected_weapon = 0;
 
+static void lookat_set_zmin(struct vector const *target, float z_min)
+{
+    z_min += z_ground(obj[0].pos.x, obj[0].pos.y, true);
+
+    if (obj[0].pos.z < z_min) {
+        obj[0].pos.z = z_min;
+        subv3(target, &obj[0].pos, &obj[0].rot.z);
+        renorme(&obj[0].rot.z);
+        prodvect(&obj[0].rot.z, &obj[0].rot.x, &obj[0].rot.y);
+    }
+}
+
+// Position camera (obj[0]) to look at given object
+static void lookat(struct vector const *target, float dist, float view_angle)
+{
+    obj[0].rot.y.x = 0; obj[0].rot.y.y = 0; obj[0].rot.y.z = -1;
+    obj[0].rot.x.x = cos(view_angle); obj[0].rot.x.y = sin(view_angle); obj[0].rot.x.z = 0;
+    obj[0].rot.z.x =-sin(view_angle); obj[0].rot.z.y = cos(view_angle); obj[0].rot.z.z = 0;
+    obj[0].pos = obj[0].rot.z;
+    mulv(&obj[0].pos, -dist);
+    addv(&obj[0].pos, target);
+
+    lookat_set_zmin(target, 3. * ONE_METER);
+}
 
 static void setup_camera(float dt_sec)
 {
     static float view_angle = 0.;   // for the rotating view
-    view_angle += 0.03;
+    view_angle += 0.02;
     float n = 0.;
     int i;
 
@@ -222,7 +246,7 @@ static void setup_camera(float dt_sec)
         else {
             if (DogBot==controled_bot || bot[DogBot].camp==-1) next_dog_bot();
             if (DogBot!=controled_bot && bot[DogBot].camp!=-1) {
-                copyv(&DogBotDir,&obj[bot[DogBot].vion].pos);
+                DogBotDir = obj[bot[DogBot].vion].pos;
                 subv(&DogBotDir,&obj[bot[controled_bot].vion].pos);
                 DogBotDist=renorme(&DogBotDir);
                 if (DogBotDist>DOGDISTMAX) next_dog_bot();
@@ -316,13 +340,7 @@ static void setup_camera(float dt_sec)
 
         break;
     case VIEW_ROTATING_PLANE:
-        obj[0].rot.y.x=0; obj[0].rot.y.y=0; obj[0].rot.y.z=-1;
-        obj[0].rot.x.x=cos(view_angle); obj[0].rot.x.y=sin(view_angle); obj[0].rot.x.z=0;
-        obj[0].rot.z.x=-sin(view_angle); obj[0].rot.z.y=cos(view_angle); obj[0].rot.z.z=0;
-        copyv(&obj[0].pos,&obj[0].rot.z);
-        mulv(&obj[0].pos,-extcam_dist);
-        addv(&obj[0].pos,&obj[bot[viewed_bot].vion].pos);
-        if (obj[0].pos.z<(n=30+z_ground(obj[0].pos.x,obj[0].pos.y, true))) obj[0].pos.z=n;
+        lookat(&obj[bot[viewed_bot].vion].pos, extcam_dist, view_angle);
         break;
     case VIEW_PLANE_FROM_ABOVE:
         copym(&obj[0].rot,&mat_id);
@@ -331,20 +349,10 @@ static void setup_camera(float dt_sec)
         obj[0].pos.z+=extcam_dist;
         break;
     case VIEW_ROTATING_BOMB:
-        obj[0].rot.y.x=0; obj[0].rot.y.y=0; obj[0].rot.y.z=-1;
-        obj[0].rot.x.x=cos(view_angle); obj[0].rot.x.y=sin(view_angle); obj[0].rot.x.z=0;
-        obj[0].rot.z.x=-sin(view_angle); obj[0].rot.z.y=cos(view_angle); obj[0].rot.z.z=0;
-        copyv(&obj[0].pos,&obj[0].rot.z);
-        mulv(&obj[0].pos,-extcam_dist);
-        addv(&obj[0].pos,&obj[viewed_bomb].pos);
+        lookat(&obj[viewed_bomb].pos, extcam_dist, view_angle);
         break;
     case VIEW_ANYTHING_CHEAT:
-        obj[0].rot.y.x=0; obj[0].rot.y.y=0; obj[0].rot.y.z=-1;
-        obj[0].rot.x.x=cos(view_angle); obj[0].rot.x.y=sin(view_angle); obj[0].rot.x.z=0;
-        obj[0].rot.z.x=-sin(view_angle); obj[0].rot.z.y=cos(view_angle); obj[0].rot.z.z=0;
-        copyv(&obj[0].pos,&obj[0].rot.z);
-        mulv(&obj[0].pos,-extcam_dist);
-        addv(&obj[0].pos,&obj[viewed_obj].pos);
+        lookat(&obj[viewed_obj].pos, extcam_dist, view_angle);
         break;
     case VIEW_BEHIND_PLANE:
         obj[0].pos = obj[bot[viewed_bot].vion].pos;
@@ -359,18 +367,16 @@ static void setup_camera(float dt_sec)
         p = bot[viewed_bot].vionvit;
         mulv(&p, -1.);
         addv(&obj[0].pos, &p);
-        if (obj[0].pos.z < (n = 30 + z_ground(obj[0].pos.x, obj[0].pos.y, true))) {
-            obj[0].pos.z = n;
-        }
+        lookat_set_zmin(&obj[bot[viewed_bot].vion].pos, 6. * ONE_METER);
         break;
     case VIEW_STANDING:
-        subv3(&obj[bot[viewed_bot].vion].pos,&obj[0].pos,&obj[0].rot.z);
+        subv3(&obj[bot[viewed_bot].vion].pos, &obj[0].pos, &obj[0].rot.z);
         renorme(&obj[0].rot.z);
-        obj[0].rot.y.x=obj[0].rot.y.y=0;
-        obj[0].rot.y.z=-1;
-        orthov(&obj[0].rot.y,&obj[0].rot.z);
+        obj[0].rot.y.x = obj[0].rot.y.y = 0; obj[0].rot.y.z = -1;
+        orthov(&obj[0].rot.y, &obj[0].rot.z);
         renorme(&obj[0].rot.y);
-        prodvect(&obj[0].rot.y,&obj[0].rot.z,&obj[0].rot.x);
+        prodvect(&obj[0].rot.y, &obj[0].rot.z, &obj[0].rot.x);
+        lookat_set_zmin(&obj[bot[viewed_bot].vion].pos, 6. * ONE_METER);
         break;
     }
 }
@@ -634,22 +640,26 @@ parse_error:
         // PNJ
         if (! game_paused) {
             // calcul les pos du sol
-            for (i=0; i<NBBOT; i++) bot[i].zs=obj[bot[i].vion].pos.z-z_ground(obj[bot[i].vion].pos.x,obj[bot[i].vion].pos.y, true);
-            for (i=NbHosts; i<NBBOT; i++) robot(i);
-            for (i=0; i<NBTANKBOTS; i++) robotvehic(i);
+            for (i = 0; i < NBBOT; i++) {
+                bot[i].zs = obj[bot[i].vion].pos.z - z_ground(obj[bot[i].vion].pos.x, obj[bot[i].vion].pos.y, true);
+            }
+            for (i = NbHosts; i < NBBOT; i++) robot(i);
+            for (i = 0; i < NBTANKBOTS; i++) robotvehic(i);
             // vérifie que les playbots ne heurtent rien
-            if (!easy_mode) {
-                for (j=0; j<NbHosts; j++) if (bot[j].camp!=-1) {
-                    for (i=0; i<NBBOT; i++) if (i!=j && bot[i].camp!=-1 && collision(bot[j].vion,bot[i].vion)) break;
-                    if (i<NBBOT) {
+            if (! easy_mode) {
+                for (j = 0; j < NbHosts; j++) {
+                    if (bot[j].camp == -1) continue;
+                    for (i = 0; i < NBBOT; i++) {
+                        if (i == j || bot[i].camp == -1) continue;
+                        if (! collision(bot[j].vion, bot[i].vion)) continue;
                         explose(bot[i].vion, bot[j].vion);
                         explose(bot[j].vion, bot[i].vion);
+                        break;
                     }
-                    for (i=0; i<NBZEP; i++) {
-                        if (collision(bot[j].vion, zep[i].o)) {
-                            explose(bot[j].vion, zep[i].o);
-                            break;
-                        }
+                    for (i = 0; i < NBZEP; i++) {
+                        if (! collision(bot[j].vion, zep[i].o)) continue;
+                        explose(bot[j].vion, zep[i].o);
+                        break;
                     }
                 }
             }
@@ -698,33 +708,34 @@ parse_error:
 #endif
                 }
             }
-            // déplace les bombes
-            for (i=0; i<bombidx; i++) {
-                j=bomb[i].o;
-                if (j!=-1) {
-                    int oc, fg=0;
-                    // FIXME: given dt, &pos, &vit, &acc, drag factor, apply gravity?
-                    bomb[i].vit.z -= G * dt_sec;
-                    mulv(&bomb[i].vit, pow(.9, dt_sec));
-                    v = bomb[i].vit;
-                    mulv(&v, dt_sec);
-                    addv(&obj[j].pos, &v);
-                    obj_check_pos(j);
-                    // collision ?
-                    for (oc=map[obj[j].ak].first_obj; oc!=-1; oc=obj[oc].next)
-                        if (obj[oc].type!=TYPE_SHOT && obj[oc].type!=TYPE_CAMERA && obj[oc].type!=TYPE_DECO && (oc<bot[bomb[i].b].vion || oc>=bot[bomb[i].b].vion+n_object[bot[bomb[i].b].navion].nbpieces) && collision(j,oc)) {
-                            explose(oc,j);
-                            fg=1;
-                            break;
-                        }
-                    if (fg || obj[j].pos.z<z_ground(obj[j].pos.x,obj[j].pos.y, true)) {
-                        playsound(VOICE_EXTER2, SAMPLE_BOMB_BLAST, 1+(drand48()-.5)*.08, &obj[j].pos, false, false);
-                        obj[j].objref=bot[bomb[i].b].babase;
-                        copyv(&obj[j].pos,&vec_zero);
-                        copym(&obj[j].rot,&mat_id);
-                        bomb[i].o=-1;
-                        while (bombidx>0 && bomb[bombidx-1].o==-1) bombidx--;
-                    }
+            // Move bombs
+            for (i = 0; i < bombidx; i++) {
+                int bo = bomb[i].o;
+                if (bo == -1) continue;
+                bool boom = false;
+                // FIXME: given dt, &pos, &vit, &acc, drag factor, apply gravity?
+                bomb[i].vit.z -= G * dt_sec;
+                mulv(&bomb[i].vit, pow(.9, dt_sec));
+                v = bomb[i].vit;
+                mulv(&v, dt_sec);
+                addv(&obj[bo].pos, &v);
+                obj_check_pos(bo);
+                // hit?
+                for (int oc = map[obj[bo].ak].first_obj; oc != -1; oc = obj[oc].next) {
+                    if (obj[oc].type == TYPE_SHOT || obj[oc].type == TYPE_CAMERA || obj[oc].type == TYPE_DECO) continue;    // these do not explode when bombed
+                    if (oc >= bot[bomb[i].b].vion && oc < bot[bomb[i].b].vion+n_object[bot[bomb[i].b].navion].nbpieces) continue;   // do not consider the bombing plane neither
+                    if (! collision(bo, oc)) continue;
+                    explose(oc,bo);
+                    boom = true;
+                    break;
+                }
+                if (boom || obj[bo].pos.z < z_ground(obj[bo].pos.x,obj[bo].pos.y, true)) {
+                    playsound(VOICE_EXTER2, SAMPLE_BOMB_BLAST, 1+(drand48()-.5)*.08, &obj[bo].pos, false, false);
+                    obj[bo].objref = bot[bomb[i].b].babase;
+                    obj[bo].pos = vec_zero;
+                    obj[bo].rot = mat_id;
+                    bomb[i].o = -1;
+                    while (bombidx > 0 && bomb[bombidx-1].o == -1) bombidx--;
                 }
             }
             // avance les débris

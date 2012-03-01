@@ -220,12 +220,12 @@ void control(int b)
         }
     }
     if (!accelerated_mode || frame_count > 64) {
-            if (kread(gkeys[kc_zoomout].kc)) {
-            if (! map_mode) extcam_dist += 10;
+        if (kread(gkeys[kc_zoomout].kc)) {
+            if (! map_mode) extcam_dist += 10.;
             else zoom += win_center_x/6;
         }
         if (kread(gkeys[kc_zoomin].kc)) {
-            if (! map_mode) extcam_dist -= 10;
+            if (! map_mode && extcam_dist > 10.) extcam_dist -= 10.;
             else if ((zoom -= win_center_x/6) < win_center_x) zoom = win_center_x;
         }
         if (kread(gkeys[kc_riseview].kc)) {

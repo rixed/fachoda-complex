@@ -384,7 +384,7 @@ extern int viewed_bomb;
 extern bool map_mode, accelerated_mode, autopilot, game_paused;
 extern int controled_bot;
 extern int frame_count, viewed_obj;
-extern double extcam_dist, sight_teta, sight_phi;
+extern float extcam_dist, sight_teta, sight_phi;
 extern bool view_instruments, view_predef, prompt_quit, quit_game, draw_high_scores;
 extern int selected_weapon;
 extern struct matrix mat_id;
@@ -659,52 +659,67 @@ static inline void prodvect(struct vector const *a, struct vector const *b, stru
     c->y = a->z*b->x-a->x*b->z;
     c->z = a->x*b->y-a->y*b->x;
 }
-static inline void orthov(struct vector *a, struct vector *b) {
-    float s=scalaire(a,b);
+static inline void orthov(struct vector *a, struct vector const *b)
+{
+    float s = scalaire(a,b);
     a->x -= s*b->x;
     a->y -= s*b->y;
     a->z -= s*b->z;
 }
-static inline float orthov3(struct vector *a, struct vector *b, struct vector *r) {
-    float s=scalaire(a,b);
+static inline float orthov3(struct vector const *a, struct vector const *b, struct vector *r)
+{
+    float s = scalaire(a,b);
     r->x = a->x-s*b->x;
     r->y = a->y-s*b->y;
     r->z = a->z-s*b->z;
-    return(s);
+    return s;
 }
-static inline void mulmv(struct matrix *n, struct vector *v, struct vector *r) {
+static inline void mulmv(struct matrix *n, struct vector *v, struct vector *r)
+{
     struct vector t;
     copyv(&t,v);
     r->x = n->x.x*t.x+n->y.x*t.y+n->z.x*t.z;
     r->y = n->x.y*t.x+n->y.y*t.y+n->z.y*t.z;
     r->z = n->x.z*t.x+n->y.z*t.y+n->z.z*t.z;
 }
-static inline void mulmtv(struct matrix *n, struct vector *v, struct vector *r) {
+
+static inline void mulmtv(struct matrix *n, struct vector *v, struct vector *r)
+{
     struct vector t;
     copyv(&t,v);
     r->x = n->x.x*t.x+n->x.y*t.y+n->x.z*t.z;
     r->y = n->y.x*t.x+n->y.y*t.y+n->y.z*t.z;
     r->z = n->z.x*t.x+n->z.y*t.y+n->z.z*t.z;
 }
+
 static inline void neg(struct vector *v) { v->x=-v->x; v->y=-v->y; v->z=-v->z; }
-static inline void subv3(struct vector const *restrict a, struct vector const *restrict b, struct vector *restrict r) {    // il faut r!=a,b
+
+static inline void subv3(struct vector const *restrict a, struct vector const *restrict b, struct vector *restrict r)
+{
     r->x = a->x-b->x;
     r->y = a->y-b->y;
     r->z = a->z-b->z;
 }
-static inline void addv3(struct vector *a, struct vector *b, struct vector *restrict r) {    // il faut r!=a,b
+
+static inline void addv3(struct vector *a, struct vector *b, struct vector *restrict r)
+{
     r->x = a->x+b->x;
     r->y = a->y+b->y;
     r->z = a->z+b->z;
 }
-static inline void cap_dist(struct vector *a, float dist) {
+
+static inline void cap_dist(struct vector *a, float dist)
+{
 #   define CAP(x) if ((x) > dist) x = dist; else if ((x) < -dist) x = -dist;
     CAP(a->x);
     CAP(a->y);
     CAP(a->z);
 }
+
 void randomv(struct vector *v);
-static inline void randomm(struct matrix *m) {
+
+static inline void randomm(struct matrix *m)
+{
     randomv(&m->x);
     renorme(&m->x);
     m->y.x=-m->x.y;
