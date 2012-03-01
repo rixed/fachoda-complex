@@ -27,11 +27,10 @@
 #include "sound.h"
 #include "file.h"
 
-struct pixel32 *presentimg;
+static struct pixel32 *presentimg;
+static int IMGX, IMGY;
 
-int IMGX, IMGY;
-
-void jloadpresent() {
+static void jloadpresent(void) {
     struct jpeg_decompress_struct cinfo;
     struct jpeg_error_mgr jerr;
 //  djpeg_dest_ptr dest_mgr = NULL;
@@ -79,7 +78,7 @@ void affpresent(int dx,int dy) {
         }
     }
 }
-void affpresentanim(int d) {
+static void affpresentanim(int d) {
     int y;
     int xb=(win_width-IMGX)>>1, yb=(win_height-IMGY)>>1, clipx=0;
     if (xb<0) { clipx=-xb; xb=0; }
@@ -96,40 +95,13 @@ void affpresentanim(int d) {
     }
 }
 
-void animpresent() {
-//  int dt1=0,dt2=0,dt3=0;
-//  int m1=-1,m2=-1,m3=-1, om;
+void animpresent(void) {
     int d=20;
-/*  struct timeval GTime;
-    long DT;
-    #define  NBAM 19
-    char *(mesg[NBAM])={
-        "Code & Gfx by RiXed",
-        "(c) Cedric Cellier, feb 2000",
-        "Anarchie en Chiraquie !",
-        "Any ressemblance with actual facts...",
-        "Visit http://rixed.free.fr",
-        "Click somewhere, try to get me !",
-        "Now, click on the window.",
-        "Fear the Moshito !",
-        "Fly like a real penguin !",
-        "This is still in development",
-        "A game for true patriots",
-        "The complex explains the whole thing",
-        "Are pinguins still complexed ?",
-        "Ah Dieux ! Que la guerre est jolie !",
-        "Tanks can be destroyed with guns",
-        "use option -l to play at night",
-        "Complain to rixed@free.fr",
-        "How high can a penguin fly ?",
-        "Wreak vengeance on Fachoda !"
-    };*/
     TextClipX1=(win_width-IMGX)/2;
     TextClipX2=(win_width-IMGX)/2+250;
     TextColfont=0xD0D0D0;
     jloadpresent();
     memset32((int*)videobuffer,*(int*)(presentimg+IMGX+1),win_width*win_height);
-//  gettimeofday(&GTime,NULL);
     playsound(VOICE_EXTER, SAMPLE_PRESENT, 1., &voices_in_my_head, true, false);
     while (d) {
         affpresentanim(d);
@@ -252,7 +224,7 @@ int presentold() {
     } while (1);
 }
 */
-void redefinekeys() {
+void redefinekeys(void) {
     int i,jdep,j;
     char msg[200];
     int nbl=win_height/10;

@@ -431,6 +431,7 @@ void calcposaind(int i);
 void calcposa(void);
 enum render_part { GROUND, CLOUDS, SKY, ALL };  // ALL = GROUND+SKY
 void renderer(int ak, enum render_part);
+void plotfumee(int x, int y, int r);
 //#define VEC_DEBUG
 #ifdef VEC_DEBUG
 enum debug_vector {
