@@ -479,7 +479,7 @@ extern struct vector mark[NB_MARKS];
 extern int zoom, map_x, map_y, next_mark_set;
 void map_draw(void);
 extern int colcamp[4];
-extern char const *camp_name[4];
+extern char const *camp_name[4][2];
 
 // FIXME: defined in robot.c but should go elsewhere
 extern struct bot *bot;

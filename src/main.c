@@ -396,7 +396,7 @@ static void view_hud_draw(void)
                 } else if (bot[DogBot].camp != bot[controled_bot].camp) {
                     snprintf(vn, sizeof(vn), "%s (%s)",
                         plane_desc[bot[DogBot].navion].name,
-                        camp_name[bot[DogBot].camp]);
+                        camp_name[bot[DogBot].camp][lang]);
                 } else {    // don't write friend side name for faster visual check
                     snprintf(vn, sizeof(vn), "%s",
                         plane_desc[bot[DogBot].navion].name);
@@ -413,7 +413,7 @@ static void view_hud_draw(void)
                     snprintf(vn, sizeof(vn), "Spying on %s (%s)",
                         plane_desc[bot[viewed_bot].navion].name,
                         bot[viewed_bot].camp != -1 ?
-                            camp_name[bot[viewed_bot].camp] : "dead");
+                            camp_name[bot[viewed_bot].camp][lang] : "dead");
                 } else {
                     snprintf(vn, sizeof(vn), "Spying on %s",
                         plane_desc[bot[viewed_bot].navion].name);
