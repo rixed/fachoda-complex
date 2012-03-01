@@ -27,8 +27,6 @@
 #include "sound.h"
 #include "gtime.h"
 
-extern void deltatime(void);
-extern void plotfumee(int,int,int);
 static struct {
     char nbkases;
     struct {
@@ -206,17 +204,18 @@ void button(int x, int y, char *label,char highlight) {
 }
 
 static int xb[10],yb[10], kzc;
-static int agit=0;
-static void draw_page(int r, float rayon, float phase) {
+static int bg_shaking;
+static void draw_page(int r, float radius, float phase)
+{
     int b;
     int SS = MAX(win_center_x,win_center_y);
     update_listener(&vec_zero, &vec_zero, &mat_id);
-    affpresent(drand48()*(agit>>8),drand48()*(agit>>8));
-    if (agit>256) agit=(agit*9)/10;
+    affpresent(drand48()*(bg_shaking>>8), drand48()*(bg_shaking>>8));
+    bg_shaking = (bg_shaking*9)/10;
     for (b=0; b<Round[r].nbkases; b++) {    // compute buttons position
         float ang = phase + b*M_PI*2./Round[r].nbkases;
-        xb[b] = win_center_x+SS*rayon*cos(ang);
-        yb[b] = win_center_y+SS*rayon*sin(ang);
+        xb[b] = win_center_x+SS*radius*cos(ang);
+        yb[b] = win_center_y+SS*radius*sin(ang);
     }
     for (b=0; b<Round[r].nbkases; b++) {    // draw buttons shaddow
         int dx = xmouse-xb[b];
@@ -227,14 +226,16 @@ static void draw_page(int r, float rayon, float phase) {
         button(xb[b], yb[b], Round[r].kase[b].label, kzc==b);
     }
 }
-int kazeclick(int x, int y, int r) {
+
+static int kazeclick(int x, int y, int r) {
     int b;
     for (b=Round[r].nbkases-1; b>=0; b--) {
         if ((x-xb[b])*(x-xb[b])+(y-yb[b])*(y-yb[b])<RAYONBOUTTON*RAYONBOUTTON) return b;
     }
     return -1;
 }
-int jauge(int vi, int max) {
+
+static int jauge(int vi, int max) {
     int va=vi;
     int jx, y;
     float phaz=0;
@@ -253,46 +254,27 @@ int jauge(int vi, int max) {
         if (kread(0) || kread(1)) {
             if (kzc==0) {
                 playsound(VOICE_MOTOR, SAMPLE_BIPINTRO, 1+(drand48()-.5)*.05, &voices_in_my_head, true, false);
-                agit=50*256;
+                bg_shaking = 70*256;
                 return va;
             }
             else if (xmouse>=10 && xmouse<win_width-10) va=((xmouse-10)*max)/(win_width-20);
         }
     } while (1);
 }
-/*void readstring(char *m) {
-    float phaz=0;
-    int curpos=strlen(m), i;
-    char prompt[]="Type in name :                                             ";
-    do {
-        kzc=kazeclick(xmouse,ymouse,14);
-        draw_page(14,.45+.2*sin(phaz*.61),.5*M_PI+0.2*sin(phaz));
-        phaz+=.11;
-        for (i=0; i+15<strlen(prompt) && i<strlen(m)+1; i++)
-        prompt[i+15]=i==curpos?108+16:m[i];
-        prompt[i+15]='\0';
-        pstr(prompt,win_height/3,0xFFF020);
-        plotcursor(xmouse,ymouse);
-        buffer2video();
-        //wait_sync();  !! INDISPENSABLE
-        xproceed();
-        if (kread(0) || kread(1)) {
-            if (kzc==0) return;
-        }
 
-    } while (1);
-}*/
-
-int present(void) {
-    int curround=0, oldcurround, nextround, etap=2;
-    float phaz=drand48()*2*M_PI, rayon=2, phazr=drand48()*2*M_PI;
+int present(void)
+{
+    int curround = 0, oldcurround, nextround, etap = 2;
+    float phaz = drand48()*2*M_PI;
+    float phazr = drand48()*2*M_PI;
+    float radius = 2.;
+    float rot_speed = 40.;
     gtime_start();
     do {
         float const dt_sec = gtime_next_sec();
-        if (etap==1) {
-            // explosion
-            rayon += 9.*dt_sec;
-            if (rayon > 1.5) {
+        if (etap==1) { // explose
+            radius += 9.*dt_sec;
+            if (radius > 1.5) {
                 if (nextround<0) {
                     switch (nextround) {
                     case -1: return -1;
@@ -310,29 +292,30 @@ int present(void) {
                 } else curround=nextround;
                 etap=2;
             }
-        } else if (etap==2) {
-            // implosion
-            rayon -= dt_sec * 2.3;
-            phaz  += dt_sec * (.9 + sin(phazr)*6.1);
-            phazr += dt_sec * (sin(phaz)*6.3 + sin(phazr*3.)*1.1);
-            if (rayon <= .4) {
+        } else if (etap==2) { // implose
+            radius -= dt_sec * 2.2;
+            if (radius <= .4) {
                 etap = 0;
-                rayon = .4;
+                radius = .4;
             }
         }
         kzc = kazeclick(xmouse, ymouse, curround);
-        draw_page(curround, rayon + .018*sin(phazr), phaz);
+        draw_page(curround, radius + .018*sin(phazr), phaz);
         plotcursor(xmouse, ymouse);
         buffer2video();
         xproceed();
-        phaz += dt_sec * (.09 + sin(phazr)*.61);
-        phazr += dt_sec * (sin(phaz*.1)*.63 + sin(phazr*.13)*.11);
+        phaz += rot_speed * dt_sec * (.13 + sin(phazr*1.1)*.61);
+        phazr += rot_speed * dt_sec * (sin(phaz*.312)*.63 + sin(phazr*.13)*.31);
+        rot_speed *= pow(0.1, dt_sec);
 
         if (etap==0 && (kreset(0) || kreset(1))) {
-            if (kzc!=-1) {
+            if (kzc != -1) {
+                rot_speed = 40.;
+                phaz = drand48()*2*M_PI;
+                phazr = drand48()*2*M_PI;
                 struct vector mousepos = { .x = (float)xmouse/win_width, .y = (float)ymouse/win_height, .z = 0. };
                 playsound(VOICE_MOTOR, SAMPLE_BIPINTRO, 1+(drand48()-.5)*.05, &mousepos, true, false);
-                agit=20*256;
+                bg_shaking = 50*256;
                 if (Round[curround].kase[kzc].nxtround>=0) {
                     oldcurround=curround;
                     nextround=Round[curround].kase[kzc].nxtround;
