@@ -306,8 +306,23 @@ static void do_clip(struct vecic const *p1, struct vecic const *p2, struct vecic
     pr->c.b = p1->c.b + ((dz1 * ((((int)p2->c.b-p1->c.b)<<8)/dz2))>>8);
 }
 
+/* Given p1, p2 and p3 are given in clockwise order (and are relative to camera),
+ * tells if this triangle faces the camera. */
+static bool is_facing_cam(struct veci const *p1, struct veci const *p2, struct veci const *p3)
+{
+    struct vect2d l1, l2, l3;
+    proji(&l1, p1);
+    proji(&l2, p2);
+    proji(&l3, p3);
+
+    int const dot_product = (l2.x-l1.x)*(l3.y-l1.y) - (l2.y-l1.y)*(l3.x-l1.x);
+    return dot_product >= 0;
+}
+
 static void poly(struct vecic const *p1, struct vecic const *p2, struct vecic const *p3)
 {
+    if (! is_facing_cam(&p1->v, &p2->v, &p3->v)) return;
+
     struct vect2dc l1,l2,l3;
     proji(&l1.v, &p1->v);   // FIXME: should not project the same pt several times!
     l1.c = p1->c;
@@ -374,6 +389,65 @@ void polyclip(struct vecic const *p1, struct vecic const *p2, struct vecic const
     case 7:
         // don't draw anything is all points are below zmin
         break;
+    }
+}
+
+static void dot(struct vecic const *p)
+{
+    if (p->v.z <= FRUSTUM_ZMIN) return;
+
+    struct vect2d l;
+    proji(&l, &p->v);
+
+    if (l.x < 0 || l.x >= win_width || l.y < 0 || l.y >= win_height) return;
+
+    videobuffer[l.y * win_width + l.x] = pixel32_of_pixel(p->c);
+}
+
+// This restartable random generator is used to locate dots on the poly.
+static void next_rand(uint32_t *prev1, uint32_t *prev2)
+{
+    *prev1 = 36969*(*prev1 & 0xffff) + (*prev1 >> 16);
+    *prev2 = 18000*(*prev2 & 0xffff) + (*prev2 >> 16);
+}
+
+// Draw dots on the surface of the given poly (used to help user evaluate distance to ground)
+static void polydots(struct vecic const *p1, struct vecic const *p2, struct vecic const *p3, unsigned seed)
+{
+#   define DIST_DOTS (10000 * ONE_METER)
+#   define NB_DOTS_PER_POLY 20
+
+    int const dist = normei_approx(&p1->v);
+    if (dist >= DIST_DOTS) return;
+    if (! is_facing_cam(&p1->v, &p2->v, &p3->v)) return;
+
+    uint32_t rand1 = 0x12345678 * seed, rand2 = 0x87654321 * seed;
+    unsigned const nb_dots = (NB_DOTS_PER_POLY * (DIST_DOTS - dist))/DIST_DOTS;
+    int const visibility = ((DIST_DOTS - dist) << 8) / DIST_DOTS;
+    for (unsigned d = 0; d < nb_dots; d++) {
+        next_rand(&rand1, &rand2);
+        int const x = rand1 & 0xffff;
+        int const y = rand2 & 0xffff;
+        if ((uint_least64_t)x + y > 0xffffULL) continue;    // this dot is outside the triangle
+        struct veci dx = {
+            .x = ((int_least64_t)x*(p2->v.x - p1->v.x)) >> 16,
+            .y = ((int_least64_t)x*(p2->v.y - p1->v.y)) >> 16,
+            .z = ((int_least64_t)x*(p2->v.z - p1->v.z)) >> 16,
+        };
+        struct veci dy = {
+            .x = ((int_least64_t)y*(p3->v.x - p1->v.x)) >> 16,
+            .y = ((int_least64_t)y*(p3->v.y - p1->v.y)) >> 16,
+            .z = ((int_least64_t)y*(p3->v.z - p1->v.z)) >> 16,
+        };
+        struct vecic p;
+        p.v = p1->v;
+        addvi(&p.v, &dx);
+        addvi(&p.v, &dy);
+        int const dc = (((x&0xff)-128) * visibility) >> 8;
+        p.c.r = add_sat(p1->c.r, dc, 255);
+        p.c.g = add_sat(p2->c.g, dc, 255);
+        p.c.b = add_sat(p3->c.b, dc, 255);
+        dot(&p);
     }
 }
 
@@ -584,33 +658,60 @@ static void get_map_z(int x, int y, int *params)
     params[8] = (zcol[z].b * intens)<<1;
 }
 
-static void draw_tile(int *sw, int *nw, int *se, int *ne, int xo, int ro)
+// receive points in order: sw, nw, se, ne
+static void draw_tile(struct vecic const *p)
 {
     // Draw a mere tile, without submap
-    struct vecic p1 = {
-        .v = { .x=sw[xo], .y=sw[xo+1], .z=sw[xo+2] },
-        .c = { .r=sw[ro]>>8, .g=sw[ro+1]>>8, .b=sw[ro+2]>>8 }
-    };
-    struct vecic p2 = {
-        .v = { .x=nw[xo], .y=nw[xo+1], .z=nw[xo+2] },
-        .c = { .r=nw[ro]>>8, .g=nw[ro+1]>>8, .b=nw[ro+2]>>8 }
-    };
-    struct vecic p3 = {
-        .v = { .x=se[xo], .y=se[xo+1], .z=se[xo+2] },
-        .c = { .r=se[ro]>>8, .g=se[ro+1]>>8, .b=se[ro+2]>>8 }
-    };
-    struct vecic p4 = {
-        .v = { .x=ne[xo], .y=ne[xo+1], .z=ne[xo+2] },
-        .c = { .r=ne[ro]>>8, .g=ne[ro+1]>>8, .b=ne[ro+2]>>8 }
-    };
-    polyclip(&p1, &p2, &p3);
-    polyclip(&p4, &p3, &p2);
+    polyclip(p+0, p+1, p+2);
+    polyclip(p+3, p+2, p+1);
+}
+
+// receive points in order: sw, nw, se, ne
+static void draw_dots(struct vecic const *p, unsigned seed)
+{
+    polydots(p+0, p+1, p+2, seed);
+    polydots(p+3, p+2, p+1, seed);
+}
+
+// xo -> offset of x in param arrays passed as sw, nw, se and ne ; ro -> red offset
+static void fetch_vecic_from_params(int *sw, int *nw, int *se, int *ne, int xo, int ro, struct vecic *p)
+{
+    p[0].v.x = sw[xo];
+    p[0].v.y = sw[xo+1];
+    p[0].v.z = sw[xo+2];
+    p[0].c.r = sw[ro]>>8;
+    p[0].c.g = sw[ro+1]>>8;
+    p[0].c.b = sw[ro+2]>>8;
+
+    p[1].v.x = nw[xo];
+    p[1].v.y = nw[xo+1];
+    p[1].v.z = nw[xo+2];
+    p[1].c.r = nw[ro]>>8;
+    p[1].c.g = nw[ro+1]>>8;
+    p[1].c.b = nw[ro+2]>>8;
+
+    p[2].v.x = se[xo];
+    p[2].v.y = se[xo+1];
+    p[2].v.z = se[xo+2];
+    p[2].c.r = se[ro]>>8;
+    p[2].c.g = se[ro+1]>>8;
+    p[2].c.b = se[ro+2]>>8;
+
+    p[3].v.x = ne[xo];
+    p[3].v.y = ne[xo+1];
+    p[3].v.z = ne[xo+2];
+    p[3].c.r = ne[ro]>>8;
+    p[3].c.g = ne[ro+1]>>8;
+    p[3].c.b = ne[ro+2]>>8;
 }
 
 static void render_submap_tile(int x, int y, struct orient_param const *orient, int *sw, int *nw, int *se, int *ne)
 {
     (void)x; (void)y; (void)orient;
-    draw_tile(sw, nw, se, ne, 6, 9);
+    struct vecic p[4];
+    fetch_vecic_from_params(sw, nw, se, ne, 6, 9, p);
+    draw_tile(p);
+    draw_dots(p, x + orient->dmx+ ((y + orient->dmy)<<SUBMAP_LEN_N));
 }
 
 static void render_map_tile(int x, int y, struct orient_param const *orient, int *sw, int *nw, int *se, int *ne)
@@ -643,7 +744,9 @@ static void render_map_tile(int x, int y, struct orient_param const *orient, int
             render_submap_tile
         );
     } else {
-        draw_tile(sw, nw, se, ne, 3, 6);
+        struct vecic p[4];
+        fetch_vecic_from_params(sw, nw, se, ne, 3, 6, p);
+        draw_tile(p);
     }
 
     // Draw roads

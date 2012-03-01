@@ -19,6 +19,7 @@
 #ifndef PROTO_H_120116
 #define PROTO_H_120116
 
+#include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>
 #include "gtime.h"
@@ -31,7 +32,7 @@
 
 #define BACKCOLOR 0xAC8DBD
 
-#define ONE_METER 100.  // dist unit seams to be approx the cm
+#define ONE_METER 100  // dist unit seams to be approx the cm
 #define DOGDISTMAX (90. * ONE_METER)    // Max distance at which one can spot a plane in dogfight view
 #define G (3. * ONE_METER)  // actual gravity is of course 10, but we like it smaller so that planes can fly slower
 #define NTANKMARK 12    // 11 bits pour les No de tanks
@@ -80,13 +81,19 @@ struct pixel {
     uchar b,g,r;
 };
 
-static inline int color_of_pixel(struct pixel c) {
+static inline int color_of_pixel(struct pixel c)
+{
     return (c.r<<16) + (c.g<<8) + (c.b);
 }
 
 struct pixel32 {
     uchar b,g,r,u;
 };
+
+static inline struct pixel32 pixel32_of_pixel(struct pixel c)
+{
+    return (struct pixel32){ .r = c.r, .g = c.g, .b = c.b, .u = 0 };
+}
 
 struct vector {
     float x,y,z;
@@ -641,6 +648,10 @@ static inline float renorme(struct vector *a)
     float d = norme(a);
     if (d!=0) {a->x/=d; a->y/=d; a->z/=d; }
     return(d);
+}
+static inline int normei_approx(struct veci const *v)
+{
+    return abs(v->x) + abs(v->y) + abs(v->z);    // good enough
 }
 static inline void prodvect(struct vector const *a, struct vector const *b, struct vector *c)
 {

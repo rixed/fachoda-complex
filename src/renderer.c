@@ -123,6 +123,7 @@ void cercle(int x, int y, int radius, int c) {
 }
 
 extern inline int color_of_pixel(struct pixel c);
+extern inline struct pixel32 pixel32_of_pixel(struct pixel c);
 
 bool polyflat(struct vect2d *p1, struct vect2d *p2, struct vect2d *p3, struct pixel coul) {
     struct vect2d *tmp;

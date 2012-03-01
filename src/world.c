@@ -38,6 +38,7 @@ float norme(struct vector *u)
 extern inline float norme2(struct vector const *u);
 extern inline float scalaire(struct vector const *u, struct vector const *v);
 extern inline float renorme(struct vector *a);
+extern inline int normei_approx(struct veci const *v);
 extern inline void prodvect(struct vector const *a, struct vector const *b, struct vector *c);
 extern inline void orthov(struct vector *a, struct vector *b);
 extern inline float orthov3(struct vector *a, struct vector *b, struct vector *r);
