@@ -123,7 +123,7 @@ static struct {
     }, {    // cercle 11 Difficulty
         2,
         {
-            {"easy_mode",-11},
+            {"Easy",-11},
             {"Normal",-12}
         }
     }, {    // cercle 12 Visibility
