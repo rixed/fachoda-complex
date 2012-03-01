@@ -572,7 +572,7 @@ void physics_plane(int b, float dt_sec)
             if (b == viewed_bot) playsound(VOICE_SHOT, SAMPLE_SHOT, 1+(drand48()-.5)*.08, &v, false, false);
             else drand48();
             gunner[nb_obj-shot_start]=b;
-            shot_ttl[nb_obj-shot_start]=80;
+            shot_ttl[nb_obj-shot_start] = 5.;   // TTL of the shot in seconds
             object_add(0, &v, &obj[bot[b].vion].rot, -1, 0);
             nb_shot++;
             bot[b].bullets--;
@@ -644,7 +644,7 @@ void physics_tank(int v, float dt_sec)
         u = obj[o+3+tank[v].ocanon].pos;
         addv(&p, &u);
         gunner[nb_obj-shot_start] = v|(1<<NTANKMARK);
-        shot_ttl[nb_obj-shot_start] = 70;
+        shot_ttl[nb_obj-shot_start] = 4.;
         object_add(0, &p, &obj[o+3+tank[v].ocanon].rot, -1, 0);
         if (++tank[v].ocanon >= 4) tank[v].ocanon = 0;
         nb_shot ++;
@@ -672,7 +672,7 @@ static void zep_shot(int z, struct vector *c, int i)
         mulv(&p,40);
         addv(&p,&obj[zep[z].o+5+i].pos);
         gunner[nb_obj-shot_start]=-1;    // passe inapercu (ie pas pris pour cible en retours)
-        shot_ttl[nb_obj-shot_start]=90;
+        shot_ttl[nb_obj-shot_start] = 4.;
         object_add(0, &p, &m, -1, 0);
         nb_shot++;
     }

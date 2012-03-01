@@ -38,7 +38,7 @@ char *village_name[NB_VILLAGES] = {
 };
 
 char current_msg[1000];
-int current_msg_ttl=0;
+float current_msg_ttl = 0.;
 int current_msg_camp;
 #define NBMSG 2
 char *villagemsg[NBMSG][4][2] = {
@@ -156,7 +156,7 @@ void reward_new() {
     for (i=0; i<MAX_REWARDS && reward[i].amount!=0; i++);
     if (i<MAX_REWARDS) {
         current_msg_camp=(current_msg_camp+1)&3;
-        current_msg_ttl=300;
+        current_msg_ttl = 15.;
         strcpy(current_msg,lang?"Try to make more collateral victims":"Essayez de faire davantage de dommages colateraux");
         switch ((int)(drand48()*3.)) {
         case 0:

@@ -64,7 +64,7 @@ bool explosion;
 //
 int airfield_obj[2][3][4];   // o1, o2 // base 1, base 2, base 3 // camp A,B,C,D
 int gunner[MAX_SHOTS];
-short int shot_ttl[MAX_SHOTS];
+float shot_ttl[MAX_SHOTS];
 struct bomb *bomb;
 int bombidx;
 char (*playbotname)[30];
@@ -675,12 +675,12 @@ parse_error:
             // avance les shots
             for (i=shot_start; i<nb_obj; i++) {
                 int oc;
-                if (!shot_ttl[i-shot_start]) continue;
-                shot_ttl[i-shot_start]--;
+                if (shot_ttl[i-shot_start] <= 0.) continue;
+                shot_ttl[i-shot_start] -= dt_sec;
                 // collision ?
                 for (oc=map[obj[i].ak].first_obj; oc!=-1; oc=obj[oc].next) {
                     if (obj[oc].type != TYPE_BOMB && collision(i, oc)) {
-                        if (hitgun(oc, i)) shot_ttl[i-shot_start]=0;
+                        if (hitgun(oc, i)) shot_ttl[i-shot_start] = 0.;
                     }
                 }
                 v = obj[i].rot.x;
@@ -692,7 +692,7 @@ parse_error:
                 orthov(&obj[i].rot.y,&obj[i].rot.x);
                 prodvect(&obj[i].rot.x,&obj[i].rot.y,&obj[i].rot.z);
                 obj_check_pos(i);
-                if (shot_ttl[i-shot_start]==0 || obj[i].pos.z<z_ground(obj[i].pos.x,obj[i].pos.y, true)) {
+                if (shot_ttl[i-shot_start] <= 0. || obj[i].pos.z<z_ground(obj[i].pos.x,obj[i].pos.y, true)) {
                     obj[i].aff=0;   // pour qu'il soit plus affiché
 #ifndef DEMO
                     if (i==nb_obj-1) do {
@@ -862,14 +862,14 @@ parse_error:
                 for (j=car[i].o+1; j<car[i+1].o; j++) calcposrigide(j);
             }
             // new radio messages
-            if (current_msg_ttl) current_msg_ttl--;
+            if (current_msg_ttl > 0.) current_msg_ttl -= dt_sec;
             else if (initradio || !dtradio--) {
                 if (!killemall_mode && initradio) {
                     current_msg_camp=camp;
-                    strcpy(current_msg,scenar[current_msg_camp][4-initradio][lang]);
+                    strcpy(current_msg, scenar[current_msg_camp][4-initradio][lang]);
                     initradio--;
                     playsound(VOICE_GEAR, SAMPLE_MESSAGE, 1., &voices_in_my_head, true, false);
-                    current_msg_ttl=40;
+                    current_msg_ttl = 16.;
                 } else {
                     reward_new();
                     if (current_msg_camp==bot[viewed_bot].camp) playsound(VOICE_GEAR, SAMPLE_MESSAGE, 1., &voices_in_my_head, true, false);
@@ -985,7 +985,9 @@ parse_error:
                 }
                 if (accelerated_mode) pstr("ACCELERATED MODE",win_center_y/3,0xFFFFFF);
                 if (prompt_quit) pstr("Quit ? Yes/No",win_center_y/2-8,0xFFFFFF);
-                if (current_msg_ttl && bot[viewed_bot].camp==current_msg_camp) pstr(current_msg,10,0xFFFF00);
+                if (current_msg_ttl >= 0. && bot[viewed_bot].camp == current_msg_camp) {
+                    pstr(current_msg, 10, 0xF1F511);
+                }
                 // Display current balance
                 if (bot[controled_bot].gold - 2000 > maxgold) {
                     maxgold = bot[controled_bot].gold - 2000;

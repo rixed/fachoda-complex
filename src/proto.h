@@ -399,7 +399,7 @@ void object_add(int, struct vector *, struct matrix *, int, uchar);
 extern int viewed_bot;
 extern int gold;
 extern int gunner[MAX_SHOTS];
-extern short int shot_ttl[MAX_SHOTS];
+extern float shot_ttl[MAX_SHOTS];
 extern float smoke_radius[];
 extern uchar smoke_type[];
 // video_interf
@@ -470,7 +470,7 @@ extern struct village village[];
 void reward_new(void);
 extern char *village_name[];
 extern char current_msg[1000];
-extern int current_msg_ttl;
+extern float current_msg_ttl;
 extern int current_msg_camp;
 // heightfield.c
 void polyclip(struct vecic const *p1, struct vecic const *p2, struct vecic const *p3);
