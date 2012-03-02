@@ -526,7 +526,7 @@ parse_error:
     }
     camp--;
     initradio=4;
-    if (win_width<200) win_width=250;
+    if (win_width<250) win_width=250;
     if (win_height<200) win_height=200;
     win_width&=0xFFFFFFF8; win_height&=0xFFFFFFFE;
     win_center_x=win_width>>1; win_center_y=win_height>>1;
