@@ -107,36 +107,38 @@ void explose(int oc, int i)
             copym(&obj[o1].rot,&mat_id);
             jk=o1+1;
         } else jk=o1;
+        /* jk is o1+1 if the exploding object is close to the ground, or o1 otherwise.
+         * ie. it's the first object that's a flying debris (since we may reserve jk-1
+         * for placing a hole on the ground... */
         for (j=jk; j<o2; j++) {
     //      obj[j].model=n_object[NB_PLANES+NB_AIRFIELDS+NB_HOUSES+NB_TANKS+6].firstpiece;
         //  copyv(&obj[j].pos,&obj[o1].pos);
-            obj[j].objref=-1;
-            obj[j].type=TYPE_DECO;
+            obj[j].objref = -1;
+            obj[j].type = TYPE_DECO;
         }
         for (i=0, j=jk; i<MAX_DEBRIS && j<o2; i++) {
-            if (debris[i].o == -1) {
-                debris[i].o = j;
-                if (i != o1) {
-                    randomv(&debris[i].vit);
-                    if (jk == o1) {
-                        // The main part (also smoke source)
-                        mulv(&debris[i].vit, 1. * ONE_METER);
-                    } else {
-                        // The other parts
-                        // (larger dispersion in Z since it gives better result for ground targets)
-                        debris[i].vit.x *= 11. * ONE_METER;
-                        debris[i].vit.y *= 11. * ONE_METER;
-                        debris[i].vit.z *= 25. * ONE_METER;
-                    }
+            if (debris[i].o != -1) continue;
+            debris[i].o = j;
+            if (j != o1) {  // we'd rather keep original speed for the smoking object.
+                randomv(&debris[i].vit);
+                if (jk == o1) { // explose in the air
+                    mulv(&debris[i].vit, 10. * ONE_METER);
+                } else { // explose at ground level
+                    // (larger dispersion in Z since it gives better result for ground targets)
+                    debris[i].vit.x *= 5. * ONE_METER;
+                    debris[i].vit.y *= 5. * ONE_METER;
+                    debris[i].vit.z *= 25. * ONE_METER;
                 }
-                addv(&debris[i].vit, &vit);
-                debris[i].a1=drand48()*M_PI*2;
-                debris[i].a2=drand48()*M_PI*2;
-                debris[i].ai1 = debris[i].a1*2.;
-                debris[i].ai2 = debris[i].a2*2.;
-                if (debris[i].vit.z>0) debris[i].vit.z=-debris[i].vit.z;
-                j++;
+            } else {
+                debris[i].vit = vec_zero;
             }
+            addv(&debris[i].vit, &vit);
+            debris[i].a1=drand48()*M_PI*2;
+            debris[i].a2=drand48()*M_PI*2;
+            debris[i].ai1 = debris[i].a1*2.;
+            debris[i].ai2 = debris[i].a2*2.;
+            if (debris[i].vit.z>0) debris[i].vit.z=-debris[i].vit.z;
+            j++;
         }
         // TODO: smoke_source_new
         for (j=0; j<MAX_SMOKE_SOURCES && smoke_source_intens[j]; j++);
