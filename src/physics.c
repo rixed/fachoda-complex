@@ -653,24 +653,27 @@ void physics_tank(int v, float dt_sec)
 
 static void zep_shot(int z, struct vector *c, int i)
 {
-    struct vector p;
-    struct matrix m;
-    float s;
     gtime const min_shot_period = SHOT_PERIOD / 6; // 6 cannons per Zeppelin
     if (nb_shot < MAX_SHOTS && gtime_age(zep[z].last_shot) > min_shot_period) {
         zep[z].last_shot = gtime_last();
-        copyv(&p,c);
+        struct vector p = *c;
         renorme(&p);
-        s=scalaire(&p,&obj[zep[z].o].rot.y);
-        if (i<3) s=-s;
+        float s = scalaire(&p, &obj[zep[z].o].rot.y);
+        if (i<3) s = -s;
         if (s<.5) return;
-        copyv(&m.x,&p);
+        // spread bullets slightly
+        p.x += 0.01*(drand48()-.5);
+        p.y += 0.01*(drand48()-.5);
+        p.z += 0.01*(drand48()-.5);
+        renorme(&p);
+        struct matrix m;
+        m.x = p;
         m.y.x=m.y.y=m.y.z=1;
-        orthov(&m.y,&m.x);
+        orthov(&m.y, &m.x);
         renorme(&m.y);
         prodvect(&m.x,&m.y,&m.z);
-        mulv(&p,40);
-        addv(&p,&obj[zep[z].o+5+i].pos);
+        mulv(&p, 40);
+        addv(&p, &obj[zep[z].o+5+i].pos);
         gunner[nb_obj-shot_start]=-1;    // passe inapercu (ie pas pris pour cible en retours)
         shot_ttl[nb_obj-shot_start] = 4.;
         object_add(0, &p, &m, -1, 0);
@@ -782,8 +785,11 @@ void physics_zep(int z, float dt_sec)
     for (i=5; i<5+6; i++) {
         if (zep[z].cib[i-5]!=-1) {
             subv3(&obj[bot[zep[z].cib[i-5]].vion].pos,&obj[zep[z].o+i].pos,&v);
-            if (norme2(&v)>TILE_LEN*TILE_LEN*0.5) zep[z].cib[i-5]=-1;
-            else if ((i+frame_count)&1) zep_shot(z,&v,i-5);        //dans gunner, laisser -1 ?
+            if (norme2(&v)>TILE_LEN*TILE_LEN*0.5) {
+                zep[z].cib[i-5]=-1;
+            } else {
+                zep_shot(z, &v, i-5);        //dans gunner, laisser -1 ?
+            }
         }
     }
 
