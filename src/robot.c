@@ -541,14 +541,19 @@ void robot(int b)
                     float const target_speed = d > 3. * ONE_METER ? .6 * ONE_METER : .3 * ONE_METER;
                     adjust_throttle(b, target_speed);
                     if (d > .7 * ONE_METER) {
-                        bot[b].xctl = -2. * scalaire(&u, &obj[o].rot.y)/d;
-                        if (scalaire(&u, &obj[o].rot.x) < 0.) {
-                            bot[b].xctl = bot[b].xctl > 0. ? 1. : -1.;
+                        if (fabs(obj[o].rot.y.z) < .1) {
+                            bot[b].xctl = -2. * scalaire(&u, &obj[o].rot.y)/d;
+                            if (scalaire(&u, &obj[o].rot.x) < 0.) {
+                                bot[b].xctl = bot[b].xctl > 0. ? 1. : -1.;
+                            }
+                            CLAMP(bot[b].xctl, 1.);
+                        } else {
+                            bot[b].xctl = -obj[o].rot.y.z;
                         }
-                        CLAMP(bot[b].xctl, 1.);
                     } else {
                         bot[b].thrust = 0.;    // to trigger reload
                         bot[b].but.frein = 1;
+                        bot[b].xctl = 0.;
                         if (bot[b].vitlin < .01 * ONE_METER) {
                             newcib(b);
                             if (bot[b].cibt != -1) bot[b].maneuver = LINE_UP;
