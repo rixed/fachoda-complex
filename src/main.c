@@ -1045,7 +1045,6 @@ parse_error:
     // FIN
 fin:
     sound_fini();
-    system("xset r on");    // FIXME
     // save highscores
     if (!easy_mode && !enable_view_enemy && plane_desc[starting_plane-1].prix<=plane_desc[0].prix && (file=file_open(".fachoda-highscores", getenv("HOME"), "w+"))!=NULL) {
         fwrite(&highscore, sizeof(struct high_score), ARRAY_LEN(highscore), file);
