@@ -24,11 +24,20 @@
 #include "robot.h"
 
 char *tankname="Rug-Warrior";
-int bosse(int a) {
-    if (a) return abs((int)map[a].z-map[a+1].z)+abs((int)map[a].z-map[a+MAP_LEN].z)+abs((int)map[a].z-map[a+1+MAP_LEN].z);
-    else return MAXINT;
+
+static int bosse(int a)
+{
+    if (! a) return MAXINT;
+    return abs((int)map[a].z-map[a+1].z)+abs((int)map[a].z-map[a+MAP_LEN].z)+abs((int)map[a].z-map[a+1+MAP_LEN].z);
 }
-void randomhm(struct matrix *m) {
+
+static int bossep(struct vector *p)
+{
+    return bosse(akpos(p));
+}
+
+void randomhm(struct matrix *m)
+{
     float a=drand48()*M_PI*2;
     copym(m,&mat_id);
     m->x.x=cos(a);
@@ -36,7 +45,9 @@ void randomhm(struct matrix *m) {
     m->y.x=-m->x.y;
     m->y.y=m->x.x;
 }
-void posem(struct matrix *m, struct vector *p) {  // tourne légèrement la matrice pour la "poser" sur le sol
+
+static void posem(struct matrix *m, struct vector *p)
+{   // tourne légèrement la matrice pour la "poser" sur le sol
     m->x.z=z_ground(p->x+m->x.x,p->y+m->x.y, true)-z_ground(p->x,p->y, true);
     renorme(&m->x);
     m->y.x=-m->x.y;
@@ -45,7 +56,9 @@ void posem(struct matrix *m, struct vector *p) {  // tourne légèrement la matric
     renorme(&m->y);
     prodvect(&m->x,&m->y,&m->z);
 }
-int randomvroute(struct vector *v) {
+
+static int randomvroute(struct vector *v)
+{
     int i;
     do i=2+drand48()*(routeidx-4); while(route[i+1].ak==-1 || route[i].ak==-1);
     v->x=route[i].i.x;
@@ -53,8 +66,9 @@ int randomvroute(struct vector *v) {
     v->z=route[i].i.z;
     return i;
 }
-int bossep(struct vector *p) { return bosse(akpos(p)); }
-void addbabase(int c) {
+
+static void addbabase(int c)
+{
     int x,y;
     int x1[4] = { MAP_LEN/5., 3.*MAP_LEN/5., MAP_LEN/5., 3.*MAP_LEN/5. };
     int y1[4] = { MAP_LEN/5., MAP_LEN/5., 3.*MAP_LEN/5., 3.*MAP_LEN/5. };
@@ -145,7 +159,9 @@ void addbabase(int c) {
     //  printf("Add Babase #%d, C#%d, at %f,%f\n",x,c,p.x,p.y);
     }
 }
-void randomvferme(struct vector *p) {
+
+static void randomvferme(struct vector *p)
+{
     int c,i,ok;
     do {
         ok=1;
@@ -160,12 +176,16 @@ void randomvferme(struct vector *p) {
         }
     } while (map[akpos(p)].z<80 || map[akpos(p)].z>150 || !ok);
 }
-int collisionpoint(struct vector *pp, int k, int mo) {
+
+static int collisionpoint(struct vector *pp, int k, int mo)
+{
     struct vector u;
     subv3(pp,&obj[k].pos,&u);
     return norme(&u)<=mod[mo].rayoncollision+mod[obj[k].model].rayoncollision;
 }
-void affjauge(float j) {
+
+void affjauge(float j)
+{
     static float jauge=0;
     float nj=jauge+j;
     static int x=10;
@@ -182,7 +202,8 @@ void affjauge(float j) {
     jauge=nj;
 }
 
-void initworld() {
+void initworld(void)
+{
     int i,j,k;
     struct vector p;
     struct matrix m;

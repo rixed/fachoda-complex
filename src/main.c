@@ -226,7 +226,6 @@ static void setup_camera(float dt_sec)
 {
     static float view_angle = 0.;   // for the rotating view
     view_angle += 0.02;
-    float n = 0.;
     int i;
 
     if (view == VIEW_ROTATING_BOMB) {
