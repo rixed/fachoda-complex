@@ -24,6 +24,10 @@ body {
 	margin-left: 3em;
 }
 
+#container iframe {
+	margin-left: 3em;
+}
+
 #container ul, #container ol {
 	margin-left: 4em;
 }
@@ -71,7 +75,7 @@ div#menu {
 
 div#menu a {
 	display: inline-block;
-	width: 170px;
+	width: 135px;
 	margin: 0;
 	padding: 20px 0 20px 0;
 	text-align: center;

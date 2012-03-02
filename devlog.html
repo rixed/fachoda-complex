@@ -40,6 +40,7 @@
    <a href="index.html" id="home_link">Home</a>
    <a href="download.html" id="download_link">Download</a>
    <a href="manual.html" id="manual_link">Manual</a>
+   <a href="tutorial.html" id="tutorial_link">Tutorial</a>
    <a href="devlog.html" id="devlog_link">DevLog</a>
   </div>
     <div class="description">
@@ -50,7 +51,7 @@ restoring a vintage piece of <i>code</i>, a small game that was quickly
 put together at the end of the former century then had its bits abandoned
 to rust. The original author is long gone and his ideas and thoughts
 forgotten. He was the me of 12 years ago.</p>
- <p>I've always wanted to come up with a follow up but even if it was
+ <p>I&rsquo;ve always wanted to come up with a follow up but even if it was
 started on several occasions nothing was ever achieved. Being not
 interested in games nor 3D rendering any more, the only second version of
 it I can seriously envision now is to bring back to life this rusty piece
@@ -70,7 +71,7 @@ so I did not expect anything to show properly after this move.
 After hundreds of dreadful warnings the SDL version of the game compiled
 (the other versions were jettisoned one commit earlier). When you think about it,
 it means that SDL is still retrocompatible with code written more than
-10 years ago. That's what I call commitment !
+10 years ago. That&rsquo;s what I call commitment !
 </p><p>
 So, since I was able to run the game then I just did,
 and... the game menu appeared, in all its past glory, colors and animations!
@@ -84,14 +85,14 @@ There must have been a lot of redundant code in there.
 If you are like me, you pay a lot of attention to the game menu. Lots of
 them are bugged or otherwise unpleasant because I suppose game authors
 enjoy writing the game engine more than its menu. But I think a good game
-menu says it all about authors' (lack of) care to details. The only other
+menu says it all about authors&rsquo; (lack of) care to details. The only other
 game I ever worked on also have an animated menu (see
 <a href="http://www.nongnu.org/ensemblist/index_en.html">here</a>).
 Some games I remember the menus but not the actual games.
 I could watch some of them for hours.
 </p><p>
 But here I was curious about the game, so I hit the "Go!" button.
-The game started to load but crashed before displaying it's first ingame
+The game started to load but crashed before displaying it&rsquo;s first ingame
 picture.
 </p><p>
 Well, it had to be expected.
@@ -99,7 +100,7 @@ Well, it had to be expected.
 The <a href="https://github.com/rixed/fachoda-complex/commit/3c9d121eba7372face78f2c565fd131167120ed5">fix</a>
 was hopefully trivial. Embarrassingly trivial actually. A quite look around this line
 revealed many other potential variants for the same bug. Ouch.
-For now, let's fix this one which is causing a segfault and try again.
+For now, let&rsquo;s fix this one which is causing a segfault and try again.
 </p><p>
 Compile... run... "Go!"... and then, the game!
 </p><p>
@@ -112,15 +113,15 @@ somewhat below some kind of ground (but the blue sky can be seen from
 time to time and is indeed blue). Also, the lighting results in many small
 white stripes, which is nice but no, thanks.
 </p><p>
-Anyway, the engine runs already so that's not too bad.
+Anyway, the engine runs already so that&rsquo;s not too bad.
 </p>
 <img src="ingame1.png"/>
 <p>
-Obviously there's still a lot of work to do before it's finished (and put to sleep
-again for 12 more years), but it's a good start.
+Obviously there&rsquo;s still a lot of work to do before it&rsquo;s finished (and put to sleep
+again for 12 more years), but it&rsquo;s a good start.
 </p><p>
 To see this old program running again is a lot like when you find by accident an
-old toy you owned or an old drawing you've made as a kid. It feels at the same time warm
+old toy you owned or an old drawing you&rsquo;ve made as a kid. It feels at the same time warm
 and distant, familiar but alien, desirable yet worthless.
 </p>
 <h2>Day 2</h2>
@@ -145,7 +146,7 @@ predefined sub-heighfield.</p>
  <p>Then, we have another array of 256 colors that gives us the color of any
 landscape point from its altitude. Then comes the lighting, for with we need another
 10 arrays of 8x8 bytes, giving the relative lightening of this particular sub-tile
-relative to the underlying tile (sloppy, but the eye won't notice and this avoids
+relative to the underlying tile (sloppy, but the eye won&rsquo;t notice and this avoids
 many dot products). Each polygon of the landscape is then &quot;gouraued&quot;.</p>
  <p>The whole landscape thus fit into:<br/>
 128*128&nbsp;+&nbsp;10*(8*8)&nbsp;+&nbsp;128*128&nbsp;+&nbsp;256&nbsp;+&nbsp;10*(8*8)&nbsp;=&nbsp;34Kbyte.
@@ -169,7 +170,7 @@ that was lost when ditching MMX code.</p>
 <h2>Day 3</h2>
 <p>I had a hard time trying to figure out how the landscape drawing functions
 were working. I had only some vague memories about some of the tricks used there,
-like the absence of sort or the multiple levels of details. In the process I've rewritten
+like the absence of sort or the multiple levels of details. In the process I&rsquo;ve rewritten
 the code from scratch, fixing a few bugs along the way (and probably introduced new ones).
 The resulting code is easier to understand and have gained in generality, without
 giving up significant optimisations. In the future, one could easily add new levels of
@@ -189,7 +190,7 @@ most of the time objects and camera move only a little from one frame to the nex
 <p>To reduce even further the number of objects to sort in one go, objects are grouped
 by categories: grounded (shadows, houses, ground vehicles...), flying, clouds... Since
 there is (almost) no way that a cloud may be draw after a ground vehicle for instance (since
-you won't be able to drag the camera under a vehicle and watch at the sky...)</p>
+you won&rsquo;t be able to drag the camera under a vehicle and watch at the sky...)</p>
 <p>But of course objects are allowed to cross tiles boundaries, so when this happen you
 can see some rendering artifact (like the ground below you suddenly showing up above your
 plane noise for one frame). To deal with this, objects belonging to the 9 closest tiles
@@ -223,7 +224,7 @@ game make use of an old trick: first you draw a picture of a spotlight and then
 you project this picture into your object from the light source position (not
 unlike environment shading). You would then obtain a rendering that can barely
 be distinguished from actual Phong.</p>
-<p>But wait: what's this picture of a spotlight? It's merely a concentric spot
+<p>But wait: what&rsquo;s this picture of a spotlight? It&rsquo;s merely a concentric spot
 of descending light intensity. So, you can replace the whole picture with a
 function that yields the light intensity at a given distance. Then, when
 iterating through the scanline, you just have to interpolate the distance to
@@ -241,7 +242,7 @@ repartition of light on this low-poly fuselage:</p>
 <p>The second change in importance after the replacement of x86 assembly was
 expected to be the sound engine. The program used to control a Gravis Ultrasound
 via /dev/dsp ; This card was the only sound card a Linux gamer would own in
-those days (surely you remember your brave GUS, don't you?). The alternative for
+those days (surely you remember your brave GUS, don&rsquo;t you?). The alternative for
 sound processing was using esound, and according to the comments it was not
 first class. Nothing else was available at this time that fits these requirements:</p>
 <ul>
@@ -254,14 +255,14 @@ first class. Nothing else was available at this time that fits these requirement
 today. Apparently, many people are happy with samples played always at the
 same frequency and thus sounding always exactly the same, although by varying
 slightly the pitch the experience is so much better! For instance in Fachoda
-when your plane is hit by a bullet you can ear a 'dong' like a rock hitting an
+when your plane is hit by a bullet you can ear a &rsquo;dong&rsquo; like a rock hitting an
 old pot. So when you are under heavy fire you can either ear a boring
-repetition of the same 'dong' or, by an easy randomization of the pitch, a
-funny sequence of 'dings' and 'dongs' like you're actually ripping off an old
+repetition of the same &rsquo;dong&rsquo; or, by an easy randomization of the pitch, a
+funny sequence of &rsquo;dings&rsquo; and &rsquo;dongs&rsquo; like you&rsquo;re actually ripping off an old
 pot under a machine gun.</p>
-<p>The only complying library that's also open-source and elegantly designed
+<p>The only complying library that&rsquo;s also open-source and elegantly designed
 that I know of is OpenAL, so I settled for this. I remember having already
-looked at it in the past but having dismissed it because of it's poor
+looked at it in the past but having dismissed it because of it&rsquo;s poor
 performance, but time have passed and either better implementations are
 available now or maybe I just lowered my expectations.</p>
 <p>Anyway, retrofitting OpenAL into sound.c was much easier than expected, maybe because
@@ -277,7 +278,6 @@ for, the site can offer you a list of similar sounds. I never found the right
 sound using this feature, but it has always been both funny and intriguing to
 discover how two completely unrelated sound sources actually produce sounds that
 are close enough for a soul-less algorithm to find them similar. Go try it!</p>
-
 <h2>Day 6</h2>
 
 <p>Having changed the flight model, the AI controlled bots where noised on the ground,
@@ -289,9 +289,9 @@ it clearly should have been a small particular case of it).</p>
 I choose the later. So first I fixed the autopilot then used it to control the bots
 (with additional behavior for attacking, taking of and landing).</p>
 
-<p>Quickly, the AI was able to sustain a dogfight. It's not particularly deadly on
+<p>Quickly, the AI was able to sustain a dogfight. It&rsquo;s not particularly deadly on
 1 vs 1 situations but as most encounters involves many planes the difficulty is
-more to figure out what's happening around you than to out-turn a particular
+more to figure out what&rsquo;s happening around you than to out-turn a particular
 opponent.</p>
 
 <p>The code is still very far from perfection but since most of this should be rewritten
