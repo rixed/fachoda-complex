@@ -18,9 +18,10 @@
  */
 #include <math.h>
 #include <stdbool.h>
+#include <stdint.h>
 #include <assert.h>
-#include <SDL/SDL.h>
 #include "proto.h"
+#include "video_sdl.h"
 
 static SDL_Surface *screen, *bufsurface;
 struct pixel32 *videobuffer;
@@ -48,8 +49,6 @@ void initvideo(bool fullscreen)
     SDL_ShowCursor(0);
     SDL_EventState(SDL_ACTIVEEVENT, SDL_IGNORE);
     SDL_EventState(SDL_MOUSEMOTIONMASK, SDL_IGNORE);
-    SDL_EventState(SDL_MOUSEBUTTONUP, SDL_IGNORE);
-    SDL_EventState(SDL_MOUSEBUTTONDOWN, SDL_IGNORE);
 
     SDL_WM_SetCaption("FACHODA Complex","FACHODA Complex");
 }
@@ -66,9 +65,15 @@ void buffer2video(void)
     SDL_UpdateRects(screen,1,&dstrect);
 }
 
-char keytab[32];
-
 int xmouse, ymouse;
+static bool mouse_button[7];
+static uint8_t keytab[SDLK_LAST-SDLK_FIRST+1];
+
+static unsigned bit_of_key(SDLKey k)
+{
+    assert(k >= SDLK_FIRST && k <= SDLK_LAST);
+    return k - SDLK_FIRST;
+}
 
 static void bitset(unsigned n)
 {
@@ -80,50 +85,67 @@ static void bitzero(unsigned n)
     keytab[n/8] &= ~(1U<<(n&7));
 }
 
-bool kread(unsigned n)
+static bool bittest(unsigned n)
 {
     return !!(keytab[n/8] & (1U<<(n&7)));
 }
 
-bool kreset(unsigned n)
+bool kread(SDLKey k)
 {
-    bool r = kread(n);
+    return bittest(bit_of_key(k));
+}
+
+bool kreset(SDLKey k)
+{
+    unsigned n = bit_of_key(k);
+    bool const r = bittest(n);
     bitzero(n);
+    return r;
+}
+
+bool button_read(unsigned b)
+{
+    assert(b < ARRAY_LEN(mouse_button));
+    return mouse_button[b];
+}
+
+bool button_reset(unsigned b)
+{
+    assert(b < ARRAY_LEN(mouse_button));
+    bool r = mouse_button[b];
+    mouse_button[b] = false;
     return r;
 }
 
 void xproceed(void)
 {
-    static bool but1released = true, but2released = true;
     SDL_Event event;
-    int bmouse = SDL_GetMouseState(&xmouse,&ymouse);
-    if (xmouse<0) xmouse=0;
-    if (ymouse<0) ymouse=0;
-    if (xmouse>=win_width) xmouse=win_width-1;
-    if (ymouse>=win_height) ymouse=win_height-1;
-    if (bmouse&SDL_BUTTON(1) && but1released) {
-        bitset(0);
-        but1released = false;
-    }
-    if (bmouse&SDL_BUTTON(3) && but2released) {
-        bitset(1);
-        but2released = false;
-    }
-    if (!(bmouse&SDL_BUTTON(1))) {
-        but1released = true;
-        bitzero(0);
-    }
-    if (!(bmouse&SDL_BUTTON(3))) {
-        but2released = true;
-        bitzero(1);
-    }
+
+    // Pointer position
+    SDL_GetMouseState(&xmouse, &ymouse);
+    if (xmouse < 0) xmouse = 0;
+    if (ymouse < 0) ymouse = 0;
+    if (xmouse >= win_width) xmouse = win_width-1;
+    if (ymouse >= win_height) ymouse = win_height-1;
+
+    // Keys
     while (SDL_PollEvent(&event)) {
         switch (event.type) {
             case SDL_KEYDOWN:
-                bitset(event.key.keysym.scancode);
+                bitset(bit_of_key(event.key.keysym.sym));
                 break;
             case SDL_KEYUP:
-                bitzero(event.key.keysym.scancode);
+                bitzero(bit_of_key(event.key.keysym.sym));
+                break;
+            case SDL_MOUSEBUTTONDOWN:
+                if (event.button.button < ARRAY_LEN(mouse_button)) {
+                    mouse_button[event.button.button] = true;
+                }
+                break;
+            case SDL_MOUSEBUTTONUP:
+                if (event.button.button < ARRAY_LEN(mouse_button)) {
+                    mouse_button[event.button.button] = false;
+                }
                 break;
             case SDL_QUIT:
                 quit_game = true;
@@ -132,11 +154,16 @@ void xproceed(void)
     }
 }
 
-char getscancode(void)
+SDLKey getscancode(void)
 {
     SDL_Event event;
-    while (SDL_WaitEvent(&event)>=0) {
-        if (event.type==SDL_KEYDOWN) return event.key.keysym.scancode;
+    while (SDL_WaitEvent(&event) >= 0) {
+        switch (event.type) {
+            case SDL_KEYDOWN:
+                return event.key.keysym.sym;
+            case SDL_QUIT:
+                exit(0);
+        }
     }
     assert(!"Error in SDL_WaitEvent()");
     return -1;  // ??

@@ -22,6 +22,7 @@
 #include <values.h>
 #include "heightfield.h"
 #include "robot.h"
+#include "video_sdl.h"
 
 char *tankname="Rug-Warrior";
 

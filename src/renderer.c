@@ -22,6 +22,7 @@
 #include <math.h>
 #include <values.h>
 #include <assert.h>
+#include "video_sdl.h"
 #include "heightfield.h"
 
 struct vect2dlum *pts2d;

@@ -20,6 +20,7 @@
 #include <math.h>
 #include <values.h>
 #include "heightfield.h"
+#include "video_sdl.h"
 
 int zoom = 200, map_x = 0, map_y = 0;
 

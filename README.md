@@ -31,7 +31,7 @@ computer controlled plane or tank does it.
 
 You need to return to your home base and park to refuel and repair your plane.
 There you can also buy a better plane by parking your plane close to an unused
-one you can afford and press F11.
+one you can afford and press F10.
 
 Each time you earn or lose money the new balance is written in front of the
 screen (blue for credits or red for debits, then white for the actual
@@ -120,8 +120,6 @@ dogfight view
 
 `F1`: view your own plane, or select the closest enemy plane in dogfight view
 
-`F10`: in bomb view, cycle through bombs
-
 `F9`: map view
 
 `P`: autopilot
@@ -154,7 +152,7 @@ Arrows: watch in every direction in internal view ; move the map in map view
 
 `Pause`: guess what
 
-`F11`: sell your plane and by the closest one amongst those parked at your home
+`F10`: sell your plane and by the closest one amongst those parked at your home
 base.
 
 `Enter` (hold): display the highs-cores

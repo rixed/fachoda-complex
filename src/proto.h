@@ -328,11 +328,6 @@ struct debris {
     float a1,a2,ai1,ai2;
 };
 
-struct kc {
-    char kc;
-    char *name;
-};
-
 struct road {
     int ak;
     struct vector i,i2;
@@ -402,15 +397,6 @@ extern int gunner[MAX_SHOTS];
 extern float shot_ttl[MAX_SHOTS];
 extern float smoke_radius[];
 extern uchar smoke_type[];
-// video_interf
-extern struct pixel32 *videobuffer;
-void buffer2video(void);
-char getscancode(void);
-void initvideo(bool fullscreen);
-bool kread(unsigned n);
-bool kreset(unsigned n);
-void xproceed(void);
-extern int xmouse, ymouse;
 // renderer.c
 void calcposrigide(int o);
 void calcposarti(int o, struct matrix *m);
@@ -553,8 +539,12 @@ void MMXCopyToScreen(int *dest, int *src, int sx, int sy, int width);
 extern uchar *BigFont;
 extern uchar font[112][10];
 // keycodes
+#include <SDL/SDL.h>
 #define NBKEYS 45 //56
-extern struct kc gkeys[NBKEYS];
+extern struct kc {
+    SDLKey kc;
+    char *function;
+} gkeys[NBKEYS];
 // roads
 extern int largroute[3];
 void hashroute(void);

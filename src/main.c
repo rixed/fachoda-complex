@@ -31,6 +31,7 @@
 #include "keycodesdef.h"
 #include "robot.h"
 #include "file.h"
+#include "video_sdl.h"
 
 //#define PRINT_DEBUG
 

@@ -25,6 +25,7 @@
 #include "sound.h"
 #include "gtime.h"
 #include "robot.h"
+#include "video_sdl.h"
 
 int DogBot=0;
 struct vector DogBotDir;
@@ -101,18 +102,18 @@ void control(int b)
     // Left button
     if (! map_mode) switch (selected_weapon) {
     case 0:
-        if ((enable_mouse && kread(0)) || kread(gkeys[kc_fire].kc)) bot[b].but.canon=1;
+        if ((enable_mouse && button_read(SDL_BUTTON_LEFT)) || kread(gkeys[kc_fire].kc)) bot[b].but.canon=1;
         break;
     case 1:
-        if ((enable_mouse && kreset(0)) || kreset(gkeys[kc_fire].kc)) bot[b].but.bomb=1;
+        if ((enable_mouse && button_reset(SDL_BUTTON_LEFT)) || kreset(gkeys[kc_fire].kc)) bot[b].but.bomb=1;
         break;
-    } else if ((enable_mouse && kread(0)) || kread(gkeys[kc_fire].kc)) {
+    } else if ((enable_mouse && button_read(SDL_BUTTON_LEFT)) || kread(gkeys[kc_fire].kc)) {
         bot[b].u.x = ((xmouse-win_center_x)*(MAP_LEN/2)*TILE_LEN)/zoom+map_x*TILE_LEN;
         bot[b].u.y = ((win_center_y-ymouse)*(MAP_LEN/2)*TILE_LEN)/zoom+map_y*TILE_LEN;
         bot[b].u.z = z_ground(bot[b].u.x, bot[b].u.y, true);
     }
     // Right button
-    if ((enable_mouse && kreset(1)) || kreset(gkeys[kc_weapon].kc)) {
+    if ((enable_mouse && button_reset(SDL_BUTTON_RIGHT)) || kreset(gkeys[kc_weapon].kc)) {
         if (abs(xmouse) < 2 && abs(ymouse) < 2) {
             if (! prompt_quit) prompt_quit = true;
             else quit_game = true;

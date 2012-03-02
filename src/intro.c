@@ -26,6 +26,7 @@
 #include "proto.h"
 #include "sound.h"
 #include "gtime.h"
+#include "video_sdl.h"
 
 static struct {
     char nbkases;
@@ -251,7 +252,7 @@ static int jauge(int vi, int max) {
         plotcursor(xmouse,ymouse);
         buffer2video();
         xproceed();
-        if (kread(0) || kread(1)) {
+        if (button_read(SDL_BUTTON_LEFT) || button_read(SDL_BUTTON_RIGHT)) {
             if (kzc==0) {
                 playsound(VOICE_MOTOR, SAMPLE_BIPINTRO, 1+(drand48()-.5)*.05, &voices_in_my_head, true, false);
                 bg_shaking = 70*256;
@@ -309,7 +310,7 @@ int present(void)
         phazr += rot_speed * dt_sec * (sin(phaz*.312)*.63 + sin(phazr*.13)*.31);
         rot_speed *= pow(0.1, dt_sec);
 
-        if (etap==0 && (kreset(0) || kreset(1))) {
+        if (etap==0 && (button_reset(SDL_BUTTON_LEFT) || button_reset(SDL_BUTTON_RIGHT))) {
             if (kzc != -1) {
                 rot_speed = 40.;
                 phaz = drand48()*2*M_PI;

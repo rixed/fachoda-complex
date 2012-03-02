@@ -20,6 +20,8 @@
 #include <stdio.h>
 #include <math.h>
 #include "proto.h"
+#include "video_sdl.h"
+
 #define SunMapX 64
 #define SunMapY 32
 #define SunImgL 40

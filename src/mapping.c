@@ -20,6 +20,7 @@
 #include <math.h>
 #include <values.h>
 #include "proto.h"
+#include "video_sdl.h"
 
 int *mapping;
 static uchar preca[256];

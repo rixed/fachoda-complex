@@ -23,6 +23,7 @@
 #include <assert.h>
 #include "proto.h"
 #include "file.h"
+#include "video_sdl.h"
 
 unsigned char num[10][8]= {
     { 0x3E,0x41,0x41,0x41,0x41,0x41,0x41,0x3E },        // 0

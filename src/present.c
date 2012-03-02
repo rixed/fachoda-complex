@@ -26,6 +26,7 @@
 #include "keycodesdef.h"
 #include "sound.h"
 #include "file.h"
+#include "video_sdl.h"
 
 static struct pixel32 *presentimg;
 static int IMGX, IMGY;
@@ -66,7 +67,8 @@ static void jloadpresent(void) {
     fclose(input_file);
 }
 
-void affpresent(int dx,int dy) {
+void affpresent(int dx,int dy)
+{
     int y;
     int xb=((win_width-IMGX)>>1)+dx, yb=((win_height-IMGY)>>1)+dy, clipx1=0, clipx2=0;
     if (xb+IMGX>win_width) clipx2=xb+IMGX-win_width;
@@ -78,7 +80,9 @@ void affpresent(int dx,int dy) {
         }
     }
 }
-static void affpresentanim(int d) {
+
+static void affpresentanim(int d)
+{
     int y;
     int xb=(win_width-IMGX)>>1, yb=(win_height-IMGY)>>1, clipx=0;
     if (xb<0) { clipx=-xb; xb=0; }
@@ -95,7 +99,8 @@ static void affpresentanim(int d) {
     }
 }
 
-void animpresent(void) {
+void animpresent(void)
+{
     int d=20;
     TextClipX1=(win_width-IMGX)/2;
     TextClipX2=(win_width-IMGX)/2+250;
@@ -195,7 +200,7 @@ int presentold() {
         plotcursor(xmouse,ymouse);
         buffer2video();
         xproceed();
-        if (kreset(0)) {
+        if (button_reset(0)) {
             switch (phaz) {
             case 5:
                 phaz=0;
@@ -224,26 +229,32 @@ int presentold() {
     } while (1);
 }
 */
-void redefinekeys(void) {
-    int i,jdep,j;
-    char msg[200];
-    int nbl=win_height/10;
-//  darkpresent();
-    for (j=0; j<NBKEYS; j++) {
-        affpresent(0,0);
-        jdep=j-(nbl-1);
-        if (jdep<0) jdep=0;
-        for (i=0; i<nbl && i<NBKEYS; i++) {
-            if (i+jdep==j) {
-                sprintf(msg,"Type new key for %s",gkeys[j].name);
-                pstr(msg,i*10,0xFFFFFF);
+
+void redefinekeys(void)
+{
+#   define LINE_HEIGHT 11
+    int const nb_disp_lines = win_height/LINE_HEIGHT;
+    for (int redef_k = 0; redef_k < NBKEYS; redef_k++) {
+        affpresent(0, 0);
+        int first_disp_k = redef_k - (nb_disp_lines-1);
+        if (first_disp_k < 0) first_disp_k = 0;
+        for (int line = 0; line < nb_disp_lines && line < NBKEYS; line++) {
+            int const k = line + first_disp_k;
+            char msg[200];
+            if (k == redef_k) {
+                snprintf(msg, sizeof(msg), "Type new key for %s (was %s)",
+                    gkeys[k].function,
+                    SDL_GetKeyName(gkeys[k].kc));
+                pstr(msg, line*LINE_HEIGHT, 0x20FF30);
             } else {
-                sprintf(msg,"%s : %d",gkeys[i+jdep].name,gkeys[i+jdep].kc);
-                pstr(msg,i*10,0xE0E0E0);
+                snprintf(msg, sizeof(msg), "%s : %s",
+                    gkeys[k].function,
+                    SDL_GetKeyName(gkeys[k].kc));
+                pstr(msg, line*LINE_HEIGHT, 0xE0E0E0);
             }
         }
         buffer2video();
-        gkeys[j].kc=getscancode();
+        gkeys[redef_k].kc = getscancode();
     }
 
     keys_save();

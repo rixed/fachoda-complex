@@ -21,6 +21,7 @@
 #include <stdint.h>
 #include <math.h>
 #include <values.h>
+#include "video_sdl.h"
 #include "heightfield.h"
 
 // Length of the vision square
