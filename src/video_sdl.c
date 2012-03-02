@@ -18,6 +18,7 @@
  */
 #include <math.h>
 #include <stdbool.h>
+#include <assert.h>
 #include <SDL/SDL.h>
 #include "proto.h"
 
@@ -117,15 +118,26 @@ void xproceed(void)
         bitzero(1);
     }
     while (SDL_PollEvent(&event)) {
-        if (event.type==SDL_KEYDOWN) bitset(event.key.keysym.scancode);
-        else if (event.type==SDL_KEYUP) bitzero(event.key.keysym.scancode);
+        switch (event.type) {
+            case SDL_KEYDOWN:
+                bitset(event.key.keysym.scancode);
+                break;
+            case SDL_KEYUP:
+                bitzero(event.key.keysym.scancode);
+                break;
+            case SDL_QUIT:
+                quit_game = true;
+                break;
+        }
     }
 }
 
-char getscancode() {
+char getscancode(void)
+{
     SDL_Event event;
     while (SDL_WaitEvent(&event)>=0) {
         if (event.type==SDL_KEYDOWN) return event.key.keysym.scancode;
     }
+    assert(!"Error in SDL_WaitEvent()");
     return -1;  // ??
 }

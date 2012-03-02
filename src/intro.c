@@ -255,11 +255,12 @@ static int jauge(int vi, int max) {
             if (kzc==0) {
                 playsound(VOICE_MOTOR, SAMPLE_BIPINTRO, 1+(drand48()-.5)*.05, &voices_in_my_head, true, false);
                 bg_shaking = 70*256;
-                return va;
+                break;
             }
             else if (xmouse>=10 && xmouse<win_width-10) va=((xmouse-10)*max)/(win_width-20);
         }
-    } while (1);
+    } while (! quit_game);
+    return va;
 }
 
 int present(void)
@@ -367,5 +368,6 @@ int present(void)
                 }
             }
         }
-    } while (1);
+    } while (! quit_game);
+    return -1;
 }
