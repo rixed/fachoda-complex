@@ -1,0 +1,34 @@
+For a detailed ChangeLog, see git logs.
+Here are only reported the most visible changes.
+
+New in 2.1 (2012-03-09)
+-----------------------
+
+* Rework keyboard controls.
+  If you previously redefied your keys you must:
+  - deletes your $(HOME)/.fachoda-keys
+  - redefine them again :)
+
+* Display ingame messages longer
+
+* Make game menu easier to use
+
+* Add small dots on the ground as a visual indication that it's near
+
+* Make game playable from source directory
+
+* Add a caption to some views
+
+* Allow to exit the game by closing the window or CTRL+C
+
+* Suppressed frightening but harmless error messages
+
+* Fix many small bugs here and there
+
+
+New in 2.0 (2012-02-21)
+-----------------------
+
+Too many changes to be listed here.
+See devlog at http://rixed.github.com/fachoda-complex/devlog.html.
+
