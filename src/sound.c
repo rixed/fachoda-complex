@@ -122,7 +122,8 @@ static ALenum al_format(unsigned nb_channels, unsigned bits_per_sample)
     assert(!"Unsuported wave format");
 }
 
-int load_wave(enum snd_sample samp, char const *fn, bool loop, float gain)
+// Load a wave file. Supported format include mono/stereo 8 or 16 bits/sample
+static int load_wave(enum snd_sample samp, char const *fn, bool loop, float gain)
 {
     if (! with_sound) return 0;
 
@@ -200,7 +201,7 @@ exit0:
     return -1;
 }
 
-int loadsample(enum snd_sample samp, char const *fn, bool loop, float gain)
+static int load_raw(enum snd_sample samp, char const *fn, bool loop, float gain)
 {
     if (! with_sound) return 0;
 
@@ -394,6 +395,31 @@ int sound_init(bool with_sound_)
         play[v].samp = NB_SAMPLES;
     }
     alSpeedOfSound(34330.); // our unit of distance is approx the cm
+
+    // Load all samples
+    load_raw(SAMPLE_PRESENT,"snd/pingouin.raw", false, 1.);
+    load_raw(SAMPLE_BIPINTRO,"snd/bipintro.raw", false, 1.);
+    load_wave(SAMPLE_SHOT,"snd2/shot1.wav", false, 1.);
+    load_raw(SAMPLE_GEAR_DN,"snd/gear_dn.raw", false, 1.);
+    load_raw(SAMPLE_GEAR_UP,"snd/gear_up.raw", false, 1.);
+    load_raw(SAMPLE_SCREETCH,"snd/screetch.raw", false, 1.);
+    load_wave(SAMPLE_LOW_SPEED, "snd2/taxi.wav", true, .4);
+    load_wave(SAMPLE_MOTOR, "snd2/spit2.wav", true, .7);
+    load_raw(SAMPLE_HIT,"snd/hit.raw", false, 1.);
+    load_raw(SAMPLE_MESSAGE,"snd/message.raw", false, 1.);
+    load_wave(SAMPLE_EXPLOZ,"snd2/bombhit.wav", false, 1.);
+    load_wave(SAMPLE_BOMB_BLAST,"snd2/boum.wav", false, 1.);
+    load_raw(SAMPLE_TOLE,"snd/tole.raw", false, 1.);
+    load_raw(SAMPLE_BIPBIP,"snd/bipbip.raw", false, 1.);
+    load_raw(SAMPLE_BIPBIP2,"snd/bipbip2.raw", false, 1.);
+    load_raw(SAMPLE_BIPBIP3,"snd/bipcarte.raw", false, 1.);
+    load_raw(SAMPLE_FEU,"snd/feu.raw", true, 1.);
+    load_raw(SAMPLE_TARATATA,"snd/taratata.raw", false, 1.);
+    load_raw(SAMPLE_ALLELUIA,"snd/alleluia.raw", false, 1.);
+    load_raw(SAMPLE_ALERT,"snd/alert.raw", false, 1.);
+    load_raw(SAMPLE_PAIN,"snd/pain.raw", false, 1.);
+    load_wave(SAMPLE_DEATH,"snd2/death.wav", false, 1.);
+    load_wave(SAMPLE_BRAVO,"snd2/bravo.wav", false, 1.);
 
     printf("Sound OK\n");
     return 0;

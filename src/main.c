@@ -557,32 +557,10 @@ parse_error:
     videobuffer = malloc(win_width*win_height*sizeof(*videobuffer));
     initvideo(fullscreen);
     drawtbback();
+
     // KEYS
     keys_load();
-    // Load sound samples
-    loadsample(SAMPLE_PRESENT,"snd/pingouin.raw", false, 1.);
-    loadsample(SAMPLE_BIPINTRO,"snd/bipintro.raw", false, 1.);
-    load_wave(SAMPLE_SHOT,"snd2/shot1.wav", false, 1.);
-    loadsample(SAMPLE_GEAR_DN,"snd/gear_dn.raw", false, 1.);
-    loadsample(SAMPLE_GEAR_UP,"snd/gear_up.raw", false, 1.);
-    loadsample(SAMPLE_SCREETCH,"snd/screetch.raw", false, 1.);
-    load_wave(SAMPLE_LOW_SPEED, "snd2/taxi.wav", true, .4);
-    load_wave(SAMPLE_MOTOR, "snd2/spit2.wav", true, .7);
-    loadsample(SAMPLE_HIT,"snd/hit.raw", false, 1.);
-    loadsample(SAMPLE_MESSAGE,"snd/message.raw", false, 1.);
-    load_wave(SAMPLE_EXPLOZ,"snd2/bombhit.wav", false, 1.);
-    load_wave(SAMPLE_BOMB_BLAST,"snd2/boum.wav", false, 1.);
-    loadsample(SAMPLE_TOLE,"snd/tole.raw", false, 1.);
-    loadsample(SAMPLE_BIPBIP,"snd/bipbip.raw", false, 1.);
-    loadsample(SAMPLE_BIPBIP2,"snd/bipbip2.raw", false, 1.);
-    loadsample(SAMPLE_BIPBIP3,"snd/bipcarte.raw", false, 1.);
-    loadsample(SAMPLE_FEU,"snd/feu.raw", true, 1.);
-    loadsample(SAMPLE_TARATATA,"snd/taratata.raw", false, 1.);
-    loadsample(SAMPLE_ALLELUIA,"snd/alleluia.raw", false, 1.);
-    loadsample(SAMPLE_ALERT,"snd/alert.raw", false, 1.);
-    loadsample(SAMPLE_PAIN,"snd/pain.raw", false, 1.);
-    load_wave(SAMPLE_DEATH,"snd2/death.wav", false, 1.);
-    load_wave(SAMPLE_BRAVO,"snd2/bravo.wav", false, 1.);
+
     // PRESENTATION
     animpresent();
     if (present() == -1) goto fin;

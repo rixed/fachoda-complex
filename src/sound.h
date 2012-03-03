@@ -43,11 +43,6 @@ enum snd_voice {
     NB_VOICES
 };
 
-int loadsample(enum snd_sample samp, char const *filename, bool loop, float gain);
-
-// Load a wave file. Supported format include mono/stereo 8 or 16 bits/sample
-int load_wave(enum snd_sample samp, char const *fn, bool loop, float gain);
-
 // Set listener position (will also update all attached sound sources)
 void update_listener(struct vector const *pos, struct vector const *velocity, struct matrix const *rot);
 
