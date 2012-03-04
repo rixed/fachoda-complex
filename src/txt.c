@@ -44,7 +44,7 @@ void pnumchar(int n, int x, int y, int c) {
         x-=8;
     }
 }
-void pnum(int n, int x, int y, int c, char just) {
+void pnum(int n, int x, int y, int c, int just) {
     char sig=2*(n>=0)-1;
     int m=n;
     if (just==1) { // justifié à gauche
@@ -65,7 +65,7 @@ void pnumchara(int n, int x, int y, int c) {    // a = dans le mapping
         x-=8;
     }
 }
-void pnuma(int n, int x, int y, int c, char just) {
+void pnuma(int n, int x, int y, int c, int just) {
     char sig=2*(n>=0)-1;
     int m=n;
     if (just==1) { // justifié à gauche
@@ -79,7 +79,7 @@ void pnuma(int n, int x, int y, int c, char just) {
     };
     if (sig==-1) for (m=x+2; m<x+6; m++) ((int*)mapping)[m+((y+4)<<8)]=c;
 }
-uchar font[112][10];
+uint8_t font[112][10];
 int SizeCharY=10;
 
 void loadfont(char *fn, int nx, int ny, int cy) {
@@ -109,7 +109,7 @@ void loadfont(char *fn, int nx, int ny, int cy) {
         }
     free(itmp);
 }
-uchar *BigFont;
+uint8_t *BigFont;
 int SizeBigCharY=50, SizeBigCharX=50, SizeBigChar=2500;
 
 void loadbigfont(char *fn) {
@@ -129,7 +129,7 @@ void loadbigfont(char *fn) {
     itmp = malloc(sx*sy*sizeof(*itmp));
     fread(itmp, sizeof(*itmp), sx*sy, fil);
     fclose(fil);
-    BigFont=(uchar*)malloc(sx*sy*sizeof(uchar));
+    BigFont = malloc(sx*sy*sizeof(*BigFont));
     for (fx=0; fx<13; fx++) {
         for (y=0; y<SizeBigCharY; y++) {
             for (x=0; x<SizeBigCharX; x++)
@@ -189,9 +189,9 @@ void pbignumchar(int n, int x, int y, int coul) {
         }
     }
 }
-void pbignum(int n, int x, int y, char just, char tot, char dolsig) {
+void pbignum(int n, int x, int y, int just, char tot, char dolsig) {
     int m, c;
-    uchar sig=0;
+    uint8_t sig=0;
     if (n<0) { sig=1; n=-n; }
     if (tot) c=0x7F7F7F;
     else {

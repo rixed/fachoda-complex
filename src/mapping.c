@@ -23,15 +23,16 @@
 #include "video_sdl.h"
 
 int *mapping;
-static uchar preca[256];
+static uint8_t preca[256];
 
 #define MAX_PRECA 180
-void initmapping() {
+void initmapping(void)
+{
     for (int a = 0; a < 256; a++) {
         preca[a] = MAX_PRECA * exp(-a/50.);
     }
 
-    mapping=(int*)malloc(256*256*sizeof(int));
+    mapping = malloc(256*256*sizeof(*mapping));
 }
 
 void polymap(struct vect2dm *p1, struct vect2dm *p2, struct vect2dm *p3) {

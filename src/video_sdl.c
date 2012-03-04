@@ -71,7 +71,10 @@ static uint8_t keytab[SDLK_LAST-SDLK_FIRST+1];
 
 static unsigned bit_of_key(SDLKey k)
 {
-    assert(k >= SDLK_FIRST && k <= SDLK_LAST);
+#   if SDLK_FIRST > 0
+    assert(k >= SDLK_FIRST);
+#   endif
+    assert(k <= SDLK_LAST);
     return k - SDLK_FIRST;
 }
 

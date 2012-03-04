@@ -820,7 +820,9 @@ void LoadModeles() {
     }
     for (s--; s>=0; s--) subv(&mod[s].offset,&mod[mod[s].pere].offset);
 }
-int addnobjet(int na, struct vector *p, struct matrix *m, uchar sol) {
+
+int addnobjet(int na, struct vector *p, struct matrix *m, uint8_t sol)
+{
     int i;
     int firstobj=nb_obj;
     for (i=n_object[na].firstpiece; i<n_object[na].firstpiece+n_object[na].nbpieces; i++) {

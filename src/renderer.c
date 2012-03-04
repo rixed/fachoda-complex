@@ -468,7 +468,7 @@ void plotfumee(int x, int y, int r) {
     } while (++xoff <= yoff);
 }
 
-static void darken(uchar *b)
+static void darken(uint8_t *b)
 {
     *b = *b - ((*b>>2) & 0x3F);
 }

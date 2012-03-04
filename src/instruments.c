@@ -25,7 +25,7 @@
 short int sxtbtile, sytbtile;
 int xsoute,ysoute,xthrust,ythrust,rthrust,xspeed,yspeed,rspeed,xassi,yassi,rassi,xinclin,yinclin,hinclin,dxinclin,xgear,ygear,rgear,xflap,yflap,rflap,xvert,yvert,rvert,xalti,yalti,ralti,xbous,ybous,hbous,dxbous,rbous,xfrein,yfrein,rfrein,xauto,yauto,rauto;
 struct pixel32 *tbtile, *tbback, *tbback1, *tbback2;
-uchar *tbz;
+uint8_t *tbz;
 int *tbwidth;
 int *boussole;
 void rectangle(int *v, int rx, int ry, int c) {
@@ -140,7 +140,7 @@ void loadtbtile(char *fn) {
         tbtile[x+y*sxtbtile].b=p.b;
     }
     fclose(f);
-    tbz=(uchar*)malloc(pannel_height*pannel_width*sizeof(uchar));
+    tbz = malloc(pannel_height*pannel_width*sizeof(*tbz));
     tbback = malloc(pannel_height*pannel_width*sizeof(*tbback));
     vid=tbback;
     for (y=0; y<pannel_width; y++) {

@@ -197,7 +197,10 @@ void reward_new() {
         case 2:
             // détruire un bot véhic
             k=0;
-            do {k++; j=NBTANKBOTS*drand48();} while (k<10 && tank[j].camp==-1);
+            do {
+                k++;
+                j = NBTANKBOTS*drand48();
+            } while (k<10 && tank[j].camp == -1);
             if (k<10) {
                 sprintf(current_msg,botvehicmsg[tank[j].camp==current_msg_camp][(int)(drand48()*NBMSG)][current_msg_camp][lang],tank[j].nom,obj[tank[j].o1].pos.x,obj[tank[j].o1].pos.y);
                 reward[i].camp=current_msg_camp;

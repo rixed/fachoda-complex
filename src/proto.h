@@ -22,6 +22,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>
+#include <stdint.h>
 #include "gtime.h"
 
 #define MIN(a,b) ((a)<=(b)?(a):(b))
@@ -75,10 +76,8 @@ enum obj_type {
     TYPE_ZEPPELIN
 };
 
-typedef unsigned char uchar;
-
 struct pixel {
-    uchar b,g,r;
+    uint8_t b,g,r;
 };
 
 static inline int color_of_pixel(struct pixel c)
@@ -87,7 +86,7 @@ static inline int color_of_pixel(struct pixel c)
 }
 
 struct pixel32 {
-    uchar b,g,r,u;
+    uint8_t b,g,r,u;
 };
 
 static inline struct pixel32 pixel32_of_pixel(struct pixel c)
@@ -130,7 +129,7 @@ struct vect2dc {
 
 struct vect2dm {
     struct vect2d v;
-    uchar mx,my;
+    uint8_t mx, my;
 };
 
 struct matrix {
@@ -139,14 +138,14 @@ struct matrix {
 #define MAT_ID { {1, 0, 0},  {0, 1, 0},  {0, 0, 1} }
 
 struct button {
-    char gear:1;    // how we want the gears (1 = down)
-    char canon:1;
-    char bomb:1;
-    char flap:1;
-    char gearup:1;  // if the gears are currently up
-    char frein:1;
-    char business:1;
-    char mark:1;
+    uint8_t gear:1;    // how we want the gears (1 = down)
+    uint8_t canon:1;
+    uint8_t bomb:1;
+    uint8_t flap:1;
+    uint8_t gearup:1;  // if the gears are currently up
+    uint8_t frein:1;
+    uint8_t business:1;
+    uint8_t mark:1;
 };
 
 struct face {
@@ -172,7 +171,6 @@ struct model {
 };
 
 struct object {
-    uchar type; // FIXME: use mod[obj.model].type?
     struct vector pos;     // translation par rapport à l'obj de référence
     struct matrix rot;     // rotation par rapport à l'obj de reference
     int next,prec;  // lien sur l'objet suivant dans la liste du tri en Z
@@ -182,16 +180,17 @@ struct object {
     struct vector posc;
     float distance; // eloignement en R2 a la camera
     struct vector t;   // position du centre dans le mark de la camera
-    uchar aff:1;    // 0 = pas aff, 1=aff normal
+    uint8_t type; // FIXME: use mod[obj.model].type?
+    uint8_t aff:1;    // 0 = pas aff, 1=aff normal
 };
 
 struct part {
     char *fn, *fnlight;
     int pere;   // relativement à la première pièce du modèle
-    char plat:1;    // 1 si la piece est plate
-    char bomb:3;    // 0 si pas bomb, 1 si light, 2 si HEAVY ! 3 = destructible à la bomb, pour instal terrestres
-    char mobil;
-    char platlight:1;
+    int plat:1;    // 1 si la piece est plate
+    int bomb:3;    // 0 si pas bomb, 1 si light, 2 si HEAVY ! 3 = destructible à la bomb, pour instal terrestres
+    int mobil;
+    int platlight:1;
 };
 
 struct n_object {
@@ -205,7 +204,7 @@ struct reward {
     int dt;
     char *endmsg;
     int no;
-    char camp;
+    int camp;
 };
 
 struct village {
@@ -215,7 +214,7 @@ struct village {
 };
 
 struct bot {
-    short int navion,babase;    // Numéro de type d'avion, de base
+    int navion, babase;    // Numéro de type d'avion, de base
     int vion;   // numéro de l'objet principal de l'avion
     int camp;  // 1 ou 2 ou -1 si détruit
     int nbomb;
@@ -260,11 +259,11 @@ struct bot {
     float p;
     float target_speed;
     float target_rel_alt;   // relative altitude compared to u.z
-    uchar alterc;
+    uint8_t alterc;
     int fiul;
     int fiulloss;
-    char motorloss;
-    char aeroloss;
+    int motorloss;
+    int aeroloss;
     int bloodloss;
     int gunned; // bot/tank number of the oponent (while cibv/cibt is the object number)
     float cap;
@@ -287,7 +286,7 @@ struct zeppelin {
 };
 
 struct tank {
-    char camp;  // 1 ou 2 ou -1 si détruit.
+    int camp;  // 1 ou 2 ou -1 si détruit.
     int o1, o2;
     char *nom;
     struct vector p;
@@ -304,9 +303,9 @@ struct tank {
 struct plane_desc {
     char *name;
     int nbpiecestete, prix,nbmoyeux, nbcharngearx,nbcharngeary,tabbord,firstcanon,nbcanon;
-    uchar avant:1;
-    uchar retract3roues:1;
-    uchar oldtb:1;
+    uint8_t avant:1;
+    uint8_t retract3roues:1;
+    uint8_t oldtb:1;
     float motorpower, lift, drag;
     int bulletsmax, fiulmax;
     int roue[3];    // D,G,A
@@ -337,7 +336,7 @@ struct road {
 struct car {
     int r;
     int o;
-    char sens;
+    int sens;
     float vit;
     int dist;
 };
@@ -390,13 +389,13 @@ extern struct object obj[];
 extern double z_near;
 extern struct matrix light;
 extern int win_center_x, win_center_y, win_width, win_height, pannel_width, pannel_height;
-void object_add(int, struct vector *, struct matrix *, int, uchar);
+void object_add(int, struct vector *, struct matrix *, int, uint8_t);
 extern int viewed_bot;
 extern int gold;
 extern int gunner[MAX_SHOTS];
 extern float shot_ttl[MAX_SHOTS];
 extern float smoke_radius[];
-extern uchar smoke_type[];
+extern uint8_t smoke_type[];
 // renderer.c
 void calcposrigide(int o);
 void calcposarti(int o, struct matrix *m);
@@ -431,13 +430,13 @@ void draw_debug(void);
 void pcharady(int m, int *v, int c, int off);
 extern int TextClipX1,TextClipX2,TextColfont;
 void pnumchar(int n, int x, int y, int c);
-void pnum(int n, int x, int y, int c, char just);
-void pnuma(int n, int x, int y, int c, char just);
+void pnum(int n, int x, int y, int c, int just);
+void pnuma(int n, int x, int y, int c, int just);
 extern int SizeCharY;
 extern int SizeBigCharY, SizeBigCharX, SizeBigChar;
 void loadbigfont(char *fn);
 void pbignumchar(int n, int x, int y, int c);
-void pbignum(int n, int x, int y, char just, char tot, char dolard);
+void pbignum(int n, int x, int y, int just, char tot, char dolard);
 void loadfont(char *fn, int nx, int ny, int cy);
 void pchar(int m, int x, int y, int c);
 void pcharlent(int m, int x, int y, int c);
@@ -449,7 +448,7 @@ void pstrlent(char const *m, int y, int c);
 extern struct plane_desc plane_desc[];
 extern struct n_object n_object[];
 void LoadModeles(void);
-int addnobjet(int na, struct vector *p, struct matrix *m, uchar);
+int addnobjet(int na, struct vector *p, struct matrix *m, uint8_t);
 // radio.c
 extern struct reward reward[];
 extern struct village village[];
@@ -488,7 +487,7 @@ void drawtbcadrans(int b);
 extern int lx,ly,lz;
 extern short int sxtbtile, sytbtile;
 extern struct pixel32 *tbtile, *tbback, *tbback1, *tbback2;
-extern uchar *tbz;
+extern uint8_t *tbz;
 extern int *tbwidth;
 // physics
 #define BEST_LIFT_SPEED (2.5 * ONE_METER)    // according to control.c
@@ -536,8 +535,8 @@ void MMXFlatTransp(int *dest, int nbr, int c);
 void memset32(int *deb, int coul, int n);
 void MMXAddSatInt(int *deb, int coul, int n);
 void MMXCopyToScreen(int *dest, int *src, int sx, int sy, int width);
-extern uchar *BigFont;
-extern uchar font[112][10];
+extern uint8_t *BigFont;
+extern uint8_t font[112][10];
 // keycodes
 #include <SDL/SDL.h>
 #define NBKEYS 45 //56

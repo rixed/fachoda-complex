@@ -51,7 +51,7 @@ int nb_obj;
 int shot_start, smoke_start, mill_start, mill_stop;
 float AngleMoulin=0;
 float smoke_radius[MAX_SMOKES];
-uchar smoke_type[MAX_SMOKES];
+uint8_t smoke_type[MAX_SMOKES];
 int smoke_source[MAX_SMOKE_SOURCES], smoke_source_intens[MAX_SMOKE_SOURCES];
 gtime smoke_source_last_emit[MAX_SMOKE_SOURCES];
 double z_near;
@@ -75,7 +75,7 @@ int win_center_x, win_center_y, win_width=400, win_height=250, pannel_width, pan
 int nb_shot;
 
 // add an object to obj[]
-void object_add(int mo, struct vector *p, struct matrix *m, int or, uchar sol)
+void object_add(int mo, struct vector *p, struct matrix *m, int or, uint8_t sol)
 {
     int xk,yk,ak;
     assert(nb_obj < (int)ARRAY_LEN(obj));
@@ -99,20 +99,20 @@ void object_add(int mo, struct vector *p, struct matrix *m, int or, uchar sol)
 
 static void background_line(int *v,int sx,int dz,int z,int coul) {
     int x;
-    uchar cz;
+    uint8_t cz;
     if (coul==-1) return;
     if (coul==0) {
         if (z>64<<8) z=64<<8;
         else if (z<0) z=0;
         if (!night_mode) for (x=0; x<sx; x++) {
-            uchar r;
+            uint8_t r;
             cz=z>>8;
             r=224-cz;
             cz=-cz; //?
             v[x]=(r<<16)+(r<<8)+(cz&0xFF);
             z+=dz;
         } else for (x=0; x<sx; x++) {
-            uchar r;
+            uint8_t r;
             cz=z>>8;    // z>>8 entre 0 et 64
             r=0x20+64-cz;
             cz=0x40+64-cz;
@@ -917,7 +917,7 @@ parse_error:
 #                   endif
                     if (! night_mode) {
                         double i;
-                        uchar u;
+                        uint8_t u;
                         if ((i=scalaire(&obj[0].rot.z,&light.z))<-.9) {
                             u=(exp(-i-.9)-1)*2200;
                             MMXAddSatInt((int*)videobuffer,(u<<16)+(u<<8)+u,win_width*win_height);

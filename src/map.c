@@ -28,7 +28,7 @@ int zoom = 200, map_x = 0, map_y = 0;
 int next_mark_set = 0;
 struct vector mark[NB_MARKS];
 
-static void plotchar(int x, int y, int c, uchar m)
+static void plotchar(int x, int y, int c, unsigned char m)
 {
     pcharlent(m+16,x-3,y-SizeCharY/2,c);
 }

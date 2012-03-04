@@ -57,7 +57,7 @@ struct tile *map;   // The global map: a square of MAP_LEN*MAP_LEN tiles.
  * are always slightly higher. Thus, transition between submaped close tiles and tiles
  * farther away show no gap.
  */
-static uchar *submap[10];
+static uint8_t *submap[10];
 
 /* Each vector of a submap heighfield have a specific lightning (to be added to the
  * lightning of the tile). It's faster than to compute a proper lightning for every
@@ -82,7 +82,7 @@ static void random_submap(
     int x, int y,   // location of the starting corner of the square to randomize
     int s,          // length of the square to randomize
     size_t z_off,   // offset between any two consecutive z bytes along x
-    uchar *m,       // first z
+    uint8_t *m,       // first z
     int smap        // length ot the total map
 ) {
     int ss = s >> 1;
@@ -116,7 +116,7 @@ static void random_submap(
     random_submap(x + ss, y + ss, ss, z_off, m, smap);
 }
 
-static void smooth_map(uchar *m, int smap, int s, size_t z_off)
+static void smooth_map(uint8_t *m, int smap, int s, size_t z_off)
 {
     for (int i = 0; i < s; i++) {
         size_t yo = 0, yn;
@@ -131,7 +131,7 @@ static void smooth_map(uchar *m, int smap, int s, size_t z_off)
     }
 }
 
-static void make_map(uchar *m, int smooth_factor, int mapzmax, int map_length, size_t z_off)
+static void make_map(uint8_t *m, int smooth_factor, int mapzmax, int map_length, size_t z_off)
 {
     m[0] = 255; // ?
     random_submap(0, 0, map_length, z_off, m, map_length);
@@ -185,7 +185,7 @@ void initmap(void)
         { 210,210,210 } // roc
     };
     struct {
-        uchar z1, z2;
+        uint8_t z1, z2;
     } zcolterrain[4] = { {0,3}, {40,50}, {80,151}, {200,255} };//{ {0,52}, {100,151}, {200,255} };
     // ZCOL
     for (y=0; y<4; y++) {

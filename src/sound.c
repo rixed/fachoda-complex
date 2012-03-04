@@ -88,7 +88,7 @@ static void *load_file(char const *fn, size_t *size)
 
     if (size) *size = sz;
 
-    uchar *buf = malloc(sz);
+    uint8_t *buf = malloc(sz);
     if (! buf) {
         fprintf(stderr, "Cannot malloc(%ld)\n", sz);
         goto exit1;
@@ -146,7 +146,7 @@ static int load_wave(enum snd_sample samp, char const *fn, bool loop, float gain
         // Data section
         char data[4];
         uint32_t data_size;
-        uchar samples[];
+        uint8_t samples[];
     } __attribute__((__packed__));
 
     size_t sz;
@@ -208,7 +208,7 @@ static int load_raw(enum snd_sample samp, char const *fn, bool loop, float gain)
     ALenum err;
 
     size_t sz;
-    uchar *fbuf = load_file(fn, &sz);
+    uint8_t *fbuf = load_file(fn, &sz);
     if (! fbuf) goto exit0;
 
     assert(samp < ARRAY_LEN(buffers));

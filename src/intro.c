@@ -29,10 +29,10 @@
 #include "video_sdl.h"
 
 static struct {
-    char nbkases;
+    int nbkases;
     struct {
         char *label;
-        char nxtround;
+        int nxtround;
     } kase[9];
 } Round []= {
     {   // cercle 0
