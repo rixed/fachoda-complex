@@ -541,7 +541,7 @@ void robot(int b)
                     break;
                 case TAXI:
                     d = dist_from_navpoint(b, &u);
-                    float const target_speed = d > 3. * ONE_METER ? .6 * ONE_METER : .3 * ONE_METER;
+                    float const target_speed = d > 3. * ONE_METER ? .3 * ONE_METER : .2 * ONE_METER;
                     adjust_throttle(b, target_speed);
                     if (d > .7 * ONE_METER) {
                         if (fabs(obj[o].rot.y.z) < .1) {
@@ -567,9 +567,8 @@ void robot(int b)
 #                   endif
                     break;
                 case LINE_UP:
-                    bot[b].thrust = 0.1;
-                    bot[b].but.frein = 1;
-                    bot[b].xctl = -4*scalaire(&bot[b].v, &obj[o].rot.y);
+                    adjust_throttle(b, .05 * ONE_METER);
+                    bot[b].xctl = -8. * scalaire(&bot[b].v, &obj[o].rot.y);
                     if (scalaire(&bot[b].v, &obj[o].rot.x) < 0.) {
                         bot[b].xctl = bot[b].xctl > 0. ? 1. : -1.;
                     }
@@ -677,7 +676,7 @@ void robot(int b)
                     }
                     bot[b].u = obj[bot[b].babase].pos;
                     bot[b].maneuver = ILS_3;
-                    bot[b].target_speed = 1.9 * ONE_METER;
+                    bot[b].target_speed = 1.6 * ONE_METER;
                     bot[b].target_rel_alt = 0.;
                     break;
                 case ILS_3:

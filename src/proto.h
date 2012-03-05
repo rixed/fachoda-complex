@@ -491,7 +491,7 @@ extern uint8_t *tbz;
 extern int *tbwidth;
 // physics
 #define BEST_LIFT_SPEED (2.5 * ONE_METER)    // according to control.c
-#define MIN_SPEED_FOR_LIFT 120.
+#define MIN_SPEED_FOR_LIFT 100.
 extern float snd_thrust;
 void physics_plane(int b, float dt_sec);
 void physics_tank(int v, float dt_sec);

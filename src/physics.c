@@ -329,10 +329,10 @@ void physics_plane(int b, float dt_sec)
         if (easy_mode || b>=NbHosts) kx*=1.2;
 
         // les ailes aiment bien etre de front (girouette)
-        double const prof = .001*vz + bot[b].yctl * kx;
+        double const prof = .002*vz + bot[b].yctl * kx;
         double const gouv = .001*vy +
             // rear wheel in contact with the ground
-            (touchdown_mask & 4 ? -vx*.06*bot[b].xctl : 0.);
+            (touchdown_mask & 4 ? -vx*.1*bot[b].xctl : 0.);
 
         double const deriv =
             (bot[b].xctl * kx)/(1. + .05*bot[b].nbomb) /*+
@@ -377,8 +377,8 @@ void physics_plane(int b, float dt_sec)
 
         float const fix_orient = rt * 1. * dt_sec;
         if (touchdown_mask&3  && !(touchdown_mask&4)) { // either right or left wheel but not front/rear -> noise down/up
-            if (plane_desc[bot[b].navion].avant) obj_rotate_y(bot[b].vion, -fix_orient);
-            else obj_rotate_y(bot[b].vion, fix_orient);
+            if (plane_desc[bot[b].navion].avant) obj_rotate_y(bot[b].vion, -2.*fix_orient);
+            else obj_rotate_y(bot[b].vion, 2.*fix_orient);
         } else if (!(touchdown_mask&3) && touchdown_mask&4) {   // front/read but neither left nor right -> noise up/down
             if (plane_desc[bot[b].navion].avant) obj_rotate_y(bot[b].vion, fix_orient);
             else obj_rotate_y(bot[b].vion, -fix_orient);
