@@ -129,12 +129,15 @@ void explose(int oc, int i)
                     debris[i].vit.y *= 5. * ONE_METER;
                     debris[i].vit.z *= 25. * ONE_METER;
                 }
+                debris[i].a1 = drand48()*M_PI*2;
+                debris[i].a2 = drand48()*M_PI*2;
             } else {
                 debris[i].vit = vec_zero;
+                // Do not rotate too fast the part where the camera is attached
+                debris[i].a1 = drand48()*M_PI*.2;
+                debris[i].a2 = drand48()*M_PI*.2;
             }
             addv(&debris[i].vit, &vit);
-            debris[i].a1=drand48()*M_PI*2;
-            debris[i].a2=drand48()*M_PI*2;
             debris[i].ai1 = debris[i].a1*2.;
             debris[i].ai2 = debris[i].a2*2.;
             if (debris[i].vit.z>0) debris[i].vit.z=-debris[i].vit.z;
