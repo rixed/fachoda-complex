@@ -339,7 +339,7 @@ void physics_plane(int b, float dt_sec)
         // push wings frontally
         if (touchdown_mask) {
             prof = 0.;
-            gouv = touchdown_mask & 4 ? -vx*.1*bot[b].xctl : 0.; // rear wheel in contact with the ground
+            gouv = touchdown_mask & 4 ? -.5*bot[b].xctl : 0.; // rear wheel in contact with the ground
             deriv = 0.;
         } else {
             float const k_vx = .4*atan(0.06*(vx-MIN_SPEED_FOR_LIFT)) - 0.66;
