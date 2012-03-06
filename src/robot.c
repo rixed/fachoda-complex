@@ -193,8 +193,8 @@ void robotvehic(int v)
                 if (tz > -100. && tz < 100. && n < 2500.) {
                     tank[v].tir = 1;
                     // spread bullets slightly
-                    tank[v].ang1 += 0.01*(drand48()-.5);
-                    tank[v].ang2 += 0.01*(drand48()-.5);
+                    tank[v].ang1 += 0.05*(drand48()-.5);
+                    tank[v].ang2 += 0.05*(drand48()-.5);
                 }
             }
         }
