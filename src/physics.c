@@ -232,19 +232,21 @@ void physics_plane(int b, float dt_sec)
     }
 #   endif
 
-    double zs = obj[bot[b].vion].pos.z - bot[b].zs; // ground altitude
+    double const zs = obj[bot[b].vion].pos.z - bot[b].zs; // ground altitude
+    float aoa = cap(vx, -vz);
+    if (aoa > M_PI) aoa -= 2.*M_PI;
+
 #   ifndef NLIFT
     {
         float kx = 0;
         if (vx >= MIN_SPEED_FOR_LIFT) {
-            float const aoa = -vz/vx;
-#           define MAX_AOA_FOR_LIST 0.5 // ratio of z/x
-            if (fabs(aoa) < MAX_AOA_FOR_LIST) {
-                kx = (aoa/MAX_AOA_FOR_LIST) * MIN(.0005*(vx-MIN_SPEED_FOR_LIFT)*(vx-MIN_SPEED_FOR_LIFT), 12.*exp(-.001*vx));
+#           define MAX_AOA_FOR_LIFT 0.5
+            if (fabs(aoa) < MAX_AOA_FOR_LIFT) {
+                kx = (aoa/MAX_AOA_FOR_LIFT) * MIN(.0005*(vx-MIN_SPEED_FOR_LIFT)*(vx-MIN_SPEED_FOR_LIFT), 12.*exp(-.001*vx));
             }
         }
 
-        // kx max is aprox 1., when vx is around 250 (BEST_LIFT_SPEED!) and a-o-a around MAX_AOA_FOR_LIST
+        // kx max is aprox 1., when vx is around 250 (BEST_LIFT_SPEED!) and a-o-a around MAX_AOA_FOR_LIFT
         float lift = plane_desc[bot[b].navion].lift;
         if (bot[b].but.flap) lift *= 1.2;
         if (zs < 5. * ONE_METER) lift *= 1.1;   // more lift when close to the ground
@@ -253,7 +255,7 @@ void physics_plane(int b, float dt_sec)
         mulv(&u, (G * 1.) * lift * kx * (1-bot[b].aeroloss/128.));
         addv(&a, &u);
 #       ifdef PRINT_DEBUG
-        if (b == viewed_bot) printf("lift   -> %"PRIVECTOR" (kx=%f)\n", PVECTOR(a), kx);
+        if (b == viewed_bot) printf("lift   -> %"PRIVECTOR" (aoa=%f, kx=%f)\n", PVECTOR(a), aoa, kx);
 #       endif
 #       ifdef VEC_DEBUG
         if (b == viewed_bot) {
@@ -281,7 +283,7 @@ void physics_plane(int b, float dt_sec)
                 mulv(&v, .4);
                 subv(&a, &v);
             } else {
-                v.x = (bot[b].but.frein && vx < 1. * ONE_METER ? .08:.00005) * vx;
+                v.x = (bot[b].but.frein && vx < 1. * ONE_METER ? .08:.00001) * vx;
                 v.y = .05 * vy;
                 v.z = 0;
                 mulmv(&obj[bot[b].vion].rot, &v, &u);
@@ -320,29 +322,31 @@ void physics_plane(int b, float dt_sec)
     }
 
 #   ifndef NTORSION
-    {   // des effets de moment angulaire
-        // 1 lacet pour les ailes
-        // Commands are the most effective when vx=200. (then kx=1)
+    {   // Angular momentum due to airflow on wings + controls
+        // Commands are the most effective when vx=BEST_SPEED_FOR_CONTROL. (then kx=1)
         float kx;
-        double const kx1 = .0001*(vx-40)*(vx-40);
-        double const kx2 = 1. - .00003*(vx-200)*(vx-200);
-        double const kx3 = 1. -.001*vx;
-        if (vx < 40) kx=0;
-        else if (vx < 200) kx = MIN(kx1, kx2);
+        double const kx1 = .00005*(vx-MIN_SPEED_FOR_LIFT)*(vx-MIN_SPEED_FOR_LIFT);
+        double const kx2 = 1. - .00003*(vx-BEST_SPEED_FOR_CONTROL)*(vx-BEST_SPEED_FOR_CONTROL);
+        double const kx3 = 1. -.0017*vx;
+        if (vx < MIN_SPEED_FOR_LIFT) kx=0;
+        else if (vx < BEST_SPEED_FOR_CONTROL) kx = MIN(kx1, kx2);
         else kx = MAX(kx2, kx3);
         if (kx < 0) kx = 0;
 
         if (easy_mode || b>=NbHosts) kx*=1.2;
 
-        // les ailes aiment bien etre de front (girouette)
-        double const prof = .002*vz + bot[b].yctl * kx;
-        double const gouv = .001*vy +
-            // rear wheel in contact with the ground
-            (touchdown_mask & 4 ? -vx*.1*bot[b].xctl : 0.);
-
-        double const deriv =
-            (bot[b].xctl * kx)/(1. + .05*bot[b].nbomb) /*+
-            .00001 * obj[bot[b].vion].rot.y.z*/;
+        double prof, gouv, deriv;
+        // push wings frontally
+        if (touchdown_mask) {
+            prof = 0.;
+            gouv = touchdown_mask & 4 ? -vx*.1*bot[b].xctl : 0.; // rear wheel in contact with the ground
+            deriv = 0.;
+        } else {
+            float const k_vx = .4*atan(0.06*(vx-MIN_SPEED_FOR_LIFT)) - 0.66;
+            prof = k_vx*aoa + bot[b].yctl * kx;
+            gouv = -0.04*k_vx*vy;
+            deriv = (bot[b].xctl * kx)/(1. + .05*bot[b].nbomb);
+        }
 
         obj_rotate(bot[b].vion, deriv*dt_sec, prof*dt_sec, gouv*dt_sec);
     }
@@ -381,7 +385,7 @@ void physics_plane(int b, float dt_sec)
         if (b == viewed_bot) printf("ground -> %"PRIVECTOR"\n", PVECTOR(a));
 #       endif
 
-        float const fix_orient = rt * 1. * dt_sec;
+        float const fix_orient = rt * 0.4 * dt_sec;
         if (touchdown_mask&3  && !(touchdown_mask&4)) { // either right or left wheel but not front/rear -> noise down/up
             if (plane_desc[bot[b].navion].avant) obj_rotate_y(bot[b].vion, -2.*fix_orient);
             else obj_rotate_y(bot[b].vion, 2.*fix_orient);
@@ -483,7 +487,6 @@ void physics_plane(int b, float dt_sec)
     addv(&bot[b].vionvit, &a);
 #   ifdef PRINT_DEBUG
     if (b == viewed_bot) printf("* dt   -> %"PRIVECTOR"\n", PVECTOR(a));
-    if (b == viewed_bot) printf("velocity= %"PRIVECTOR"\n", PVECTOR(bot[b].vionvit));
 #   endif
     v = bot[b].vionvit;
     mulv(&v, dt_sec);
