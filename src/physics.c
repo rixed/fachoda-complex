@@ -625,7 +625,7 @@ void physics_tank(int v, float dt_sec)
     m.z.x=0; m.z.y=0; m.z.z=1;
     copym(&obj[o].rot,&m);
     if (tank[v].moteur) {
-#       define TANK_SPEED (1.4 * ONE_METER) // per seconds
+#       define TANK_SPEED (1.1 * ONE_METER) // per seconds
         copyv(&p, &obj[o].rot.x);
         mulv(&p, TANK_SPEED * dt_sec);
         addv(&obj[o].pos, &p);
