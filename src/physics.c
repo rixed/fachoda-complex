@@ -135,7 +135,7 @@ void physics_plane(int b, float dt_sec)
     if (plane_desc[bot[b].navion].nbcharngearx==0 && plane_desc[bot[b].navion].nbcharngeary==0) bot[b].but.gear=1;
 
     // Fiul
-#   define FIUL_CONSUMPTION_SPEED .01   // 0.01 unit of fiul per second at full thrust
+#   define FIUL_CONSUMPTION_SPEED .03   // 0.03 unit of fiul per second at full thrust
     bot[b].fiul -= (FIUL_CONSUMPTION_SPEED * bot[b].thrust + bot[b].fiulloss) * dt_sec;
     if (bot[b].fiul < 0) {
         bot[b].fiul = 0;
