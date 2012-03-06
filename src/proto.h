@@ -143,7 +143,7 @@ struct button {
     uint8_t bomb:1;
     uint8_t flap:1;
     uint8_t gearup:1;  // if the gears are currently up
-    uint8_t frein:1;
+    uint8_t brakes:1;
     uint8_t business:1;
     uint8_t mark:1;
 };

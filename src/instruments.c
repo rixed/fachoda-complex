@@ -398,7 +398,7 @@ void drawtbcadrans(int b) {
     }
     disqueL(xflap,yflap,rflap);
     // Brakes
-    if (bot[b].but.frein) {
+    if (bot[b].but.brakes) {
         disque(mapping+xfrein+MAP_MARGIN+((MAP_MARGIN+yfrein)<<8),rfrein*.8,0xCC2020);
     }
     disqueL(xfrein,yfrein,rfrein);

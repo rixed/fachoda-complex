@@ -407,7 +407,7 @@ void robot_safe(int b, float min_alt)
 {
     // First: if we are grounded, the safest thing to do is to stop !
     if (! bot[b].is_flying) {
-        bot[b].but.frein = 1;
+        bot[b].but.brakes = 1;
         bot[b].thrust = 0.;
         bot[b].but.gear = 1;    // just in case
         return;
@@ -555,7 +555,7 @@ void robot(int b)
                         }
                     } else {
                         bot[b].thrust = 0.;    // to trigger reload
-                        bot[b].but.frein = 1;
+                        bot[b].but.brakes = 1;
                         bot[b].xctl = 0.;
                         if (bot[b].vitlin < .01 * ONE_METER) {
                             newcib(b);
@@ -578,7 +578,7 @@ void robot(int b)
                 case TAKE_OFF:
                     bot[b].thrust = 1.;
                     bot[b].but.flap = 1;
-                    bot[b].but.frein = 0;
+                    bot[b].but.brakes = 0;
                     bot[b].xctl = 0.;
                     if (vit > 1. * ONE_METER) {
                         // Small trick: use rebound to gain lift
@@ -687,7 +687,7 @@ void robot(int b)
                         bot[b].target_speed = 0.;
                     }
                     if (bot[b].vitlin < 15.) {
-                        bot[b].but.frein = 1;
+                        bot[b].but.brakes = 1;
                     }
                     if (bot[b].vitlin < 1.) {
                         bot[b].maneuver = PARKING;

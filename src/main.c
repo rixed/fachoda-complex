@@ -958,7 +958,7 @@ parse_error:
                     }
                     if (bot[b].but.gear) pword("gear",10,60,0xD0D0D0);
                     if (bot[b].but.flap) pword("flaps",10,70,0xD0D0D0);
-                    if (bot[b].but.frein) pword("brakes",10,80,0xD0D0D0);
+                    if (bot[b].but.brakes) pword("brakes",10,80,0xD0D0D0);
                     if (autopilot) pword("auto", 10, 90, 0xD0D0D0);
                 }
                 if (accelerated_mode) pstr("ACCELERATED MODE",win_center_y/3,0xFFFFFF);

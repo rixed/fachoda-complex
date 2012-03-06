@@ -283,7 +283,7 @@ void physics_plane(int b, float dt_sec)
                 mulv(&v, .4);
                 subv(&a, &v);
             } else {
-                v.x = (bot[b].but.frein && vx < 1. * ONE_METER ? .08:.00001) * vx;
+                v.x = (bot[b].but.brakes && vx < 1. * ONE_METER ? .08:.00001) * vx;
                 v.y = .05 * vy;
                 v.z = 0;
                 mulmv(&obj[bot[b].vion].rot, &v, &u);

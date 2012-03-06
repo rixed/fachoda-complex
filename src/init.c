@@ -569,7 +569,7 @@ void initworld(void)
         bot[i].but.canon = 0;
         bot[i].but.bomb = 0;
         bot[i].but.gearup = 0;
-        bot[i].but.frein = 0;
+        bot[i].but.brakes = 0;
         bot[i].but.business = 0;
         bot[i].anghel = 0;
         bot[i].anggear = 0;

@@ -280,7 +280,7 @@ void control(int b)
         bot[b].but.flap^=1;
         playsound(VOICE_GEAR, SAMPLE_BIPBIP, 1., &obj[bot[b].vion].pos, false, false);
     }
-    bot[b].but.frein=kread(gkeys[kc_brakes].kc);
+    bot[b].but.brakes=kread(gkeys[kc_brakes].kc);
     if (kreset(gkeys[kc_business].kc)) bot[b].but.business = 1;
     if (kreset(gkeys[kc_autopilot].kc)) {
         autopilot = ! autopilot;
