@@ -235,10 +235,16 @@ void physics_plane(int b, float dt_sec)
     double zs = obj[bot[b].vion].pos.z - bot[b].zs; // ground altitude
 #   ifndef NLIFT
     {
-        float kx = vx < MIN_SPEED_FOR_LIFT ?
-            0. : MIN(.00005*(vx-MIN_SPEED_FOR_LIFT)*(vx-MIN_SPEED_FOR_LIFT), 1.2*exp(-.001*vx));
-        // kx max is aprox 1., when vx is around 250 (BEST_LIFT_SPEED!)
-        // TODO: add lift with a-o-a?
+        float kx = 0;
+        if (vx >= MIN_SPEED_FOR_LIFT) {
+            float const aoa = -vz/vx;
+#           define MAX_AOA_FOR_LIST 0.5 // ratio of z/x
+            if (fabs(aoa) < MAX_AOA_FOR_LIST) {
+                kx = (aoa/MAX_AOA_FOR_LIST) * MIN(.0005*(vx-MIN_SPEED_FOR_LIFT)*(vx-MIN_SPEED_FOR_LIFT), 12.*exp(-.001*vx));
+            }
+        }
+
+        // kx max is aprox 1., when vx is around 250 (BEST_LIFT_SPEED!) and a-o-a around MAX_AOA_FOR_LIST
         float lift = plane_desc[bot[b].navion].lift;
         if (bot[b].but.flap) lift *= 1.2;
         if (zs < 5. * ONE_METER) lift *= 1.1;   // more lift when close to the ground
@@ -247,7 +253,7 @@ void physics_plane(int b, float dt_sec)
         mulv(&u, (G * 1.) * lift * kx * (1-bot[b].aeroloss/128.));
         addv(&a, &u);
 #       ifdef PRINT_DEBUG
-        if (b == viewed_bot) printf("lift   -> %"PRIVECTOR"\n", PVECTOR(a));
+        if (b == viewed_bot) printf("lift   -> %"PRIVECTOR" (kx=%f)\n", PVECTOR(a), kx);
 #       endif
 #       ifdef VEC_DEBUG
         if (b == viewed_bot) {
