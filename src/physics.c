@@ -177,7 +177,7 @@ void physics_plane(int b, float dt_sec)
 #   endif
 
 #   ifndef NTHRUST
-#   define THRUST_ACC (.7 * G)  // at full thrust, with motorpower=1, fail to compensate gravity
+#   define THRUST_ACC (2. * G)  // If the old Merlin can do it, so can I!
     {   // Thrust
         double k = THRUST_ACC * bot[b].thrust * alt_factor * (1-bot[b].motorloss/128.) * plane_desc[bot[b].navion].motorpower;
         v = obj[bot[b].vion].rot.x;
@@ -205,8 +205,8 @@ void physics_plane(int b, float dt_sec)
         // linear up to around 150 and proportional to v*v afterward (so that we can't stop abruptly)
 #       define LINEAR_DRAG_MAXSPEED 200
 #       define LDM LINEAR_DRAG_MAXSPEED
-#       define LIN_FACTOR .3
-#       define SQ_FACTOR .006
+#       define LIN_FACTOR .5
+#       define SQ_FACTOR .02
 #       define DRAG(what, factor) \
             fabs(what) < LDM ? \
                 (factor)*LIN_FACTOR*(what) : \
