@@ -223,6 +223,7 @@ struct bot {
     struct vector acc;
     float anghel, anggear;
     float vitlin;
+    float aoa;  // angle of attack
     int bullets;
     gtime last_shot;
     float zs;
@@ -493,6 +494,7 @@ extern int *tbwidth;
 #define BEST_LIFT_SPEED (2.5 * ONE_METER)    // according to control.c
 #define MIN_SPEED_FOR_LIFT (2. * ONE_METER)
 #define BEST_SPEED_FOR_CONTROL (3. * ONE_METER)
+#define MAX_AOA_FOR_LIFT 0.5
 extern float snd_thrust;
 void physics_plane(int b, float dt_sec);
 void physics_tank(int v, float dt_sec);

@@ -307,16 +307,16 @@ static void adjust_slope(int b, float diff_alt)
     if (b==viewed_bot) printf("naive slope: %f ", slope);
 #   endif
 
-    // But we do not want to have a slope too distinct from plane actual direction
-    float aoa = slope - speed.z;  // from -2 to 2
     // The more linear speed we have, the more we can turn
     if (bot[b].vitlin < 0) { // don't know how to handle this
         bot[b].thrust = 1.;
         return;
     }
-    float const max_aoa = 0.01 + powf(bot[b].vitlin / (2. * BEST_LIFT_SPEED), 5.2);
-    aoa = max_aoa*atan(5. * aoa);  // smoothly cap the angle of attack
-    slope = aoa + speed.z;
+
+    // But we do not want to have a slope too distinct from plane actual direction
+    float cap_aoa = fabs(bot[b].aoa) / MAX_AOA_FOR_LIFT;
+    if (cap_aoa > 1.) cap_aoa = 1.;
+    slope *= 1. - cap_aoa;
 #   ifdef PRINT_DEBUG
     if (b==viewed_bot) printf("capped slope: %f ", slope);
 #   endif
