@@ -71,7 +71,7 @@ int bombidx;
 char (*playbotname)[30];
 struct debris debris[MAX_DEBRIS];
 // options changeables à la ligne de com :
-int win_center_x, win_center_y, win_width=400, win_height=250, pannel_width, pannel_height;
+int win_center_x, win_center_y, win_width=600, win_height=400, pannel_width, pannel_height;
 int nb_shot;
 
 // add an object to obj[]
