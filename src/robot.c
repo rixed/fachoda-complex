@@ -541,7 +541,7 @@ void robot(int b)
                     break;
                 case TAXI:
                     d = dist_from_navpoint(b, &u);
-                    float const target_speed = d > 3. * ONE_METER ? .3 * ONE_METER : .2 * ONE_METER;
+                    float const target_speed = d > 6. * ONE_METER ? .2 * ONE_METER : .1 * ONE_METER;
                     adjust_throttle(b, target_speed);
                     if (d > .7 * ONE_METER) {
                         if (fabs(obj[o].rot.y.z) < .1) {
@@ -568,31 +568,28 @@ void robot(int b)
                     break;
                 case LINE_UP:
                     adjust_throttle(b, .05 * ONE_METER);
+                    bot[b].but.brakes = 1;
                     bot[b].xctl = -8. * scalaire(&bot[b].v, &obj[o].rot.y);
                     if (scalaire(&bot[b].v, &obj[o].rot.x) < 0.) {
                         bot[b].xctl = bot[b].xctl > 0. ? 1. : -1.;
                     }
                     CLAMP(bot[b].xctl, 1.);
-                    if (fabs(bot[b].xctl) < .02) bot[b].maneuver = TAKE_OFF;
+                    if (fabs(bot[b].xctl) < .05) bot[b].maneuver = TAKE_OFF;
                     break;
                 case TAKE_OFF:
                     bot[b].thrust = 1.;
                     bot[b].but.flap = 1;
                     bot[b].but.brakes = 0;
                     bot[b].xctl = 0.;
-                    if (vit > 1. * ONE_METER) {
-                        // Small trick: use rebound to gain lift
-                        bot[b].xctl = .01;
-                    }
-                    if (vit > 1.5 * ONE_METER) {
+                    bot[b].xctl = -obj[o].rot.y.z;
+                    bot[b].yctl = -3.*obj[o].rot.x.z;    // level the nose
+                    if (vit > 3. * ONE_METER) {
                         bot[b].xctl = -obj[o].rot.y.z;
-                        bot[b].yctl = -obj[o].rot.x.z;    // level the nose
-                        CLAMP(bot[b].yctl, 1.);
-                        CLAMP(bot[b].xctl, 1.);
+                        bot[b].yctl = .2;
                     }
-                    if (vit > 2.4 * ONE_METER) {
-                        adjust_slope(b, ONE_METER);
-                    }
+                    CLAMP(bot[b].yctl, 1.);
+                    CLAMP(bot[b].xctl, 1.);
+
                     if (bot[b].is_flying) {
                         armstate(b);
                         newnav(b);
