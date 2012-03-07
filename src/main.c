@@ -543,9 +543,9 @@ parse_error:
     loadbigfont("bigfont.tga");
     initrender();
     loadtbtile("wood50_50.tga");
-    tbback1=tbback;
+    tbback_old = tbback;
     loadtbtile("metal50_50.tga");
-    tbback2=tbback;
+    tbback_modern = tbback;
     initmapping();
     initsol();
     for (i=0; i<NB_MARKS; i++) mark[i].x=MAXFLOAT;
@@ -906,8 +906,8 @@ parse_error:
                     affsoleil(&light.z);
                     mulmtv(&obj[bot[viewed_bot].vion].rot,&light.z,&v);
                     lx=-127*v.y; ly=-127*v.z; lz=50*v.x+77;
-                    if (plane_desc[bot[viewed_bot].navion].oldtb) tbback=tbback1;
-                    else tbback=tbback2;
+                    if (plane_desc[bot[viewed_bot].navion].oldtb) tbback = tbback_old;
+                    else tbback = tbback_modern;
                     drawtbback();
                     drawtbcadrans(viewed_bot);
                     animate_water(dt_sec);

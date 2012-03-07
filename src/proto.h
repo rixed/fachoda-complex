@@ -272,6 +272,7 @@ struct bot {
     gtime last_burnt;   // when we last blown a smoke item
     int gold;
     bool is_flying;
+    bool stall;
 };
 
 char const *aerobatic_2_str(enum aerobatic);
@@ -474,27 +475,23 @@ extern struct tank *tank;
 extern struct zeppelin *zep;
 extern struct car *car;
 
-//tableaubord.c
-extern int xsoute,ysoute,xthrust,ythrust,rthrust,xspeed,yspeed,rspeed,xalti,yalti,ralti,xinclin,yinclin,hinclin,dxinclin,xgear,ygear,rgear;
+// instruments.c
 void rectangle(int *v, int rx, int ry, int c);
 void disque(int *v, int r, int c);
 void rectangletb(struct pixel32 *v, int rx, int ry, int c);
 void disquetb(struct pixel32 *v, int r, int c);
 void rectangleZ(int x, int y, int rx, int ry, int c);
 void disqueZ(int x, int y, int r, int c);
-void loadtbtile(char *fn);
-void drawtbback(void);
+void loadtbtile(char *fn);  // FIXME: add which tbback should be drawn
+void drawtbback(void);  // FIXME: add which tbback should be drawn
 void drawtbcadrans(int b);
 extern int lx,ly,lz;
-extern short int sxtbtile, sytbtile;
-extern struct pixel32 *tbtile, *tbback, *tbback1, *tbback2;
-extern uint8_t *tbz;
-extern int *tbwidth;
+extern struct pixel32 *tbback, *tbback_old, *tbback_modern;
 // physics
-#define BEST_LIFT_SPEED (2.5 * ONE_METER)    // according to control.c
+#define BEST_SPEED_FOR_LIFT (2.5 * ONE_METER)    // according to control.c
 #define MIN_SPEED_FOR_LIFT (2. * ONE_METER)
 #define BEST_SPEED_FOR_CONTROL (3. * ONE_METER)
-#define MAX_AOA_FOR_LIFT 0.5
+#define MAX_AOA_FOR_LIFT 0.33
 extern float snd_thrust;
 void physics_plane(int b, float dt_sec);
 void physics_tank(int v, float dt_sec);

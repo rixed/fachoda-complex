@@ -235,17 +235,15 @@ void physics_plane(int b, float dt_sec)
     double const zs = obj[bot[b].vion].pos.z - bot[b].zs; // ground altitude
     bot[b].aoa = cap(vx, -vz);
     if (bot[b].aoa > M_PI) bot[b].aoa -= 2.*M_PI;
+    bot[b].stall = fabs(bot[b].aoa) > MAX_AOA_FOR_LIFT || vx < MIN_SPEED_FOR_LIFT;
 
 #   ifndef NLIFT
     {
-        float kx = 0;
-        if (vx >= MIN_SPEED_FOR_LIFT) {
-            if (fabs(bot[b].aoa) < MAX_AOA_FOR_LIFT) {
-                kx = (bot[b].aoa/MAX_AOA_FOR_LIFT) * MIN(.0005*(vx-MIN_SPEED_FOR_LIFT)*(vx-MIN_SPEED_FOR_LIFT), 12.*exp(-.001*vx));
-            }
-        }
+        float kx = bot[b].stall ?
+            0. :
+            (bot[b].aoa/MAX_AOA_FOR_LIFT) * MIN(.0005*(vx-MIN_SPEED_FOR_LIFT)*(vx-MIN_SPEED_FOR_LIFT), 12.*exp(-.001*vx));
 
-        // kx max is aprox 1., when vx is around 250 (BEST_LIFT_SPEED!) and a-o-a around MAX_AOA_FOR_LIFT
+        // kx max is aprox 1., when vx is around 250 (BEST_SPEED_FOR_LIFT!) and a-o-a around MAX_AOA_FOR_LIFT
         float lift = plane_desc[bot[b].navion].lift;
         if (bot[b].but.flap) lift *= 1.2;
         if (zs < 5. * ONE_METER) lift *= 1.1;   // more lift when close to the ground
@@ -327,7 +325,7 @@ void physics_plane(int b, float dt_sec)
         double const kx1 = .00005*(vx-MIN_SPEED_FOR_LIFT)*(vx-MIN_SPEED_FOR_LIFT);
         double const kx2 = 1. - .00003*(vx-BEST_SPEED_FOR_CONTROL)*(vx-BEST_SPEED_FOR_CONTROL);
         double const kx3 = 1. -.0017*vx;
-        if (vx < MIN_SPEED_FOR_LIFT) kx=0;
+        if (bot[b].stall) kx=0;
         else if (vx < BEST_SPEED_FOR_CONTROL) kx = MIN(kx1, kx2);
         else kx = MAX(kx2, kx3);
         if (kx < 0) kx = 0;

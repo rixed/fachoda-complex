@@ -22,20 +22,23 @@
 #include "proto.h"
 #include "file.h"
 
-short int sxtbtile, sytbtile;
-int xsoute,ysoute,xthrust,ythrust,rthrust,xspeed,yspeed,rspeed,xassi,yassi,rassi,xinclin,yinclin,hinclin,dxinclin,xgear,ygear,rgear,xflap,yflap,rflap,xvert,yvert,rvert,xalti,yalti,ralti,xbous,ybous,hbous,dxbous,rbous,xfrein,yfrein,rfrein,xauto,yauto,rauto;
-struct pixel32 *tbtile, *tbback, *tbback1, *tbback2;
-uint8_t *tbz;
-int *tbwidth;
-int *boussole;
-void rectangle(int *v, int rx, int ry, int c) {
+static short int sxtbtile, sytbtile;
+static int xsoute,ysoute,xthrust,ythrust,rthrust,xspeed,yspeed,rspeed,xassi,yassi,rassi,xinclin,yinclin,hinclin,dxinclin,xgear,ygear,rgear,xflap,yflap,rflap,xvert,yvert,rvert,xalti,yalti,ralti,xbous,ybous,rbous,xfrein,yfrein,rfrein,xauto,yauto,rauto;
+static struct pixel32 *tbtile;
+struct pixel32 *tbback, *tbback_old, *tbback_modern;
+static uint8_t *tbz;
+
+void rectangle(int *v, int rx, int ry, int c)
+{
     while (ry>0) {
         memset32(v,c,rx);
         v+=256;
         ry--;
     }
 }
-void disque(int *v, int r, int c) {
+
+void disque(int *v, int r, int c)
+{
     int balance=-r, xoff=0, yoff=r;
     do {
         rectangle(v-xoff+(yoff<<8), xoff+xoff, 1, c);
@@ -48,14 +51,18 @@ void disque(int *v, int r, int c) {
         }
     } while (++xoff <= yoff);
 }
-void rectangletb(struct pixel32 *v, int rx, int ry, int c) {
+
+void rectangletb(struct pixel32 *v, int rx, int ry, int c)
+{
     while (ry>0) {
         memset32((int*)v,c,rx);
         v+=pannel_height;
         ry--;
     }
 }
-void disquetb(struct pixel32 *v, int r, int c) {
+
+void disquetb(struct pixel32 *v, int r, int c)
+{
     int balance=-r, xoff=0, yoff=r;
     do {
         rectangletb(v-xoff+pannel_height*(yoff), xoff+xoff, 1, c);
@@ -68,7 +75,9 @@ void disquetb(struct pixel32 *v, int r, int c) {
         }
     } while (++xoff <= yoff);
 }
-void cercletb(int x, int y, int r, int c) {
+
+void cercletb(int x, int y, int r, int c)
+{
     int balance=-r, xoff=0, yoff=r;
     do {
         *((int*)tbback+x+xoff+(y+yoff)*pannel_height)=c;
@@ -85,7 +94,9 @@ void cercletb(int x, int y, int r, int c) {
         }
     } while (++xoff <= yoff);
 }
-void gradutb(int x, int y, double a, int r1, int r2, int c) {
+
+void gradutb(int x, int y, double a, int r1, int r2, int c)
+{
     struct vect2d p1,p2;
     p1.x=x+r1*cos(a);
     p1.y=y-r1*sin(a);
@@ -93,7 +104,9 @@ void gradutb(int x, int y, double a, int r1, int r2, int c) {
     p2.y=y-r2*sin(a);
     drawlinetb(&p1,&p2,c);
 }
-void rectangleZ(int x, int y, int rx, int ry, int c) {
+
+void rectangleZ(int x, int y, int rx, int ry, int c)
+{
     int xx,yy;
     rectangletb(tbback+x+y*pannel_height,rx,ry,c);
     for (yy=0; yy<ry; yy++) {
@@ -104,7 +117,9 @@ void rectangleZ(int x, int y, int rx, int ry, int c) {
         }
     }
 }
-void disqueZ(int x, int y, int r, int c) {
+
+void disqueZ(int x, int y, int r, int c)
+{
     int xx,yy;
     double r2=r*.85;
     disquetb(tbback+x+pannel_height*y,r,c);
@@ -119,7 +134,9 @@ void disqueZ(int x, int y, int r, int c) {
         }
     }
 }
-void loadtbtile(char *fn) {
+
+void loadtbtile(char *fn)
+{
     FILE *f;
     int x,y;
     struct pixel32 *vid;
@@ -191,11 +208,24 @@ void loadtbtile(char *fn) {
         a=M_PI/2-x*.4;
         gradutb(xspeed,yspeed,a,rspeed-4,rspeed-1,0xD0D0D0);
     }
-    a=0;
+#   define SPEEDO_MAX_SPEED (2. * BEST_SPEED_FOR_LIFT)
+#   define SPEEDO_ANGLE_MAX (2*M_PI - .03)
+#   define SPEEDO_ANGLE_START (M_PI*.5) // when vitlin = 0
+#   define SPEEDO_ANGLE_STOP (SPEEDO_ANGLE_START-SPEEDO_ANGLE_MAX)  // when vitlin = SPEEDO_MAX_SPEED
+#   define SPEEDO_ANGLE_FOR_SPEED(speed) (((speed)*SPEEDO_ANGLE_MAX)/SPEEDO_MAX_SPEED)
+#   define SPEEDO_ANGLE_MIN_FOR_LIFT SPEEDO_ANGLE_FOR_SPEED(MIN_SPEED_FOR_LIFT)
+#   define SPEEDO_ANGLE_TOO_FAST SPEEDO_ANGLE_FOR_SPEED(BEST_SPEED_FOR_CONTROL+(BEST_SPEED_FOR_CONTROL-MIN_SPEED_FOR_LIFT))
+    a = 0;
     do {
-        gradutb(xspeed,yspeed,M_PI/2-a,rspeed-6,rspeed-4,a<2.5?0xD0D0D0:(a<4.5?0x20E020:0xE02020));
-        a+=.01;
-    } while (a<M_PI*1.9);
+        gradutb(
+            xspeed, yspeed,
+            SPEEDO_ANGLE_START - a,
+            rspeed - 6, rspeed - 4,
+            a < SPEEDO_ANGLE_MIN_FOR_LIFT ? 0xD0D0D0 :
+            a < SPEEDO_ANGLE_TOO_FAST ? 0x20E020 :
+            0xE02020);
+        a += .01;
+    } while (a < SPEEDO_ANGLE_START - SPEEDO_ANGLE_STOP);
 
     xthrust=xspeed;
     ythrust=yassi;
@@ -261,7 +291,9 @@ void loadtbtile(char *fn) {
     disqueZ(xauto,yauto,rauto,0);
 
 }
-void drawtbback() {
+
+void drawtbback(void)
+{
     int y;
     for (y=0; y<pannel_width; y++) {
         memcpy(mapping+((MAP_MARGIN+y)<<8)+MAP_MARGIN, tbback+pannel_height*y, pannel_height*sizeof(*mapping));
@@ -269,7 +301,8 @@ void drawtbback() {
 }
 
 int lx,ly,lz,lumdec=6;
-void rectangleL(int x,int y, int rx,int ry) {
+void rectangleL(int x,int y, int rx,int ry)
+{
     int xx,yy;
     if (lz<=0) return;
     for (yy=y; yy<(y+ry); yy++) {
@@ -279,7 +312,9 @@ void rectangleL(int x,int y, int rx,int ry) {
         }
     }
 }
-void disqueL(int x, int y, int r) {
+
+void disqueL(int x, int y, int r)
+{
     int balance=-r, xoff=0, yoff=r, newyoff=1;
     do {
         if (newyoff) {
@@ -297,7 +332,9 @@ void disqueL(int x, int y, int r) {
         } else newyoff=0;
     } while (++xoff <= yoff);
 }
-void drawtbcadrans(int b) {
+
+void drawtbcadrans(int b)
+{
     struct vect2d p1,p2;
     double a, ai, aj, ak;
     int i;
@@ -325,11 +362,9 @@ void drawtbcadrans(int b) {
     lumdec=6;
     disqueL(xthrust,ythrust,rthrust);
     // Airspeed indicator
-    p1.x=p2.x=xspeed;
-    p1.y=p2.y=yspeed;
-    a = M_PI*.5 - .015*bot[b].vitlin;
-    if (a > M_PI*.5) a = M_PI*.5;
-    else if (a < -1.5*M_PI + .01) a = -1.5*M_PI + .01;
+    p1.x = p2.x = xspeed;
+    p1.y = p2.y = yspeed;
+    a = SPEEDO_ANGLE_START - SPEEDO_ANGLE_FOR_SPEED(bot[b].vitlin);
     p2.x += rspeed*cos(a);
     p2.y -= rspeed*sin(a);
     drawline2(&p1, &p2, 0xF02070);
@@ -380,9 +415,8 @@ void drawtbcadrans(int b) {
     disqueL(xvert,yvert,rvert);
     // Inclination relative to airspeed
     a = scalaire(&bot[b].vionvit, &obj[bot[b].vion].rot.z);
-#   define amax 50
-    i=(hinclin>>1)*(1.+a/amax);
-    if (i<0) i=0;
+#   define AOA_MAX MAX_AOA_FOR_LIFT
+    i = MAX((hinclin>>1)*(1. + bot[b].aoa/AOA_MAX), 0);
     for (; i<hinclin; i++)
         memset32((int*)mapping+MAP_MARGIN+xinclin+((MAP_MARGIN+yinclin+i)<<8),0xB04242,dxinclin);
     lumdec=7;

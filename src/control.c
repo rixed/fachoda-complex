@@ -286,7 +286,7 @@ void control(int b)
         autopilot = ! autopilot;
         playsound(VOICE_GEAR, SAMPLE_BIPBIP, 1., &obj[bot[b].vion].pos, false, false);
         if (autopilot) {
-            bot[controled_bot].target_speed = BEST_LIFT_SPEED;
+            bot[controled_bot].target_speed = BEST_SPEED_FOR_LIFT;
             bot[controled_bot].target_rel_alt = 100. * ONE_METER;
         }
     }

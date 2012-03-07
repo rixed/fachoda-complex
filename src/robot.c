@@ -226,7 +226,7 @@ static void landing_approach(int b)
     mulv(&bot[b].u, 130. * ONE_METER);
     addv(&bot[b].u, &obj[bot[b].babase].pos);
     bot[b].u.z = z_ground(bot[b].u.x, bot[b].u.y, false);
-    bot[b].target_speed = BEST_LIFT_SPEED;
+    bot[b].target_speed = BEST_SPEED_FOR_LIFT;
     bot[b].target_rel_alt = 16. * ONE_METER;
     bot[b].cibt = -1;
 }
@@ -236,14 +236,14 @@ void newnav(int b)
     if (killemall_mode) {
         bot[b].u.x = bot[b].u.y = 0.;
         bot[b].u.z = z_ground(bot[b].u.x, bot[b].u.y, true);
-        bot[b].target_speed = BEST_LIFT_SPEED;
+        bot[b].target_speed = BEST_SPEED_FOR_LIFT;
         bot[b].target_rel_alt = 30. * ONE_METER;
         bot[b].maneuver = NAVIG;
         return;
     }
     if (bot[b].cibt != -1 && bot[b].nbomb && bot[b].fiul > plane_desc[bot[b].navion].fiulmax/2) {
         bot[b].u = obj[bot[b].cibt].pos;
-        bot[b].target_speed = BEST_LIFT_SPEED;
+        bot[b].target_speed = BEST_SPEED_FOR_LIFT;
         bot[b].target_rel_alt = 100. * ONE_METER;
         bot[b].maneuver = NAVIG;
     } else if (bot[b].maneuver != ILS_1 && bot[b].maneuver != ILS_2 && bot[b].maneuver != ILS_3) {
@@ -321,8 +321,8 @@ static void adjust_slope(int b, float diff_alt)
     if (b==viewed_bot) printf("capped slope: %f ", slope);
 #   endif
 
-    if (slope > 0 && bot[b].vitlin < BEST_LIFT_SPEED) {
-        float vr = bot[b].vitlin/BEST_LIFT_SPEED;
+    if (slope > 0 && bot[b].vitlin < BEST_SPEED_FOR_LIFT) {
+        float vr = bot[b].vitlin/BEST_SPEED_FOR_LIFT;
         vr *= vr; vr *= vr; vr *= vr;
         slope = (1. - vr) * -speed.z + vr * slope;
         bot[b].thrust += .1;
@@ -430,7 +430,7 @@ void robot_safe(int b, float min_alt)
         // Flaps, etc
         bot[b].but.flap = 0;
         // Adjut thrust
-        adjust_throttle(b, BEST_LIFT_SPEED);
+        adjust_throttle(b, BEST_SPEED_FOR_LIFT);
         // No vertical speed
 #       ifdef PRINT_DEBUG
         if (b == viewed_bot) printf("safe, high\n");
@@ -600,7 +600,7 @@ void robot(int b)
                     d = dist_from_navpoint(b, &u);
                     if (d < 400. * ONE_METER && bot[b].cibt != -1) {
                         bot[b].target_rel_alt = 17. * ONE_METER;
-                        bot[b].target_speed = BEST_LIFT_SPEED;
+                        bot[b].target_speed = BEST_SPEED_FOR_LIFT;
                         bot[b].maneuver = HEDGEHOP;
                     }
                     break;
@@ -608,7 +608,7 @@ void robot(int b)
                     robot_autopilot(b);
                     d = dist_from_navpoint(b, &u);
                     if (d < 40. * ONE_METER) {
-                        bot[b].target_speed = (MIN_SPEED_FOR_LIFT*3 + BEST_LIFT_SPEED)/4;
+                        bot[b].target_speed = (MIN_SPEED_FOR_LIFT*3 + BEST_SPEED_FOR_LIFT)/4;
                         bot[b].target_rel_alt = 9. * ONE_METER;
                         bot[b].cibt_drop_dist2 = DBL_MAX;
                         bot[b].maneuver = BOMBING;
@@ -660,7 +660,7 @@ void robot(int b)
                     mulv(&bot[b].u, 50. * ONE_METER);
                     addv(&bot[b].u, &obj[bot[b].babase].pos);
                     bot[b].u.z = z_ground(bot[b].u.x, bot[b].u.y, false);
-                    bot[b].target_speed = (BEST_LIFT_SPEED + MIN_SPEED_FOR_LIFT)/2;
+                    bot[b].target_speed = (BEST_SPEED_FOR_LIFT + MIN_SPEED_FOR_LIFT)/2;
                     bot[b].target_rel_alt = 11. * ONE_METER;
                     bot[b].maneuver = ILS_2;
                     break;
@@ -673,7 +673,7 @@ void robot(int b)
                     }
                     bot[b].u = obj[bot[b].babase].pos;
                     bot[b].maneuver = ILS_3;
-                    bot[b].target_speed = (MIN_SPEED_FOR_LIFT*3 + BEST_LIFT_SPEED)/4;
+                    bot[b].target_speed = (MIN_SPEED_FOR_LIFT*3 + BEST_SPEED_FOR_LIFT)/4;
                     bot[b].target_rel_alt = 0.;
                     break;
                 case ILS_3:
@@ -702,7 +702,7 @@ void robot(int b)
                         mulv(&bot[b].u, 100. * ONE_METER);
                         addv(&bot[b].u, &obj[bot[b].vion].pos);
                         bot[b].u.z = z_ground(bot[b].u.x, bot[b].u.y, false);
-                        bot[b].target_speed = 2. * BEST_LIFT_SPEED; // run Forest, run!
+                        bot[b].target_speed = 2. * BEST_SPEED_FOR_LIFT; // run Forest, run!
                         bot[b].target_rel_alt = 2. * SAFE_LOW_ALT;
                         bot[b].maneuver = EVADE;
                     }
@@ -713,13 +713,13 @@ void robot(int b)
             if (obj[o].rot.y.z < 0.) bot[b].xctl = -1. - obj[o].rot.y.z;
             else bot[b].xctl = 1. - obj[o].rot.y.z;
             if (obj[o].rot.z.z < 0.) bot[b].xctl = -bot[b].xctl;
-            adjust_throttle(b, BEST_LIFT_SPEED);
+            adjust_throttle(b, BEST_SPEED_FOR_LIFT);
             bot[b].yctl = 1. - bot[b].xctl * bot[b].xctl;
             if (zs < 4. * ONE_METER) bot[b].aerobatic = MANEUVER;
             if (scalaire(&obj[o].rot.x, &obj[bot[b].cibv].rot.x) < 0.) bot[b].aerobatic = RECOVER;
             break;
         case RECOVER:
-            adjust_throttle(b, BEST_LIFT_SPEED);
+            adjust_throttle(b, BEST_SPEED_FOR_LIFT);
             bot[b].xctl = -obj[o].rot.y.z;
             adjust_slope(b, 0.);
             if (obj[o].rot.z.z > .8) bot[b].aerobatic = TAIL;
@@ -736,7 +736,7 @@ void robot(int b)
             double dc = adjust_direction_rel(b, &v);
             dist = renorme(&v);
             double distfrap2 = 0;
-            float target_speed = BEST_LIFT_SPEED;
+            float target_speed = BEST_SPEED_FOR_LIFT;
             float min_z = 30. * ONE_METER;  // will be lowered if odds look good
             if (fabs(dc) < M_PI/4) {    // opponent is in front of us
                 min_z = 20. * ONE_METER;
