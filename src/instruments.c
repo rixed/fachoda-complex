@@ -364,7 +364,7 @@ void drawtbcadrans(int b)
     // Airspeed indicator
     p1.x = p2.x = xspeed;
     p1.y = p2.y = yspeed;
-    a = SPEEDO_ANGLE_START - SPEEDO_ANGLE_FOR_SPEED(bot[b].vitlin);
+    a = SPEEDO_ANGLE_START - MIN(SPEEDO_ANGLE_FOR_SPEED(bot[b].vitlin), SPEEDO_ANGLE_MAX);
     p2.x += rspeed*cos(a);
     p2.y -= rspeed*sin(a);
     drawline2(&p1, &p2, 0xF02070);
