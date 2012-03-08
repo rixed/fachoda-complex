@@ -409,15 +409,10 @@ static void view_hud_draw(void)
             break;
         default:
             if (viewed_bot != controled_bot) {
-                if (bot[viewed_bot].camp != bot[controled_bot].camp) {  // which should only be possible in viewall mode
-                    snprintf(vn, sizeof(vn), "Spying on %s (%s)",
-                        plane_desc[bot[viewed_bot].navion].name,
-                        bot[viewed_bot].camp != -1 ?
-                            camp_name[bot[viewed_bot].camp][lang] : "dead");
-                } else {
-                    snprintf(vn, sizeof(vn), "Spying on %s",
-                        plane_desc[bot[viewed_bot].navion].name);
-                }
+                snprintf(vn, sizeof(vn), "Spying on %s (%s)",
+                    plane_desc[bot[viewed_bot].navion].name,
+                    bot[viewed_bot].camp != -1 ?
+                        camp_name[bot[viewed_bot].camp][lang] : "dead");
                 pstr(vn, win_height-12, 0xffffff);
             }
             break;
