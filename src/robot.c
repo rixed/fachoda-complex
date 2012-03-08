@@ -319,18 +319,32 @@ static void adjust_slope(int b, float diff_alt)
     float roll = obj[bot[b].vion].rot.y.z;
     roll = roll*roll; roll = roll*roll; roll = roll*roll;
     bot[b].yctl += 1. - exp(-32. * roll);
-    CLAMP(bot[b].yctl, 1.);
+#   ifdef PRINT_DEBUG
+    if (b==viewed_bot) printf("first slope=%f ", bot[b].yctl);
+#   endif
+
+    // Avoid stall!
+#   define MAX_AOA (0.7 * MAX_AOA_FOR_LIFT)
+    if (bot[b].is_flying && fabs(bot[b].aoa) > MAX_AOA) {
+        bot[b].yctl += (bot[b].aoa > 0 ? -3.:3.) * (fabs(bot[b].aoa) - MAX_AOA);
+#       ifdef PRINT_DEBUG
+        if (b==viewed_bot) printf("aoa=%f -> slope=%f ", bot[b].aoa, bot[b].yctl);
+#       endif
+    }
 
     // When stalling, allow the plane to recover
     if (bot[b].is_flying && bot[b].stall) {
-        bot[b].yctl *= 0.1;
+        bot[b].yctl = 0.;   // let it go
+#       ifdef PRINT_DEBUG
+        if (b==viewed_bot) printf("stall slope=%f ", bot[b].yctl);
+#       endif
     }
 
-    if (bot[b].thrust > 1.) bot[b].thrust = 1.;
+    CLAMP(bot[b].yctl, 1.);
 
 #   ifdef PRINT_DEBUG
-    if (b == viewed_bot) printf("vitlin=%f, diff_alt=%f, Sz=%f, slope=%f, yctl=%f, rot.x.z=%f\n",
-        bot[b].vitlin, diff_alt, speed.z, slope, bot[b].yctl, obj[bot[b].vion].rot.x.z);
+    if (b == viewed_bot) printf("vitlin=%f, diff_alt=%f, Sz=%f, yctl=%f, rot.x.z=%f\n",
+        bot[b].vitlin, diff_alt, speed.z, bot[b].yctl, obj[bot[b].vion].rot.x.z);
 #   endif
 }
 
@@ -347,7 +361,7 @@ static void adjust_throttle(int b, float target)
     CLAMP2(bot[b].thrust, 0., 1.);
 #   ifdef PRINT_DEBUG
     if (b == viewed_bot) printf("%s %svitlin=%f, target=%f\n",
-        bot[b].is_flying ? "flying":"taxiing",
+        bot[b].is_flying ? "flying":"grounded",
         bot[b].stall ? "STALL ":"",
         bot[b].vitlin, target);
 #   endif
@@ -477,12 +491,11 @@ void robot_autopilot(int b)
 
 void robot(int b)
 {
-    float vit,dist,disth;
+    float dist, disth;
     struct vector u,v;
     int o=bot[b].vion;
     if (bot[b].camp==-1) return;
 //  printf("bot %d man %d ",b,bot[b].maneuver);
-    vit = norme(&bot[b].vionvit);
 #define zs bot[b].zs
     if (bot[b].gunned!=-1) {    // il reviendra a chaque fois en cas de voltige...
         if (!(bot[b].gunned&(1<<NTANKMARK))) {  // si c'est un bot qui l'a touché
@@ -570,15 +583,11 @@ void robot(int b)
                     if (fabs(bot[b].xctl) < .05) bot[b].maneuver = TAKE_OFF;
                     break;
                 case TAKE_OFF:
-                    adjust_throttle(b, 1.1 * BEST_SPEED_FOR_LIFT);
+                    adjust_throttle(b, BEST_SPEED_FOR_CONTROL);
                     bot[b].but.flap = 1;
                     bot[b].but.brakes = 0;
                     bot[b].xctl = -obj[o].rot.y.z;
-                    if (vit > BEST_SPEED_FOR_LIFT) {
-                        bot[b].yctl += .1;
-                    } else {
-                        bot[b].yctl = -3.*obj[o].rot.x.z;    // level the nose
-                    }
+                    bot[b].yctl = -3.*(obj[o].rot.x.z-.1);    // level the nose, with small a-o-a
                     CLAMP(bot[b].yctl, 1.);
                     CLAMP(bot[b].xctl, 1.);
 

@@ -101,14 +101,30 @@ void physics_plane(int b, float dt_sec)
     struct vector u, v; struct matrix m;
     double rt;
 
+    if (bot[b].camp == -1) return;
+
     // FIXME: use: mulmtv(&obj[bot[b].vion].rot, &bot[b].vionvit, &v);
     double vx = scalaire(&bot[b].vionvit, &obj[bot[b].vion].rot.x);
     double vy = scalaire(&bot[b].vionvit, &obj[bot[b].vion].rot.y);
     double vz = scalaire(&bot[b].vionvit, &obj[bot[b].vion].rot.z);
     double velocity = norme(&bot[b].vionvit);
+    double const zs = obj[bot[b].vion].pos.z - bot[b].zs; // ground altitude
+    bot[b].aoa = cap(vx, -vz);
+    if (bot[b].aoa > M_PI) bot[b].aoa -= 2.*M_PI;
+    bot[b].stall = fabs(bot[b].aoa) > MAX_AOA_FOR_LIFT || vx < MIN_SPEED_FOR_LIFT;
+    if (plane_desc[bot[b].navion].nbcharngearx==0 && plane_desc[bot[b].navion].nbcharngeary==0) bot[b].but.gear=1;
+    bot[b].cap = cap(obj[o1].rot.x.x,obj[o1].rot.x.y);
+    bot[b].vitlin = vx;
+    bot[b].xctl += bot[b].bloodloss*.02*(drand48()-.5);
+    if (b < NbHosts) bot[b].xctl += bot[b].aeroloss*(b&1?.01:-.01);
+    CLAMP(bot[b].xctl, 1.);
+    bot[b].yctl += bot[b].bloodloss*.02*(drand48()-.5);
+    if (b < NbHosts) bot[b].yctl -= bot[b].aeroloss*.005;
+    CLAMP(bot[b].yctl, 1.);
+
 #   ifdef PRINT_DEBUG
-    if (b == viewed_bot) printf("vionvit=%"PRIVECTOR"\n", PVECTOR(bot[b].vionvit));
-    if (b == viewed_bot) printf("dt =%f\n", dt_sec);
+    if (b == viewed_bot) printf("dt=%f, vionvit=%"PRIVECTOR", aoa=%f%s\n",
+        dt_sec, PVECTOR(bot[b].vionvit), bot[b].aoa, bot[b].stall ? ", STALL":"");
 #   endif
 #   ifdef VEC_DEBUG
     if (b == viewed_bot) {
@@ -117,23 +133,6 @@ void physics_plane(int b, float dt_sec)
         addv(debug_vector[DBG_VEC_SPEED]+1, debug_vector[DBG_VEC_SPEED]+0);
     }
 #   endif
-
-    if (bot[b].camp==-1) return;
-    bot[b].cap = cap(obj[o1].rot.x.x,obj[o1].rot.x.y);
-    bot[b].vitlin = vx;
-    bot[b].xctl += bot[b].bloodloss*.02*(drand48()-.5);
-    if (b < NbHosts) bot[b].xctl += bot[b].aeroloss*(b&1?.01:-.01);
-    bot[b].yctl += bot[b].bloodloss*.02*(drand48()-.5);
-    if (b < NbHosts) bot[b].yctl -= bot[b].aeroloss*.005;
-
-    // controles
-    if (bot[b].thrust<0) bot[b].thrust=0;
-    if (bot[b].thrust>1) bot[b].thrust=1;
-    if (bot[b].xctl<-1) bot[b].xctl=-1;
-    if (bot[b].xctl>1) bot[b].xctl=1;
-    if (bot[b].yctl<-1) bot[b].yctl=-1;
-    if (bot[b].yctl>1) bot[b].yctl=1;
-    if (plane_desc[bot[b].navion].nbcharngearx==0 && plane_desc[bot[b].navion].nbcharngeary==0) bot[b].but.gear=1;
 
     // Fiul
 #   define FIUL_CONSUMPTION_SPEED .03   // 0.03 unit of fiul per second at full thrust
@@ -227,11 +226,6 @@ void physics_plane(int b, float dt_sec)
     }
 #   endif
 
-    double const zs = obj[bot[b].vion].pos.z - bot[b].zs; // ground altitude
-    bot[b].aoa = cap(vx, -vz);
-    if (bot[b].aoa > M_PI) bot[b].aoa -= 2.*M_PI;
-    bot[b].stall = fabs(bot[b].aoa) > MAX_AOA_FOR_LIFT || vx < MIN_SPEED_FOR_LIFT;
-
 #   ifndef NLIFT
     {
         float kx = bot[b].stall ?
@@ -289,7 +283,7 @@ void physics_plane(int b, float dt_sec)
             // A wheel hit the ground, make some noise/smoke
 #           define VZ_MIN_FOR_SOUND (-60.)
 #           define VZ_MIN_FOR_SMOKE (-90.)
-            if (vz < VZ_MIN_FOR_SOUND) {
+            if (bot[b].vionvit.z < VZ_MIN_FOR_SOUND) {
                 float t = drand48()-.5;
                 if (b == viewed_bot) {
                     if (!bot[b].but.gearup) {
@@ -299,7 +293,7 @@ void physics_plane(int b, float dt_sec)
                     }
                 }
             }
-            if (vz < VZ_MIN_FOR_SMOKE) {
+            if (bot[b].vionvit.z < VZ_MIN_FOR_SMOKE) {
                 int fum;
                 for (fum=0; smoke_radius[fum] > 0. && fum < MAX_SMOKES; fum++);
                 if (fum<MAX_SMOKES) {
@@ -328,7 +322,6 @@ void physics_plane(int b, float dt_sec)
 
         // push wings frontally
         double const prof = (velocity > 1. * ONE_METER ? -.00002*(velocity*velocity)*bot[b].aoa : 0) + bot[b].yctl * kx;
-        if (b == viewed_bot) printf("velocity=%f, aoa=%f -> prof=%f\n", velocity, bot[b].aoa, prof);
         double gouv, deriv;
         if (touchdown_mask) {
             gouv = touchdown_mask & 4 ? -.5*bot[b].xctl : 0.; // rear wheel in contact with the ground
@@ -344,7 +337,7 @@ void physics_plane(int b, float dt_sec)
 
     if (touchdown_mask) {
 #       ifdef PRINT_DEBUG
-        if (b == viewed_bot) printf("hit ground, vz=%f\n", vz);
+        if (b == viewed_bot) printf("hit ground, vertspeed=%f\n", bot[b].vionvit.z);
 #       endif
 
         // So we hit the ground. With what speed?
@@ -352,8 +345,8 @@ void physics_plane(int b, float dt_sec)
         float const vz_min = easy ? -150. : -100.;
         float const vz_min_rough = easy ? -100. : -70.;
         if (
-            (vz < vz_min) ||
-            (vz < vz_min_rough && (bot[b].but.gearup || submap_get(obj[bot[b].vion].ak)!=0))
+            (bot[b].vionvit.z < vz_min) ||
+            (bot[b].vionvit.z < vz_min_rough && (bot[b].but.gearup || submap_get(obj[bot[b].vion].ak)!=0))
         ) {
             explode(bot[b].vion, bot[b].vion, "crashed");
             return;
@@ -370,7 +363,7 @@ void physics_plane(int b, float dt_sec)
         bot[b].is_flying = false;
 
         obj[bot[b].vion].pos.z -= rt;   // At t+dt, be out of the ground
-        a.z = - bot[b].vionvit.z;
+        if (bot[b].vionvit.z < 0) a.z = MAX(a.z, -bot[b].vionvit.z);
 #       ifdef PRINT_DEBUG
         if (b == viewed_bot) printf("ground -> %"PRIVECTOR"\n", PVECTOR(a));
 #       endif
@@ -472,7 +465,10 @@ void physics_plane(int b, float dt_sec)
         bot[b].is_flying = true;
     }
 
-    // Done computing acceleration, now move plane
+    /*
+     * Done computing acceleration, now move plane
+     */
+
     mulv(&a, dt_sec);
     addv(&bot[b].vionvit, &a);
 #   ifdef PRINT_DEBUG

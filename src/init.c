@@ -584,6 +584,8 @@ void initworld(void)
         bot[i].cibv = bot[i].cibt = -1;
         bot[i].gold = i > NbHosts ? 30000:2000;
         bot[i].is_flying = killemall_mode;
+        bot[i].stall = false;
+        bot[i].aoa = 0.;
         armstate(i);
         if (!killemall_mode) {
             bot[i].vionvit = vec_zero;
