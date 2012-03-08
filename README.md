@@ -18,7 +18,7 @@ Debian distributions, I mean the `-dev` packages).
 
 For better performances you can try:
 
-    cd src && CFLAGS="-O4 -ffast-math -fomit-frame-pointer -funroll-loops" make -j6
+    cd src && CFLAGS="-O3 -ffast-math -funroll-loops" make -j6
 
 Objective
 ---------
