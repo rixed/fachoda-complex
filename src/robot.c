@@ -376,10 +376,11 @@ static double adjust_direction_rel(int b, struct vector const *dir)
     while (dc < -M_PI) dc += 2.*M_PI;
     float a = 0;
     float const a_max = sqrtf(1.001 - SQUARE(obj[bot[b].vion].rot.x.z));
-    if (dc > .5) a = -a_max;
-    else if (dc < -.5) a = a_max;
-    else a = a_max*dc/-.5;
-    bot[b].xctl = a - obj[bot[b].vion].rot.y.z;
+    float const dc_max = .5;
+    if (dc > dc_max) a = -a_max;
+    else if (dc < -dc_max) a = a_max;
+    else a = -a_max*dc/dc_max;
+    bot[b].xctl = 10. * (a - obj[bot[b].vion].rot.y.z);
     CLAMP(bot[b].xctl, 1.);
 #   ifdef PRINT_DEBUG
     if (b == viewed_bot) printf("a=%f rot.y.z=%f xctl=%f\n", a, obj[bot[b].vion].rot.y.z, bot[b].xctl);

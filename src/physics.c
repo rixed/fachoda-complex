@@ -203,17 +203,11 @@ void physics_plane(int b, float dt_sec)
         if (!bot[b].but.gearup) k += .07;
         if (bot[b].but.flap) k += .03;
         k *= alt_factor;
-        // linear up to around 150 and proportional to v*v afterward (so that we can't stop abruptly)
-#       define LINEAR_DRAG_MAXSPEED 200
-#       define LDM LINEAR_DRAG_MAXSPEED
-#       define LIN_FACTOR .5
-#       define SQ_FACTOR .016
+#       define SQ_FACTOR .004
 #       define DRAG(what, factor) \
-            fabs(what) < LDM ? \
-                (factor)*LIN_FACTOR*(what) : \
-                (what) > 0. ? \
-                    (factor)*(LIN_FACTOR*(what) + SQ_FACTOR*((what)-LDM)*((what)-LDM)) : \
-                    (factor)*(LIN_FACTOR*(what) - SQ_FACTOR*(-(what)-LDM)*(-(what)-LDM))
+            (what) > 0. ? \
+                + SQ_FACTOR*(what)*(what) : \
+                - SQ_FACTOR*(what)*(what)
         v.x = DRAG(vx, k);
         v.y = DRAG(vy, k * 3.);
         v.z = DRAG(vz, k * 7.);
