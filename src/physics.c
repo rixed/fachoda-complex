@@ -105,6 +105,7 @@ void physics_plane(int b, float dt_sec)
     double vx = scalaire(&bot[b].vionvit, &obj[bot[b].vion].rot.x);
     double vy = scalaire(&bot[b].vionvit, &obj[bot[b].vion].rot.y);
     double vz = scalaire(&bot[b].vionvit, &obj[bot[b].vion].rot.z);
+    double velocity = norme(&bot[b].vionvit);
 #   ifdef PRINT_DEBUG
     if (b == viewed_bot) printf("vionvit=%"PRIVECTOR"\n", PVECTOR(bot[b].vionvit));
     if (b == viewed_bot) printf("dt =%f\n", dt_sec);
@@ -333,13 +334,14 @@ void physics_plane(int b, float dt_sec)
         if (easy_mode || b>=NbHosts) kx*=1.2;
 
         // push wings frontally
-        double const prof = .006*vz*bot[b].aoa + bot[b].yctl * kx;
+        double const prof = (velocity > 1. * ONE_METER ? -.00002*(velocity*velocity)*bot[b].aoa : 0) + bot[b].yctl * kx;
+        if (b == viewed_bot) printf("velocity=%f, aoa=%f -> prof=%f\n", velocity, bot[b].aoa, prof);
         double gouv, deriv;
         if (touchdown_mask) {
             gouv = touchdown_mask & 4 ? -.5*bot[b].xctl : 0.; // rear wheel in contact with the ground
             deriv = 0.;
         } else {
-            gouv = .001*vy;
+            gouv = .004*vy;
             deriv = (bot[b].xctl * kx)/(1. + .05*bot[b].nbomb);
         }
 
