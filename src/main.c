@@ -630,13 +630,13 @@ parse_error:
                     for (i = 0; i < NBBOT; i++) {
                         if (i == j || bot[i].camp == -1) continue;
                         if (! collision(bot[j].vion, bot[i].vion)) continue;
-                        explose(bot[i].vion, bot[j].vion);
-                        explose(bot[j].vion, bot[i].vion);
+                        explode(bot[i].vion, bot[j].vion, "collided");
+                        explode(bot[j].vion, bot[i].vion, "collided");
                         break;
                     }
                     for (i = 0; i < NBZEP; i++) {
                         if (! collision(bot[j].vion, zep[i].o)) continue;
-                        explose(bot[j].vion, zep[i].o);
+                        explode(bot[j].vion, zep[i].o, "attacked zeppelin with bare hands");
                         break;
                     }
                 }
@@ -703,7 +703,7 @@ parse_error:
                     if (obj[oc].type == TYPE_SHOT || obj[oc].type == TYPE_CAMERA || obj[oc].type == TYPE_DECO) continue;    // these do not explode when bombed
                     if (oc >= bot[bomb[i].b].vion && oc < bot[bomb[i].b].vion+n_object[bot[bomb[i].b].navion].nbpieces) continue;   // do not consider the bombing plane neither
                     if (! collision(bo, oc)) continue;
-                    explose(oc,bo);
+                    explode(oc, bo, "bombed");
                     boom = true;
                     break;
                 }

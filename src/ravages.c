@@ -36,7 +36,19 @@ int kelkan(int o) {
     return c;
 }
 
-void explose(int oc, int i)
+static void log_bot_destruction(int b, char const *reason)
+{
+    printf("Bot %d (%s) %s, speed=%"PRIVECTOR", linear speed=%f, aoa=%f, alt=%f, while performing %s, fiul:%d, dammages:%d+%d+%d+%d, gunned by %d, with $%d %s\n",
+        b, camp_name[bot[b].camp][lang], reason,
+        PVECTOR(bot[b].vionvit), bot[b].vitlin,
+        bot[b].aoa, bot[b].zs,
+        maneuver_2_str(bot[b].maneuver),
+        bot[b].fiul, bot[b].fiulloss, bot[b].motorloss, bot[b].aeroloss, bot[b].bloodloss,
+        bot[b].gunned,
+        bot[b].gold, bot[b].stall ? "Salled":"");
+}
+
+void explode(int oc, int i, char const *reason)
 {
     int o1,o2=0,j,v=0,jk;
     int cmoi=NBBOT;
@@ -55,6 +67,7 @@ void explose(int oc, int i)
         while (obj[o1].objref!=-1) o1=obj[o1].objref;
         o2=o1+n_object[mod[obj[o1].model].n_object].nbpieces;
         for (v=0; v<NBBOT; v++) if (bot[v].vion==o1) {
+            log_bot_destruction(v, reason);
             copyv(&vit, &bot[v].vionvit);
             break;
         }
@@ -183,7 +196,7 @@ bool hitgun(int oc, int i) {
         switch (obj[o1].type) {
         case TYPE_CAR:
             if (shooter>=0 && shooter<NBBOT && kelkan(o1)!=bot[shooter].camp) if (drand48()<.05) bot[shooter].gold+=60;
-            if (o1!=oc && drand48()<.01) explose(o1,i);
+            if (o1!=oc && drand48()<.01) explode(o1, i, "shooted");
             break;
         case TYPE_PLANE:
             for (j=0; j<NBBOT; j++) if (bot[j].vion==o1) {
@@ -207,7 +220,7 @@ bool hitgun(int oc, int i) {
                 }
                 if (drand48()<bot[j].nbomb/1000. || drand48()<.05) {
                     bot[j].burning += drand48()*1000;
-                    if (bot[j].burning > 900) explose(o1,i);
+                    if (bot[j].burning > 900) explode(o1, i, "gunned");
                     bot[j].last_burnt = 0;
                     bot[j].fiulloss += drand48()*200;
                     if ((bot[j].motorloss += drand48()*100)<0) bot[j].motorloss=127;
@@ -225,7 +238,7 @@ bool hitgun(int oc, int i) {
         /*  for (j=0; j<NBTANKBOTS; j++) if (tank[j].o1==o1) {
                 printf("tank %d hit\n",j);
             }*/
-            if (drand48()<.07) explose(o1,i);
+            if (drand48()<.07) explode(o1, i, "gunned");
             break;
         case TYPE_ZEPPELIN:
             if (drand48()<.004) {

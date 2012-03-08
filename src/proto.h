@@ -517,7 +517,7 @@ int collision(int p, int o);
 int kelkan(int o);
 // shot_idx: idx in objs list (substract shot_start for index in gunner/shot_ttl)
 bool hitgun(int obj_idx, int shot_idx);
-void explose(int oc, int i);
+void explode(int oc, int i, char const *reason);
 // present.c
 void affpresent(int,int);
 extern char *scenar[4][4][2];

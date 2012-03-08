@@ -304,7 +304,7 @@ void control(int b)
         map_mode = ! map_mode;
         playsound(VOICE_GEAR, SAMPLE_BIPBIP3, 1., &voices_in_my_head, true, false);
     }
-    if (kreset(gkeys[kc_suicide].kc) && bot[controled_bot].camp!=-1) explose(bot[viewed_bot].vion, 0);
+    if (kreset(gkeys[kc_suicide].kc) && bot[controled_bot].camp!=-1) explode(bot[viewed_bot].vion, 0, "commited suicide");
     if (kreset(gkeys[kc_markpos].kc)) bot[b].but.mark=1;
     // Cheats
     if (cheat_mode && kread(gkeys[kc_alti].kc)) {

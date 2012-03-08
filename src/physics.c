@@ -363,7 +363,7 @@ void physics_plane(int b, float dt_sec)
             (vz < vz_min) ||
             (vz < vz_min_rough && (bot[b].but.gearup || submap_get(obj[bot[b].vion].ak)!=0))
         ) {
-            explose(bot[b].vion,bot[b].vion);
+            explode(bot[b].vion, bot[b].vion, "crashed");
             return;
         } else {
             // nice landing !
