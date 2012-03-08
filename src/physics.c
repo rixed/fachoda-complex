@@ -206,7 +206,7 @@ void physics_plane(int b, float dt_sec)
 #       define LINEAR_DRAG_MAXSPEED 200
 #       define LDM LINEAR_DRAG_MAXSPEED
 #       define LIN_FACTOR .5
-#       define SQ_FACTOR .02
+#       define SQ_FACTOR .016
 #       define DRAG(what, factor) \
             fabs(what) < LDM ? \
                 (factor)*LIN_FACTOR*(what) : \
@@ -325,7 +325,7 @@ void physics_plane(int b, float dt_sec)
         double const kx1 = .00005*(vx-MIN_SPEED_FOR_LIFT)*(vx-MIN_SPEED_FOR_LIFT);
         double const kx2 = 1. - .00003*(vx-BEST_SPEED_FOR_CONTROL)*(vx-BEST_SPEED_FOR_CONTROL);
         double const kx3 = 1. -.0017*vx;
-        if (bot[b].stall) kx=0;
+        if (bot[b].stall) kx *= 0.2;
         else if (vx < BEST_SPEED_FOR_CONTROL) kx = MIN(kx1, kx2);
         else kx = MAX(kx2, kx3);
         if (kx < 0) kx = 0;
@@ -333,16 +333,13 @@ void physics_plane(int b, float dt_sec)
         if (easy_mode || b>=NbHosts) kx*=1.2;
 
         // push wings frontally
-        float f = vx/MIN_SPEED_FOR_LIFT;
-        f *= f; f *= f;
-        float const k_vx = exp(-f);
-        double const prof = (vz>0.?1.:-1.)*.0003*vz*vz*k_vx*bot[b].aoa + bot[b].yctl * kx;
+        double const prof = .006*vz*bot[b].aoa + bot[b].yctl * kx;
         double gouv, deriv;
         if (touchdown_mask) {
             gouv = touchdown_mask & 4 ? -.5*bot[b].xctl : 0.; // rear wheel in contact with the ground
             deriv = 0.;
         } else {
-            gouv = (vy>0.?1.:-1.)*.0001*vy*vy*k_vx;
+            gouv = .001*vy;
             deriv = (bot[b].xctl * kx)/(1. + .05*bot[b].nbomb);
         }
 

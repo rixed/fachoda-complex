@@ -4,6 +4,8 @@ Here are only reported the most visible changes.
 New in 2.1 (2012-03-09)
 -----------------------
 
+* Improved flight model (more engine power, can now loop and stall)
+
 * Rework keyboard controls.
   If you previously redefied your keys you must:
   - deletes your $(HOME)/.fachoda-keys

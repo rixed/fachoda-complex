@@ -28,6 +28,7 @@
 #define MIN(a,b) ((a)<=(b)?(a):(b))
 #define MAX(a,b) ((b)<=(a)?(a):(b))
 #define CLAMP(x, v) do { if ((x) < -(v)) x = -(v); else if ((x) > v) x = v; } while (0)
+#define CLAMP2(x, min, max) do { if ((x) < (min)) x = min; else if ((x) > max) x = max; } while (0)
 #define SQUARE(x) ((x)*(x))
 #define ARRAY_LEN(x) (sizeof(x)/sizeof((x)[0]))
 
@@ -35,7 +36,7 @@
 
 #define ONE_METER 100  // dist unit seams to be approx the cm
 #define DOGDISTMAX (90. * ONE_METER)    // Max distance at which one can spot a plane in dogfight view
-#define G (3. * ONE_METER)  // actual gravity is of course 10, but we like it smaller so that planes can fly slower
+#define G (6. * ONE_METER)  // actual gravity is of course 10, but we like it smaller so that planes can fly slower
 #define NTANKMARK 12    // 11 bits pour les No de tanks
 #define SHOT_SPEED (30. * ONE_METER) // in meters/secs
 
@@ -491,7 +492,7 @@ extern struct pixel32 *tbback, *tbback_old, *tbback_modern;
 #define BEST_SPEED_FOR_LIFT (2.5 * ONE_METER)    // according to control.c
 #define MIN_SPEED_FOR_LIFT (2. * ONE_METER)
 #define BEST_SPEED_FOR_CONTROL (3. * ONE_METER)
-#define MAX_AOA_FOR_LIFT 0.33
+#define MAX_AOA_FOR_LIFT 0.4
 extern float snd_thrust;
 void physics_plane(int b, float dt_sec);
 void physics_tank(int v, float dt_sec);
@@ -700,10 +701,9 @@ static inline void addv3(struct vector *a, struct vector *b, struct vector *rest
 
 static inline void cap_dist(struct vector *a, float dist)
 {
-#   define CAP(x) if ((x) > dist) x = dist; else if ((x) < -dist) x = -dist;
-    CAP(a->x);
-    CAP(a->y);
-    CAP(a->z);
+    CLAMP(a->x, dist);
+    CLAMP(a->y, dist);
+    CLAMP(a->z, dist);
 }
 
 void randomv(struct vector *v);

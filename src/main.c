@@ -604,7 +604,7 @@ parse_error:
 
     gtime_start();
     do {
-        if (accelerated_mode) gtime_accel(MAX_DT >> 1);
+        if (accelerated_mode) gtime_accel((MAX_DT+MIN_DT) >> 1);
         float const dt_sec = gtime_next_sec();
 //      printf("dt = %f\n", dt_sec);
 

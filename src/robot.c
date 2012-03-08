@@ -236,14 +236,14 @@ void newnav(int b)
     if (killemall_mode) {
         bot[b].u.x = bot[b].u.y = 0.;
         bot[b].u.z = z_ground(bot[b].u.x, bot[b].u.y, true);
-        bot[b].target_speed = BEST_SPEED_FOR_LIFT;
+        bot[b].target_speed = BEST_SPEED_FOR_CONTROL;
         bot[b].target_rel_alt = 30. * ONE_METER;
         bot[b].maneuver = NAVIG;
         return;
     }
     if (bot[b].cibt != -1 && bot[b].nbomb && bot[b].fiul > plane_desc[bot[b].navion].fiulmax/2) {
         bot[b].u = obj[bot[b].cibt].pos;
-        bot[b].target_speed = BEST_SPEED_FOR_LIFT;
+        bot[b].target_speed = BEST_SPEED_FOR_CONTROL;
         bot[b].target_rel_alt = 100. * ONE_METER;
         bot[b].maneuver = NAVIG;
     } else if (bot[b].maneuver != ILS_1 && bot[b].maneuver != ILS_2 && bot[b].maneuver != ILS_3) {
@@ -307,48 +307,24 @@ static void adjust_slope(int b, float diff_alt)
     if (b==viewed_bot) printf("naive slope: %f ", slope);
 #   endif
 
-    // The more linear speed we have, the more we can turn
-    if (bot[b].vitlin < 0) { // don't know how to handle this
-        bot[b].thrust = 1.;
-        return;
-    }
-
-    // But we do not want to have a slope too distinct from plane actual direction
-    float cap_aoa = fabs(bot[b].aoa) / MAX_AOA_FOR_LIFT;
-    if (cap_aoa > 1.) cap_aoa = 1.;
-    slope *= 1. - cap_aoa;
-#   ifdef PRINT_DEBUG
-    if (b==viewed_bot) printf("capped slope: %f ", slope);
-#   endif
-
-    if (slope > 0 && bot[b].vitlin < BEST_SPEED_FOR_LIFT) {
-        float vr = bot[b].vitlin/BEST_SPEED_FOR_LIFT;
-        vr *= vr; vr *= vr; vr *= vr;
-        slope = (1. - vr) * -speed.z + vr * slope;
-        bot[b].thrust += .1;
-        if (slope > .1) {
-            bot[b].but.flap = 1;
-        }
-#       ifdef PRINT_DEBUG
-        if (b==viewed_bot) printf("vitlin slope: %f ", slope);
-#       endif
-    }
-
-    if (diff_alt > 0. && speed.z < 0.5 * ONE_METER) {
-        bot[b].but.flap = 1;
-        CLAMP(bot[b].xctl, 1.);
-        bot[b].thrust = 1.;
+    // if we go too fast, try to reduce speed by gaining alt
+    if (bot[b].vitlin > bot[b].target_speed) {
+        slope += 0.01 * (bot[b].vitlin - bot[b].target_speed);
     }
 
     // Choose yctl according to target slope
     bot[b].yctl = slope - speed.z;
-    CLAMP(bot[b].yctl, 1.);
 
     // The more we roll, the more we need to pull the joystick
     float roll = obj[bot[b].vion].rot.y.z;
     roll = roll*roll; roll = roll*roll; roll = roll*roll;
     bot[b].yctl += 1. - exp(-32. * roll);
     CLAMP(bot[b].yctl, 1.);
+
+    // When stalling, allow the plane to recover
+    if (bot[b].is_flying && bot[b].stall) {
+        bot[b].yctl *= 0.1;
+    }
 
     if (bot[b].thrust > 1.) bot[b].thrust = 1.;
 
@@ -358,13 +334,23 @@ static void adjust_slope(int b, float diff_alt)
 #   endif
 }
 
-static void adjust_throttle(int b, float speed)
+static void adjust_throttle(int b, float target)
 {
-    if (bot[b].vitlin < speed) {
-        bot[b].thrust += .01;
-    } else if (bot[b].thrust > .02) {
-        bot[b].thrust -= .01;
+    if (bot[b].is_flying && bot[b].stall) {
+        bot[b].thrust += .1;
+    } else {
+        float diff = .00005*(target - bot[b].vitlin);
+        CLAMP(diff, .1);
+        bot[b].thrust += diff;
+        if (diff < .5 * ONE_METER) bot[b].but.flap = 1;
     }
+    CLAMP2(bot[b].thrust, 0., 1.);
+#   ifdef PRINT_DEBUG
+    if (b == viewed_bot) printf("%s %svitlin=%f, target=%f\n",
+        bot[b].is_flying ? "flying":"taxiing",
+        bot[b].stall ? "STALL ":"",
+        bot[b].vitlin, target);
+#   endif
 }
 
 static double adjust_direction_rel(int b, struct vector const *dir)
@@ -375,6 +361,11 @@ static double adjust_direction_rel(int b, struct vector const *dir)
         if (b == viewed_bot) printf("upside down!\n");
 #       endif
         bot[b].xctl = obj[bot[b].vion].rot.y.z > 0 ? -1. : 1.;
+        return 0.;
+    }
+
+    if (bot[b].is_flying && bot[b].stall) {
+        bot[b].xctl = -obj[bot[b].vion].rot.y.z;
         return 0.;
     }
 
@@ -430,7 +421,7 @@ void robot_safe(int b, float min_alt)
         // Flaps, etc
         bot[b].but.flap = 0;
         // Adjut thrust
-        adjust_throttle(b, BEST_SPEED_FOR_LIFT);
+        adjust_throttle(b, BEST_SPEED_FOR_CONTROL);
         // No vertical speed
 #       ifdef PRINT_DEBUG
         if (b == viewed_bot) printf("safe, high\n");
@@ -438,8 +429,9 @@ void robot_safe(int b, float min_alt)
         adjust_slope(b, 0.);
     } else {
         // If the ground is near, try to keep our altitude
+        // FIXME: and we are facing up! other wise target BEST_SPEED_FOR_CONTROL
         bot[b].but.flap = 1;
-        bot[b].thrust = 1.;
+        adjust_throttle(b, BEST_SPEED_FOR_CONTROL);
 #       ifdef PRINT_DEBUG
         if (b == viewed_bot) printf("safe, low: %f < %f\n", bot[b].zs, min_alt);
 #       endif
@@ -580,12 +572,11 @@ void robot(int b)
                     bot[b].thrust = 1.;
                     bot[b].but.flap = 1;
                     bot[b].but.brakes = 0;
-                    bot[b].xctl = 0.;
                     bot[b].xctl = -obj[o].rot.y.z;
-                    bot[b].yctl = -3.*obj[o].rot.x.z;    // level the nose
-                    if (vit > 3. * ONE_METER) {
-                        bot[b].xctl = -obj[o].rot.y.z;
-                        bot[b].yctl = .2;
+                    if (vit > BEST_SPEED_FOR_LIFT) {
+                        bot[b].yctl += .1;
+                    } else {
+                        bot[b].yctl = -3.*obj[o].rot.x.z;    // level the nose
                     }
                     CLAMP(bot[b].yctl, 1.);
                     CLAMP(bot[b].xctl, 1.);
@@ -600,7 +591,7 @@ void robot(int b)
                     d = dist_from_navpoint(b, &u);
                     if (d < 400. * ONE_METER && bot[b].cibt != -1) {
                         bot[b].target_rel_alt = 17. * ONE_METER;
-                        bot[b].target_speed = BEST_SPEED_FOR_LIFT;
+                        bot[b].target_speed = BEST_SPEED_FOR_CONTROL;
                         bot[b].maneuver = HEDGEHOP;
                     }
                     break;
@@ -608,7 +599,7 @@ void robot(int b)
                     robot_autopilot(b);
                     d = dist_from_navpoint(b, &u);
                     if (d < 40. * ONE_METER) {
-                        bot[b].target_speed = (MIN_SPEED_FOR_LIFT*3 + BEST_SPEED_FOR_LIFT)/4;
+                        bot[b].target_speed = BEST_SPEED_FOR_CONTROL;
                         bot[b].target_rel_alt = 9. * ONE_METER;
                         bot[b].cibt_drop_dist2 = DBL_MAX;
                         bot[b].maneuver = BOMBING;
@@ -660,7 +651,7 @@ void robot(int b)
                     mulv(&bot[b].u, 50. * ONE_METER);
                     addv(&bot[b].u, &obj[bot[b].babase].pos);
                     bot[b].u.z = z_ground(bot[b].u.x, bot[b].u.y, false);
-                    bot[b].target_speed = (BEST_SPEED_FOR_LIFT + MIN_SPEED_FOR_LIFT)/2;
+                    bot[b].target_speed = BEST_SPEED_FOR_CONTROL;
                     bot[b].target_rel_alt = 11. * ONE_METER;
                     bot[b].maneuver = ILS_2;
                     break;
@@ -702,7 +693,7 @@ void robot(int b)
                         mulv(&bot[b].u, 100. * ONE_METER);
                         addv(&bot[b].u, &obj[bot[b].vion].pos);
                         bot[b].u.z = z_ground(bot[b].u.x, bot[b].u.y, false);
-                        bot[b].target_speed = 2. * BEST_SPEED_FOR_LIFT; // run Forest, run!
+                        bot[b].target_speed = 1.5 * BEST_SPEED_FOR_CONTROL; // run Forest, run!
                         bot[b].target_rel_alt = 2. * SAFE_LOW_ALT;
                         bot[b].maneuver = EVADE;
                     }
@@ -736,7 +727,7 @@ void robot(int b)
             double dc = adjust_direction_rel(b, &v);
             dist = renorme(&v);
             double distfrap2 = 0;
-            float target_speed = BEST_SPEED_FOR_LIFT;
+            float target_speed = BEST_SPEED_FOR_CONTROL;
             float min_z = 30. * ONE_METER;  // will be lowered if odds look good
             if (fabs(dc) < M_PI/4) {    // opponent is in front of us
                 min_z = 20. * ONE_METER;
