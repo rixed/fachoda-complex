@@ -413,7 +413,9 @@ static void view_hud_draw(void)
                     plane_desc[bot[viewed_bot].navion].name,
                     bot[viewed_bot].camp != -1 ?
                         camp_name[bot[viewed_bot].camp][lang] : "dead");
-                pstr(vn, win_height-12, 0xffffff);
+                pstr(vn, win_center_y/3 + 13, 0xffffff);
+            } else if (autopilot) {
+                pstr("AUTOPILOT", win_center_y/3 + 13, 0xFFFFFF);
             }
             break;
     }
@@ -956,8 +958,8 @@ parse_error:
                     if (bot[b].but.brakes) pword("brakes",10,80,0xD0D0D0);
                     if (autopilot) pword("auto", 10, 90, 0xD0D0D0);
                 }
-                if (accelerated_mode) pstr("ACCELERATED MODE",win_center_y/3,0xFFFFFF);
-                if (prompt_quit) pstr("Quit ? Yes/No",win_center_y/2-8,0xFFFFFF);
+                if (accelerated_mode) pstr("ACCELERATED MODE", win_center_y/3, 0xFFFFFF);
+                if (prompt_quit) pstr("Quit ? Yes/No", win_center_y/2-8, 0xFFFFFF);
                 if (current_msg_ttl >= 0. && bot[viewed_bot].camp == current_msg_camp) {
                     pstr(current_msg, 10, 0xF1F511);
                 }
