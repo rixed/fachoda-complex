@@ -203,7 +203,7 @@ void physics_plane(int b, float dt_sec)
         if (!bot[b].but.gearup) k += .07;
         if (bot[b].but.flap) k += .03;
         k *= alt_factor;
-#       define SQ_FACTOR .004
+#       define SQ_FACTOR .005
 #       define DRAG(what, factor) \
             (what) > 0. ? \
                 + SQ_FACTOR*(what)*(what) : \
@@ -236,9 +236,8 @@ void physics_plane(int b, float dt_sec)
     {
         float kx = bot[b].stall ?
             0. :
-            (bot[b].aoa/MAX_AOA_FOR_LIFT) * MIN(.0005*(vx-MIN_SPEED_FOR_LIFT)*(vx-MIN_SPEED_FOR_LIFT), 12.*exp(-.001*vx));
+            (bot[b].aoa/MAX_AOA_FOR_LIFT) * MIN(.0005*SQUARE(vx-MIN_SPEED_FOR_LIFT), 12.*exp(-.001*vx));
 
-        // kx max is aprox 1., when vx is around 250 (BEST_SPEED_FOR_LIFT!) and a-o-a around MAX_AOA_FOR_LIFT
         float lift = plane_desc[bot[b].navion].lift;
         if (bot[b].but.flap) lift *= 1.2;
         if (zs < 5. * ONE_METER) lift *= 1.1;   // more lift when close to the ground
@@ -272,10 +271,10 @@ void physics_plane(int b, float dt_sec)
             // slow down plane due to contact with ground
             if (bot[b].but.gearup) { // all directions the same
                 v = bot[b].vionvit;
-                mulv(&v, .4);
+                mulv(&v, .2);
                 subv(&a, &v);
             } else {
-                v.x = (bot[b].but.brakes && vx < 1. * ONE_METER ? .08:.00001) * vx;
+                v.x = (bot[b].but.brakes /*&& vx < 1. * ONE_METER*/ ? .08:.001) * vx;
                 v.y = .05 * vy;
                 v.z = 0;
                 mulmv(&obj[bot[b].vion].rot, &v, &u);
@@ -317,13 +316,13 @@ void physics_plane(int b, float dt_sec)
     {   // Angular momentum due to airflow on wings + controls
         // Commands are the most effective when vx=BEST_SPEED_FOR_CONTROL. (then kx=1)
         float kx;
-        double const kx1 = .00005*(vx-MIN_SPEED_FOR_LIFT)*(vx-MIN_SPEED_FOR_LIFT);
-        double const kx2 = 1. - .00003*(vx-BEST_SPEED_FOR_CONTROL)*(vx-BEST_SPEED_FOR_CONTROL);
+        double const kx1 = .00005*SQUARE(vx-MIN_SPEED_FOR_LIFT);
+        double const kx2 = 1. - .00003*SQUARE(vx-BEST_SPEED_FOR_CONTROL);
         double const kx3 = 1. -.0017*vx;
-        if (bot[b].stall) kx *= 0.2;
-        else if (vx < BEST_SPEED_FOR_CONTROL) kx = MIN(kx1, kx2);
+        if (vx < BEST_SPEED_FOR_CONTROL) kx = MIN(kx1, kx2);
         else kx = MAX(kx2, kx3);
         if (kx < 0) kx = 0;
+        if (bot[b].stall) kx *= 0.2;
 
         if (easy_mode || b>=NbHosts) kx*=1.2;
 

@@ -490,7 +490,7 @@ extern int lx,ly,lz;
 extern struct pixel32 *tbback, *tbback_old, *tbback_modern;
 // physics
 #define BEST_SPEED_FOR_LIFT (2.5 * ONE_METER)    // according to control.c
-#define MIN_SPEED_FOR_LIFT (2. * ONE_METER)
+#define MIN_SPEED_FOR_LIFT (1.5 * ONE_METER)
 #define BEST_SPEED_FOR_CONTROL (3. * ONE_METER)
 #define MAX_AOA_FOR_LIFT 0.4
 extern float snd_thrust;

@@ -570,7 +570,7 @@ void robot(int b)
                     if (fabs(bot[b].xctl) < .05) bot[b].maneuver = TAKE_OFF;
                     break;
                 case TAKE_OFF:
-                    bot[b].thrust = 1.;
+                    adjust_throttle(b, 1.1 * BEST_SPEED_FOR_LIFT);
                     bot[b].but.flap = 1;
                     bot[b].but.brakes = 0;
                     bot[b].xctl = -obj[o].rot.y.z;
@@ -684,8 +684,7 @@ void robot(int b)
                     }
                     break;
                 case NOSE_UP:   // in case we were pointing down, start climbing again and re-nav
-                    bot[b].thrust = 1.;
-                    bot[b].but.flap = 1;
+                    adjust_throttle(b, BEST_SPEED_FOR_CONTROL);
                     bot[b].xctl = -obj[o].rot.y.z;
                     CLAMP(bot[b].xctl, 1.);
                     bot[b].yctl = 1.;
