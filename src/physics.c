@@ -657,9 +657,9 @@ static void zep_shot(int z, struct vector *c, int i)
         if (i<3) s = -s;
         if (s<.5) return;
         // spread bullets slightly
-        p.x += 0.01*(drand48()-.5);
-        p.y += 0.01*(drand48()-.5);
-        p.z += 0.01*(drand48()-.5);
+        p.x += 0.04*(drand48()-.5);
+        p.y += 0.04*(drand48()-.5);
+        p.z += 0.04*(drand48()-.5);
         renorme(&p);
         struct matrix m;
         m.x = p;
