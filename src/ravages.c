@@ -45,7 +45,7 @@ static void log_bot_destruction(int b, char const *reason)
         maneuver_2_str(bot[b].maneuver),
         bot[b].fiul, bot[b].fiulloss, bot[b].motorloss, bot[b].aeroloss, bot[b].bloodloss,
         bot[b].gunned,
-        bot[b].gold, bot[b].stall ? "Salled":"");
+        bot[b].gold, bot[b].stall ? "Stalled":"");
 }
 
 void explode(int oc, int i, char const *reason)

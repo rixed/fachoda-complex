@@ -964,7 +964,7 @@ parse_error:
                     }
                 }
                 if (accelerated_mode) pstr("ACCELERATED MODE", win_center_y/3, 0xFFFFFF);
-                if (prompt_quit) pstr("Quit ? Yes/No", win_center_y/2-8, 0xFFFFFF);
+                if (prompt_quit) pstr("Quit ? Yes/No", win_center_y/3 + 2*13, 0xFFFFFF);
                 if (current_msg_ttl >= 0. && bot[viewed_bot].camp == current_msg_camp) {
                     pstr(current_msg, 10, 0xF1F511);
                 }
