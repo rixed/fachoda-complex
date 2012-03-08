@@ -322,7 +322,7 @@ static void setup_camera(float dt_sec)
             struct vector acc;
             subv3(&bot[viewed_bot].vionvit, &prev_vit, &acc);
             mulv(&acc, .02/dt_sec);
-            cap_dist(&acc, 3.);
+            cap_dist(&acc, 2.);
             subv(&obj[0].pos, &acc);
             prev_vit = bot[viewed_bot].vionvit;
         }
