@@ -41,7 +41,7 @@ static void draw_fg(void)
     int c[4]={ 0xFF0000, 0x00FF00, 0x0000FF, 0xFFFF00 };
     my_imgcount ++;
     for (i=0; i<3; i++) for (o=0; o<4; o++) {
-        if (enable_view_enemy || o==bot[controled_bot].camp) plotchar(win_center_x+(obj[airfield_obj[0][i][o]].pos.x-TILE_LEN*map_x)*zoom/(TILE_LEN*MAP_LEN/2),win_center_y-(obj[airfield_obj[0][i][o]].pos.y-TILE_LEN*map_y)*zoom/(TILE_LEN*MAP_LEN/2),c[o],10);
+        if (enable_view_enemy || o==bot[controlled_bot].camp) plotchar(win_center_x+(obj[airfield_obj[0][i][o]].pos.x-TILE_LEN*map_x)*zoom/(TILE_LEN*MAP_LEN/2),win_center_y-(obj[airfield_obj[0][i][o]].pos.y-TILE_LEN*map_y)*zoom/(TILE_LEN*MAP_LEN/2),c[o],10);
     }
     for (o=0; o<NB_VILLAGES; o++) {
         int x,y;
@@ -49,10 +49,10 @@ static void draw_fg(void)
         pwordlent(village[o].nom,x-3*strlen(village[o].nom),y+9,0xFFFFFF);
     }
     for (o=0; o<NBTANKBOTS; o++) {
-        if (tank[o].camp!=-1 && (enable_view_enemy||tank[o].camp==bot[controled_bot].camp)) plotchar(win_center_x+(obj[tank[o].o1].pos.x-TILE_LEN*map_x)*zoom/(TILE_LEN*MAP_LEN/2),win_center_y-(obj[tank[o].o1].pos.y-TILE_LEN*map_y)*zoom/(TILE_LEN*MAP_LEN/2),c[(int)tank[o].camp],14);
+        if (tank[o].camp!=-1 && (enable_view_enemy||tank[o].camp==bot[controlled_bot].camp)) plotchar(win_center_x+(obj[tank[o].o1].pos.x-TILE_LEN*map_x)*zoom/(TILE_LEN*MAP_LEN/2),win_center_y-(obj[tank[o].o1].pos.y-TILE_LEN*map_y)*zoom/(TILE_LEN*MAP_LEN/2),c[(int)tank[o].camp],14);
     }
     for (o=0; o<NBBOT; o++) {
-        if (bot[o].camp!=-1 && (enable_view_enemy||bot[o].camp==bot[controled_bot].camp)) plotchar(win_center_x+(obj[bot[o].vion].pos.x-TILE_LEN*map_x)*zoom/(TILE_LEN*MAP_LEN/2),win_center_y-(obj[bot[o].vion].pos.y-TILE_LEN*map_y)*zoom/(TILE_LEN*MAP_LEN/2),o==viewed_bot && my_imgcount&1?0xFFFFFF:c[(int)bot[o].camp],12);
+        if (bot[o].camp!=-1 && (enable_view_enemy||bot[o].camp==bot[controlled_bot].camp)) plotchar(win_center_x+(obj[bot[o].vion].pos.x-TILE_LEN*map_x)*zoom/(TILE_LEN*MAP_LEN/2),win_center_y-(obj[bot[o].vion].pos.y-TILE_LEN*map_y)*zoom/(TILE_LEN*MAP_LEN/2),o==viewed_bot && my_imgcount&1?0xFFFFFF:c[(int)bot[o].camp],12);
     }
     for (o=0; o<NB_MARKS; o++) {
         if (mark[o].x!=MAXFLOAT) plotchar(win_center_x+(mark[o].x-TILE_LEN*map_x)*zoom/(TILE_LEN*MAP_LEN/2),win_center_y-(mark[o].y-TILE_LEN*map_y)*zoom/(TILE_LEN*MAP_LEN/2),0xBFEF9F,9);

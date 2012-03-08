@@ -528,8 +528,8 @@ void initworld(void)
     printf("Adding planes...\n");
     // des vionvions
     if ((bot=calloc(sizeof(*bot),NBBOT))==NULL) { perror("bot"); exit(-1); }
-    bot[controled_bot].camp=camp;
-    bot[controled_bot].navion=starting_plane-1;
+    bot[controlled_bot].camp=camp;
+    bot[controlled_bot].navion=starting_plane-1;
     //if (NetCamp()==-1) {printf("Net Error\n"); exit(-1); }
     printf("Playing with %d planes & %d tanks\nPlayers :\n",NBBOT,NBTANKBOTS);
     for (i=0; i<NbHosts; i++) printf("%s, camp %d, in a %s\n",playbotname[i],bot[i].camp+1, plane_desc[bot[i].navion].name);

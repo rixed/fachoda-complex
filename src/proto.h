@@ -379,7 +379,7 @@ extern enum view_type {
 enum view_type next_external_view(enum view_type);
 extern int viewed_bomb;
 extern bool map_mode, accelerated_mode, autopilot, game_paused;
-extern int controled_bot;
+extern int controlled_bot;
 extern int frame_count, viewed_obj;
 extern float extcam_dist, sight_teta, sight_phi;
 extern bool view_instruments, view_predef, prompt_quit, quit_game, draw_high_scores;

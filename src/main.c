@@ -192,7 +192,7 @@ int viewed_bot = 0, viewed_obj = 0;
 enum view_type view = VIEW_IN_PLANE;
 int viewed_bomb=0;
 bool map_mode, accelerated_mode, autopilot, game_paused;
-int controled_bot, frame_count;
+int controlled_bot, frame_count;
 float extcam_dist = 2. * ONE_METER;    // external camera distance (ie. "zoom")
 float sight_teta=0, sight_phi=0;   // direction of vision while in plane view
 bool view_instruments, view_predef, prompt_quit, quit_game, draw_high_scores;
@@ -242,12 +242,12 @@ static void setup_camera(float dt_sec)
     }
     if (view == VIEW_ANYTHING_CHEAT && !cheat_mode) view = next_external_view(view);
     if (view == VIEW_DOGFIGHT) {
-        if (viewed_bot != controled_bot) view = VIEW_IN_PLANE;
+        if (viewed_bot != controlled_bot) view = VIEW_IN_PLANE;
         else {
-            if (DogBot==controled_bot || bot[DogBot].camp==-1) next_dog_bot();
-            if (DogBot!=controled_bot && bot[DogBot].camp!=-1) {
+            if (DogBot==controlled_bot || bot[DogBot].camp==-1) next_dog_bot();
+            if (DogBot!=controlled_bot && bot[DogBot].camp!=-1) {
                 DogBotDir = obj[bot[DogBot].vion].pos;
-                subv(&DogBotDir,&obj[bot[controled_bot].vion].pos);
+                subv(&DogBotDir,&obj[bot[controlled_bot].vion].pos);
                 DogBotDist=renorme(&DogBotDir);
                 if (DogBotDist>DOGDISTMAX) next_dog_bot();
                 if (DogBotDist>DOGDISTMAX) view = VIEW_IN_PLANE;
@@ -387,13 +387,13 @@ static void view_hud_draw(void)
     char vn[100];
     switch (view) {
         case VIEW_DOGFIGHT:
-            if (viewed_bot == controled_bot && bot[controled_bot].camp != -1 && bot[DogBot].camp != -1) {
-                cercle(0, 0, 10, colcamp[(int)bot[controled_bot].camp]);
+            if (viewed_bot == controlled_bot && bot[controlled_bot].camp != -1 && bot[DogBot].camp != -1) {
+                cercle(0, 0, 10, colcamp[(int)bot[controlled_bot].camp]);
                 if (DogBot < NbHosts) {
                     snprintf(vn, sizeof(vn), "%s (%s)",
                         plane_desc[bot[DogBot].navion].name,
                         playbotname[DogBot]);
-                } else if (bot[DogBot].camp != bot[controled_bot].camp) {
+                } else if (bot[DogBot].camp != bot[controlled_bot].camp) {
                     snprintf(vn, sizeof(vn), "%s (%s)",
                         plane_desc[bot[DogBot].navion].name,
                         camp_name[bot[DogBot].camp][lang]);
@@ -408,7 +408,7 @@ static void view_hud_draw(void)
             pstr("Bomb view", win_height-12, 0xffffff);
             break;
         default:
-            if (viewed_bot != controled_bot) {
+            if (viewed_bot != controlled_bot) {
                 snprintf(vn, sizeof(vn), "Spying on %s (%s)",
                     plane_desc[bot[viewed_bot].navion].name,
                     bot[viewed_bot].camp != -1 ?
@@ -566,7 +566,7 @@ parse_error:
     pstr("LOADING and CREATING THE WORLD",win_center_y+(win_height>>3)+10,0xE5D510);
     NBBOT+=NbHosts;
     playbotname = malloc(30*NbHosts);
-    strcpy(&(playbotname[controled_bot])[0],myname);
+    strcpy(&(playbotname[controlled_bot])[0],myname);
     if (night_mode==-1) night_mode=drand48()>.9;
     /*
         Load 3D models
@@ -580,9 +580,9 @@ parse_error:
     printf("World is now generated (%d objs) ; let it now degenerate !\n", nb_obj);
     for (i = 0; i < MAX_DEBRIS; i++) debris[i].o = -1;
     // Camera is obj[0]
-    obj[0].pos = obj[bot[controled_bot].vion].pos;
-    obj[0].rot = obj[bot[controled_bot].vion].rot;
-    viewed_bot = controled_bot;
+    obj[0].pos = obj[bot[controlled_bot].vion].pos;
+    obj[0].rot = obj[bot[controlled_bot].vion].rot;
+    viewed_bot = controlled_bot;
     bombidx = 0;
 
     // effacer les tableaux de bord, les poscams et les charnières
@@ -610,7 +610,7 @@ parse_error:
         frame_count++;
 
         // PJ
-        control(controled_bot);
+        control(controlled_bot);
 
         // PNJ
         if (! game_paused) {
@@ -641,9 +641,9 @@ parse_error:
             // message d'alerte ?
             float n;
             if (
-                bot[controled_bot].camp != -1 &&    // not dead
-                bot[controled_bot].vionvit.z < -.3*ONE_METER && // and fast toward the ground
-                (n=bot[controled_bot].vionvit.z * 10 + bot[controled_bot].zs) < 0  // will hit ground in less than 10s
+                bot[controlled_bot].camp != -1 &&    // not dead
+                bot[controlled_bot].vionvit.z < -.3*ONE_METER && // and fast toward the ground
+                (n=bot[controlled_bot].vionvit.z * 10 + bot[controlled_bot].zs) < 0  // will hit ground in less than 10s
             ) {
                 playsound(VOICE_ALERT, SAMPLE_ALERT, 1-n*.001, &voices_in_my_head, true, false);
             }
@@ -936,12 +936,12 @@ parse_error:
                 plotmouse(win_center_x*bot[viewed_bot].xctl,win_center_y*bot[viewed_bot].yctl);
                 // HUD
                 if (easy_mode) {
-                    int const b = viewed_bot; // controled_bot;
+                    int const b = viewed_bot; // controlled_bot;
                     pword("Sz:", 10, 10, 0x406040);
                     pnum(bot[b].vionvit.z, 40, 10, 0xAFDF10, 1);
                     pword("Sl:", 10, 20, 0x406040);
                     pnum(bot[b].vitlin, 40, 20, 0xFFFFFF, 1);
-                    if (autopilot || b != controled_bot) {
+                    if (autopilot || b != controlled_bot) {
                         float const diff_speed = bot[b].target_speed - bot[b].vitlin;
                         pnum(diff_speed, 40+4*10, 20, diff_speed > 0 ? 0xD0D0F0 : 0xF0D0D0, 1);
                     }
@@ -949,7 +949,7 @@ parse_error:
                     pnum(norme(&bot[b].vionvit), 40, 30, 0x00FFFF, 1);
                     pword("Zg:", 10, 40, 0x406040);
                     pnum(bot[b].zs, 40, 40, 0xFF00FF, 1);
-                    if (autopilot || b != controled_bot) {
+                    if (autopilot || b != controlled_bot) {
                         float const diff_alt = (bot[b].u.z + bot[b].target_rel_alt) - obj[bot[b].vion].pos.z;
                         pnum(diff_alt, 40+4*10, 40, diff_alt > 0 ? 0xD0D0F0 : 0xF0D0D0, 1);
                     }
@@ -964,8 +964,8 @@ parse_error:
                     pstr(current_msg, 10, 0xF1F511);
                 }
                 // Display current balance
-                if (bot[controled_bot].gold - 2000 > maxgold) {
-                    maxgold = bot[controled_bot].gold - 2000;
+                if (bot[controlled_bot].gold - 2000 > maxgold) {
+                    maxgold = bot[controlled_bot].gold - 2000;
                     if (maxrank < ARRAY_LEN(highscore)) highscore[maxrank].score = maxgold;
                     while (maxrank > 0 && highscore[maxrank-1].score < maxgold) {
                         maxrank--;
@@ -973,17 +973,17 @@ parse_error:
                             memcpy(&highscore[maxrank+1], &highscore[maxrank], sizeof(struct high_score));
                         }
                         highscore[maxrank].score = maxgold;
-                        snprintf(highscore[maxrank].name, sizeof(highscore[maxrank].name), "%s", playbotname[controled_bot]);
+                        snprintf(highscore[maxrank].name, sizeof(highscore[maxrank].name), "%s", playbotname[controlled_bot]);
                     }
                 }
-                if (bot[controled_bot].gold>oldgold) {
-                    if (!caissetot && caisse>0) caisse+=bot[controled_bot].gold-oldgold;
-                    else caisse=bot[controled_bot].gold-oldgold;
+                if (bot[controlled_bot].gold>oldgold) {
+                    if (!caissetot && caisse>0) caisse+=bot[controlled_bot].gold-oldgold;
+                    else caisse=bot[controlled_bot].gold-oldgold;
                     dtcaisse=20;
                     caissetot=0;
-                } else if (oldgold>bot[controled_bot].gold) {
-                    if (!caissetot && caisse<0) caisse+=bot[controled_bot].gold-oldgold;
-                    else caisse=bot[controled_bot].gold-oldgold;
+                } else if (oldgold>bot[controlled_bot].gold) {
+                    if (!caissetot && caisse<0) caisse+=bot[controlled_bot].gold-oldgold;
+                    else caisse=bot[controlled_bot].gold-oldgold;
                     dtcaisse=20;
                     caissetot=0;
                 }
@@ -992,7 +992,7 @@ parse_error:
                     dtcaisse--;
                     if (!dtcaisse) {
                         if (!caissetot) {
-                            caisse=bot[controled_bot].gold;
+                            caisse=bot[controlled_bot].gold;
                             dtcaisse=30;
                             caissetot=1;
                             playsound(VOICE_GEAR, SAMPLE_MESSAGE, 1.4, &voices_in_my_head, true, false);
@@ -1002,7 +1002,7 @@ parse_error:
                         }
                     }
                 }
-                oldgold=bot[controled_bot].gold;
+                oldgold=bot[controlled_bot].gold;
 
                 if (draw_high_scores) {
                     int y=(win_height-(ARRAY_LEN(highscore)+2)*9)>>1;

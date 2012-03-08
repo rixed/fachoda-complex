@@ -205,7 +205,7 @@ bool hitgun(int oc, int i) {
                     return false;
                 }
                 tarif=-(bot[j].fiulloss/4+bot[j].motorloss*8+bot[j].aeroloss*8+bot[j].bloodloss*2);
-                if (j==controled_bot) accelerated_mode = false;
+                if (j==controlled_bot) accelerated_mode = false;
                 struct vector r;
                 randomv(&r);    // FIXME: mul by size of obj?
                 addv(&r, &obj[o1].pos);

@@ -366,7 +366,7 @@ void physics_plane(int b, float dt_sec)
             return;
         } else {
             // nice landing !
-            if (b==controled_bot && bot[b].is_flying && fabs(obj[bot[b].vion].rot.x.x)>.8) {
+            if (b==controlled_bot && bot[b].is_flying && fabs(obj[bot[b].vion].rot.x.x)>.8) {
                 subv3(&obj[bot[b].babase].pos,&obj[bot[b].vion].pos, &v);
                 if (norme2(&v) < TILE_LEN*TILE_LEN*1.5) {
                     bot[b].gold += 300;
@@ -600,7 +600,7 @@ void physics_plane(int b, float dt_sec)
         }
     }
 
-    if (bot[b].but.mark && bot[b].camp==bot[controled_bot].camp) {
+    if (bot[b].but.mark && bot[b].camp==bot[controlled_bot].camp) {
         mark[next_mark_set] = obj[bot[b].vion].pos;
         if (++next_mark_set>NB_MARKS) next_mark_set=0;
     }

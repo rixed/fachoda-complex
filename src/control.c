@@ -36,22 +36,22 @@ static int resurrect(void)
     int j=NBBOT, jj, bestprix=0;
     struct bot bottmp;
     for (jj=NbHosts; jj<NBBOT; jj++) {
-        if (bot[jj].camp==camp && plane_desc[bot[jj].navion].prix<=plane_desc[bot[controled_bot].navion].prix && plane_desc[bot[jj].navion].prix>bestprix) {
+        if (bot[jj].camp==camp && plane_desc[bot[jj].navion].prix<=plane_desc[bot[controlled_bot].navion].prix && plane_desc[bot[jj].navion].prix>bestprix) {
             bestprix=plane_desc[bot[jj].navion].prix;
             j=jj;
         }
     }
     if (j<NBBOT) {
-        memcpy(&bottmp,&bot[controled_bot],sizeof(struct bot));
-        memcpy(&bot[controled_bot],&bot[j],sizeof(struct bot));
+        memcpy(&bottmp,&bot[controlled_bot],sizeof(struct bot));
+        memcpy(&bot[controlled_bot],&bot[j],sizeof(struct bot));
         memcpy(&bot[j],&bottmp,sizeof(struct bot));
-        bot[controled_bot].gold=55;
+        bot[controlled_bot].gold=55;
         playsound(VOICE_EXTER, SAMPLE_ALLELUIA, 1., &voices_in_my_head, true, false);
         snd_thrust=-1;
         autopilot = true;
         accelerated_mode = false;
-        map_x=obj[bot[controled_bot].vion].pos.x/TILE_LEN;
-        map_y=obj[bot[controled_bot].vion].pos.y/TILE_LEN;
+        map_x=obj[bot[controlled_bot].vion].pos.x/TILE_LEN;
+        map_y=obj[bot[controlled_bot].vion].pos.y/TILE_LEN;
         return 1;
     }
     return 0;
@@ -63,12 +63,12 @@ void next_dog_bot(void)
     DogBotDist=0;
     do {
         if (++DogBot>=NBBOT) DogBot=0;
-        if (DogBot!=controled_bot) {
+        if (DogBot!=controlled_bot) {
             copyv(&DogBotDir,&obj[bot[DogBot].vion].pos);
-            subv(&DogBotDir,&obj[bot[controled_bot].vion].pos);
+            subv(&DogBotDir,&obj[bot[controlled_bot].vion].pos);
             DogBotDist=renorme(&DogBotDir);
         }
-    } while (DogBot!=DBi && (DogBotDist>DOGDISTMAX || bot[DogBot].camp==-1 || DogBot==controled_bot));
+    } while (DogBot!=DBi && (DogBotDist>DOGDISTMAX || bot[DogBot].camp==-1 || DogBot==controlled_bot));
 }
 
 static void prev_dog_bot(void)
@@ -77,12 +77,12 @@ static void prev_dog_bot(void)
     DogBotDist=0;
     do {
         if (--DogBot<0) DogBot=NBBOT-1;
-        if (DogBot!=controled_bot) {
+        if (DogBot!=controlled_bot) {
             copyv(&DogBotDir,&obj[bot[DogBot].vion].pos);
-            subv(&DogBotDir,&obj[bot[controled_bot].vion].pos);
+            subv(&DogBotDir,&obj[bot[controlled_bot].vion].pos);
             DogBotDist=renorme(&DogBotDir);
         }
-    } while (DogBot!=DBi && (DogBotDist>DOGDISTMAX || bot[DogBot].camp==-1 || DogBot==controled_bot));
+    } while (DogBot!=DBi && (DogBotDist>DOGDISTMAX || bot[DogBot].camp==-1 || DogBot==controlled_bot));
 }
 
 enum view_type next_external_view(enum view_type v)
@@ -124,7 +124,7 @@ void control(int b)
     if (prompt_quit) {
         if (kreset(gkeys[kc_yes].kc)) quit_game = true;
         if (kreset(gkeys[kc_no].kc)) prompt_quit = false;
-    } else if (kreset(gkeys[kc_esc].kc) && (bot[controled_bot].camp!=-1 || !enable_resurrection || !resurrect())) {
+    } else if (kreset(gkeys[kc_esc].kc) && (bot[controlled_bot].camp!=-1 || !enable_resurrection || !resurrect())) {
         prompt_quit = true;
     }
     // Motor
@@ -169,7 +169,7 @@ void control(int b)
         } else {
             do {
                 if (++viewed_bot>=NBBOT) viewed_bot=0;
-            } while (!enable_view_enemy && bot[viewed_bot].camp!=camp);  // pas controled_bot.camp car peut etre tue
+            } while (!enable_view_enemy && bot[viewed_bot].camp!=camp);  // pas controlled_bot.camp car peut etre tue
             snd_thrust=-1;
             if (bot[viewed_bot].camp==-1) playsound(VOICE_MOTOR, SAMPLE_FEU, 1., &voices_in_my_head, true, true);
         }
@@ -189,8 +189,8 @@ void control(int b)
     }
     if (kreset(gkeys[kc_mybot].kc)) {
         if (view != VIEW_DOGFIGHT) {
-            viewed_bot=b;
-            snd_thrust=-1;
+            viewed_bot = b;
+            snd_thrust = -1;
         } else {
             float d;
             int DBi, DBm;
@@ -199,7 +199,7 @@ void control(int b)
             DBi=DogBot; DBm=DogBot;
             do {
                 next_dog_bot();
-                if (DogBotDist<d && bot[DogBot].camp!=bot[controled_bot].camp) {
+                if (DogBotDist<d && bot[DogBot].camp!=bot[controlled_bot].camp) {
                     d=DogBotDist;
                     DBm=DogBot;
                 }
@@ -286,8 +286,8 @@ void control(int b)
         autopilot = ! autopilot;
         playsound(VOICE_GEAR, SAMPLE_BIPBIP, 1., &obj[bot[b].vion].pos, false, false);
         if (autopilot) {
-            bot[controled_bot].target_speed = BEST_SPEED_FOR_CONTROL;
-            bot[controled_bot].target_rel_alt = 100. * ONE_METER;
+            bot[controlled_bot].target_speed = BEST_SPEED_FOR_CONTROL;
+            bot[controlled_bot].target_rel_alt = 100. * ONE_METER;
         }
     }
     // Game control
@@ -304,14 +304,14 @@ void control(int b)
         map_mode = ! map_mode;
         playsound(VOICE_GEAR, SAMPLE_BIPBIP3, 1., &voices_in_my_head, true, false);
     }
-    if (kreset(gkeys[kc_suicide].kc) && bot[controled_bot].camp!=-1) explode(bot[viewed_bot].vion, 0, "commited suicide");
+    if (kreset(gkeys[kc_suicide].kc) && bot[controlled_bot].camp!=-1) explode(bot[viewed_bot].vion, 0, "commited suicide");
     if (kreset(gkeys[kc_markpos].kc)) bot[b].but.mark=1;
     // Cheats
     if (cheat_mode && kread(gkeys[kc_alti].kc)) {
         obj[bot[viewed_bot].vion].pos.z += 500;
         bot[viewed_bot].vionvit.z = 0;
     }
-    if (cheat_mode && kreset(gkeys[kc_gunned].kc)) bot[viewed_bot].gunned=controled_bot;
+    if (cheat_mode && kreset(gkeys[kc_gunned].kc)) bot[viewed_bot].gunned=controlled_bot;
     if (!autopilot && !map_mode) {
         if (enable_mouse) {
             bot[b].xctl = ((xmouse-win_center_x)/(double)win_center_x);

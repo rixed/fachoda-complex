@@ -341,8 +341,8 @@ void drawtbcadrans(int b)
     // Cargo
     pnuma(bot[b].bullets,MAP_MARGIN+xsoute+1+20,MAP_MARGIN+ysoute+1,0x403010,0);
     pnuma(bot[b].nbomb,MAP_MARGIN+xsoute+1+20,MAP_MARGIN+ysoute+11, 0x403010,0);
-    pnuma(bot[b].bullets,MAP_MARGIN+xsoute+20,MAP_MARGIN+ysoute,b==controled_bot && selected_weapon==0?0xFFFFFF:0xFFFF10,0);
-    pnuma(bot[b].nbomb,MAP_MARGIN+xsoute+20,MAP_MARGIN+ysoute+10,b==controled_bot && selected_weapon==1?0xFFFFFF:0xFFFF10,0);
+    pnuma(bot[b].bullets,MAP_MARGIN+xsoute+20,MAP_MARGIN+ysoute,b==controlled_bot && selected_weapon==0?0xFFFFFF:0xFFFF10,0);
+    pnuma(bot[b].nbomb,MAP_MARGIN+xsoute+20,MAP_MARGIN+ysoute+10,b==controlled_bot && selected_weapon==1?0xFFFFFF:0xFFFF10,0);
     lumdec=7;
     rectangleL(xsoute-1,ysoute-1,32,22);    // regrouper à la fin et faire un seul MMXSAVEFPU
     // Thrust
