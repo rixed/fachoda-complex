@@ -643,9 +643,9 @@ parse_error:
             if (
                 bot[controlled_bot].camp != -1 &&    // not dead
                 bot[controlled_bot].vionvit.z < -.3*ONE_METER && // and fast toward the ground
-                (n=bot[controlled_bot].vionvit.z * 10 + bot[controlled_bot].zs) < 0  // will hit ground in less than 10s
+                (n = bot[controlled_bot].vionvit.z * 10 + bot[controlled_bot].zs) < 0  // will hit ground in less than 10s
             ) {
-                playsound(VOICE_ALERT, SAMPLE_ALERT, 1-n*.001, &voices_in_my_head, true, false);
+                playsound(VOICE_ALERT, SAMPLE_ALERT, MAX(0., 1-n*.001), &voices_in_my_head, true, false);
             }
             // avance les shots
             for (i=shot_start; i<nb_obj; i++) {

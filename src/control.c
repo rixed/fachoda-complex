@@ -127,9 +127,11 @@ void control(int b)
     } else if (kreset(gkeys[kc_esc].kc) && (bot[controlled_bot].camp!=-1 || !enable_resurrection || !resurrect())) {
         prompt_quit = true;
     }
+
     // Motor
-    if (kread(gkeys[kc_motormore].kc)) bot[b].thrust+=.05;
-    if (kread(gkeys[kc_motorless].kc)) bot[b].thrust-=.05;
+    if (kread(gkeys[kc_motormore].kc) && bot[b].thrust <= 0.95) bot[b].thrust += .05;
+    if (kread(gkeys[kc_motorless].kc) && bot[b].thrust >= 0.05) bot[b].thrust -= .05;
+
     // Views
     if (kreset(gkeys[kc_externview].kc)) {
         map_mode = false;
