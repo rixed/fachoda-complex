@@ -128,10 +128,11 @@ void control(int b)
         prompt_quit = true;
     }
 
-    // Motor
-    if (kread(gkeys[kc_motormore].kc) && bot[b].thrust <= 0.95) bot[b].thrust += .05;
-    if (kread(gkeys[kc_motorless].kc) && bot[b].thrust >= 0.05) bot[b].thrust -= .05;
-
+    // Engine
+#   define INCR .02
+    if (kread(gkeys[kc_motormore].kc) && bot[b].thrust <= 1.-INCR) bot[b].thrust += INCR;
+    if (kread(gkeys[kc_motorless].kc) && bot[b].thrust >= INCR) bot[b].thrust -= INCR;
+#   undef INCR
     // Views
     if (kreset(gkeys[kc_externview].kc)) {
         map_mode = false;
