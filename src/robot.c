@@ -323,15 +323,6 @@ static void adjust_slope(int b, float diff_alt)
     if (b==viewed_bot) printf("first slope=%f ", bot[b].yctl);
 #   endif
 
-    // Avoid stall!
-#   define MAX_AOA (0.7 * MAX_AOA_FOR_LIFT)
-    if (bot[b].is_flying && fabs(bot[b].aoa) > MAX_AOA) {
-        bot[b].yctl += (bot[b].aoa > 0 ? -3.:3.) * (fabs(bot[b].aoa) - MAX_AOA);
-#       ifdef PRINT_DEBUG
-        if (b==viewed_bot) printf("aoa=%f -> slope=%f ", bot[b].aoa, bot[b].yctl);
-#       endif
-    }
-
     // When stalling, allow the plane to recover
     if (bot[b].is_flying && bot[b].stall) {
         bot[b].yctl = 0.;   // let it go
@@ -587,13 +578,17 @@ void robot(int b)
                     bot[b].but.flap = 1;
                     bot[b].but.brakes = 0;
                     bot[b].xctl = -obj[o].rot.y.z;
-                    bot[b].yctl = -3.*(obj[o].rot.x.z-.1);    // level the nose, with small a-o-a
-                    CLAMP(bot[b].yctl, 1.);
                     CLAMP(bot[b].xctl, 1.);
+                    bot[b].yctl = -3.*(obj[o].rot.x.z-.3);    // level the nose, with small a-o-a
+                    CLAMP(bot[b].yctl, 1.);
 
                     if (bot[b].is_flying) {
-                        armstate(b);
-                        newnav(b);
+                        bot[b].yctl = -3.*(obj[o].rot.x.z-.4);
+                        CLAMP(bot[b].yctl, 1.);
+                        if (zs > 3 * ONE_METER) {
+                            armstate(b);
+                            newnav(b);
+                        }
                     }
                     break;
                 case NAVIG:
@@ -737,13 +732,13 @@ void robot(int b)
             dist = renorme(&v);
             double distfrap2 = 0;
             float target_speed = BEST_SPEED_FOR_CONTROL;
-            float min_z = 30. * ONE_METER;  // will be lowered if odds look good
+            float min_z = 60. * ONE_METER;  // will be lowered if odds look good
             if (fabs(dc) < M_PI/4) {    // opponent is in front of us
-                min_z = 20. * ONE_METER;
+                min_z = 40. * ONE_METER;
                 if (dist < 35. * ONE_METER) {   // and close. shot ?
-                    min_z = 15. * ONE_METER;
+                    min_z = 30. * ONE_METER;
                     if (fabsf(dc) < M_PI/7) {
-                        min_z = 10. * ONE_METER;
+                        min_z = 20. * ONE_METER;
                         mulv(&obj[o].rot.x, 400);
                         addv(&obj[o].rot.x, &v);
                         renorme(&obj[o].rot.x);
@@ -754,7 +749,7 @@ void robot(int b)
                     //float const a = scalaire(&v, &obj[o].rot.y);
                     float const m = mod[obj[bot[b].cibv].model].rayoncollision;
                     if (/*fabsf(a) < 6*m && fabsf(dc) < M_PI/2*/ fabsf(dc) < M_PI/8) {
-                        min_z = 8. * ONE_METER;
+                        min_z = 16. * ONE_METER;
                         float const dz_shot = tirz(&obj[o].rot.x, disth);
                         distfrap2 = obj[bot[b].cibv].pos.z - (obj[o].pos.z + dz_shot);
                         if (fabs(distfrap2) < 3. * m) bot[b].but.canon = 1;

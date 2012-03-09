@@ -108,7 +108,7 @@ void physics_plane(int b, float dt_sec)
     double vy = scalaire(&bot[b].vionvit, &obj[bot[b].vion].rot.y);
     double vz = scalaire(&bot[b].vionvit, &obj[bot[b].vion].rot.z);
     double velocity = norme(&bot[b].vionvit);
-    double const zs = obj[bot[b].vion].pos.z - bot[b].zs; // ground altitude
+    double const ground_z = obj[bot[b].vion].pos.z - bot[b].zs; // ground altitude
     bot[b].aoa = cap(vx, -vz);
     if (bot[b].aoa > M_PI) bot[b].aoa -= 2.*M_PI;
     bot[b].stall = fabs(bot[b].aoa) > MAX_AOA_FOR_LIFT || vx < MIN_SPEED_FOR_LIFT;
@@ -123,8 +123,13 @@ void physics_plane(int b, float dt_sec)
     CLAMP(bot[b].yctl, 1.);
 
 #   ifdef PRINT_DEBUG
-    if (b == viewed_bot) printf("dt=%f, vionvit=%"PRIVECTOR", aoa=%f%s\n",
-        dt_sec, PVECTOR(bot[b].vionvit), bot[b].aoa, bot[b].stall ? ", STALL":"");
+    // 1:phy: 2:bot 3:dt_sec 4:vit.x 5:vit.y 6:vit.z 7:aoa 8:stall 9:flying 10:vx 11:vy 12:vz
+    // 13:ground_z 14:xctl 15:yctl 16:zs
+    if (b == viewed_bot) printf("phy: %d %f %f %f %f %f %d %d %f %f %f %f %f %f %f\n",
+        b, dt_sec, bot[b].vionvit.x, bot[b].vionvit.y, bot[b].vionvit.z,
+        bot[b].aoa, bot[b].stall, bot[b].is_flying,
+        vx,vy,vz, ground_z, bot[b].xctl, bot[b].yctl,
+        bot[b].zs);
 #   endif
 #   ifdef VEC_DEBUG
     if (b == viewed_bot) {
@@ -177,7 +182,7 @@ void physics_plane(int b, float dt_sec)
 #   endif
 
 #   ifndef NTHRUST
-#   define THRUST_ACC (2. * G)  // If the old Merlin can do it, so can I!
+#   define THRUST_ACC (1.5 * G)  // If the old Merlin can do it, so can I!
     {   // Thrust
         double k = THRUST_ACC * bot[b].thrust * alt_factor * (1-bot[b].motorloss/128.) * plane_desc[bot[b].navion].motorpower;
         v = obj[bot[b].vion].rot.x;
@@ -230,11 +235,11 @@ void physics_plane(int b, float dt_sec)
     {
         float kx = bot[b].stall ?
             0. :
-            (bot[b].aoa/MAX_AOA_FOR_LIFT) * MIN(.0005*SQUARE(vx-MIN_SPEED_FOR_LIFT), 12.*exp(-.001*vx));
+            (bot[b].aoa/MAX_AOA_FOR_LIFT) * MIN(.0001*SQUARE(vx-MIN_SPEED_FOR_LIFT), 2.4*exp(-.001*vx));
 
         float lift = plane_desc[bot[b].navion].lift;
         if (bot[b].but.flap) lift *= 1.2;
-        if (zs < 5. * ONE_METER) lift *= 1.1;   // more lift when close to the ground
+        if (bot[b].zs < 5. * ONE_METER) lift *= 1.1;   // more lift when close to the ground
         lift *= alt_factor; // less lift with altitude
         u = obj[bot[b].vion].rot.z;
         mulv(&u, (G * 1.) * lift * kx * (1-bot[b].aeroloss/128.));
@@ -258,7 +263,7 @@ void physics_plane(int b, float dt_sec)
     for (rt=0, i=0; i<3; i++) {
         // zr : altitude of this wheel, relative to the ground, at t + dt
         struct vector const *wheel_pos = &obj[bot[b].vion+plane_desc[bot[b].navion].roue[i]].pos;
-        float zr = (wheel_pos->z - zs) + bot[b].vionvit.z * dt_sec;
+        float zr = (wheel_pos->z - ground_z) + bot[b].vionvit.z * dt_sec;
         if (zr < 0) {
             touchdown_mask |= 1<<i;
 #           ifndef NGROUND_DRAG
@@ -311,17 +316,17 @@ void physics_plane(int b, float dt_sec)
         // Commands are the most effective when vx=BEST_SPEED_FOR_CONTROL. (then kx=1)
         float kx;
         double const kx1 = .00005*SQUARE(vx-MIN_SPEED_FOR_LIFT);
-        double const kx2 = 1. - .00003*SQUARE(vx-BEST_SPEED_FOR_CONTROL);
-        double const kx3 = 1. -.0017*vx;
-        if (vx < BEST_SPEED_FOR_CONTROL) kx = MIN(kx1, kx2);
-        else kx = MAX(kx2, kx3);
+        double const kx2 = 1. - .00002*SQUARE(vx-BEST_SPEED_FOR_CONTROL);
+        if (vx < MIN_SPEED_FOR_LIFT) kx = 0;
+        else if (vx < BEST_SPEED_FOR_CONTROL) kx = MIN(kx1, kx2);
+        else kx = MAX(kx2, .5);
         if (kx < 0) kx = 0;
         if (bot[b].stall) kx *= 0.2;
 
         if (easy_mode || b>=NbHosts) kx*=1.2;
 
         // push wings frontally
-        double const prof = (velocity > 1. * ONE_METER ? -.00002*(velocity*velocity)*bot[b].aoa : 0) + bot[b].yctl * kx;
+        double const prof = (velocity > 1. * ONE_METER ? -.00001*(velocity*velocity)*bot[b].aoa : 0) + bot[b].yctl * kx;
         double gouv, deriv;
         if (touchdown_mask) {
             gouv = touchdown_mask & 4 ? -.5*bot[b].xctl : 0.; // rear wheel in contact with the ground
