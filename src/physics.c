@@ -319,7 +319,7 @@ void physics_plane(int b, float dt_sec)
         double const kx2 = 1. - .00002*SQUARE(vx-BEST_SPEED_FOR_CONTROL);
         if (vx < MIN_SPEED_FOR_LIFT) kx = 0;
         else if (vx < BEST_SPEED_FOR_CONTROL) kx = MIN(kx1, kx2);
-        else kx = MAX(kx2, .5);
+        else kx = MAX(kx2, .7); // At high speed controls are already endangered by wings facing airflow
         if (kx < 0) kx = 0;
         if (bot[b].stall) kx *= 0.2;
 
