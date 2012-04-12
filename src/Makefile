@@ -32,7 +32,7 @@ SUBDATADIRS := \
 	tank tanklight toyvion toyvionlight tracteur usine \
 	van vehic vion1 vion2 zeppelin
 
-COMPDATA = $(wildcard *.jpg) $(wildcard *.tga)
+COMPDATA = $(wildcard *.jpg) $(wildcard *.tga) $(wildcard *.png)
 install: fachoda $(COMPDATA)
 	install -d $(DESTDIR)$(BINDIR) $(DESTDIR)$(DATADIR) $(DESTDIR)$(DOCDIR)
 	install --strip fachoda $(DESTDIR)$(BINDIR)
