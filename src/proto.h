@@ -378,7 +378,26 @@ extern enum view_type {
 } view;
 enum view_type next_external_view(enum view_type);
 extern int viewed_bomb;
-extern bool map_mode, accelerated_mode, autopilot, game_paused;
+
+// The game can be in several states:
+// The player is looking at the map. Autopilot is maintaining altitude.
+extern bool map_mode;
+
+// The time is accelerated (and frame rate drops). Back to normal in case of hit.
+extern bool accelerated_mode;
+
+// Autopilot is enabled, maintain speed, altitude and try to reach navpoint.
+extern bool autopilot;
+
+// The world is still, but ideally some controls are still active (camera, map...)
+// This mode is entered and quit whenever the user press the `pause' key
+extern bool game_paused;
+
+// The game window is minimized or alike, and the game must stop consuming
+// CPU, making sound, etc...
+// This mode is entered when the window gets iconified/minimized...
+extern bool game_suspended;
+
 extern int controlled_bot;
 extern int frame_count, viewed_obj;
 extern float extcam_dist, sight_teta, sight_phi;

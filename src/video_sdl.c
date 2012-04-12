@@ -22,6 +22,7 @@
 #include <assert.h>
 #include "proto.h"
 #include "video_sdl.h"
+#include "sound.h"
 
 static SDL_Surface *screen, *bufsurface;
 struct pixel32 *videobuffer;
@@ -47,7 +48,7 @@ void initvideo(bool fullscreen)
     }
 
     SDL_ShowCursor(0);
-    SDL_EventState(SDL_ACTIVEEVENT, SDL_IGNORE);
+    SDL_EventState(SDL_ACTIVEEVENT, SDL_ENABLE);
     SDL_EventState(SDL_MOUSEMOTIONMASK, SDL_IGNORE);
 
     SDL_WM_SetCaption("FACHODA Complex","FACHODA Complex");
@@ -152,6 +153,13 @@ void xproceed(void)
                 break;
             case SDL_QUIT:
                 quit_game = true;
+                break;
+            case SDL_ACTIVEEVENT:
+                if (event.active.state & SDL_APPACTIVE) {
+                    game_suspended = 0 == event.active.gain;
+                    printf("Game is now %s\n", game_suspended ? "suspended" : "running");
+                    game_suspended ? sound_suspend() : sound_resume();
+                }
                 break;
         }
     }

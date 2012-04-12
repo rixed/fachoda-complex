@@ -23,6 +23,7 @@
 #include <errno.h>
 #include <assert.h>
 #include <stdint.h>
+#include <stdbool.h>
 #include <AL/al.h>
 #include <AL/alc.h>
 #include "sound.h"
@@ -345,6 +346,20 @@ void update_listener(struct vector const *pos, struct vector const *velocity, st
         do_play(v);
         if (! play[v].anchored) play[v].samp = ~0;
     }
+}
+
+void sound_suspend(void)
+{
+    if (! with_sound) return;
+
+    alcSuspendContext(ctx);
+}
+
+void sound_resume(void)
+{
+    if (! with_sound) return;
+
+    alcProcessContext(ctx);
 }
 
 /*

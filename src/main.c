@@ -191,7 +191,7 @@ static void background(void)
 int viewed_bot = 0, viewed_obj = 0;
 enum view_type view = VIEW_IN_PLANE;
 int viewed_bomb=0;
-bool map_mode, accelerated_mode, autopilot, game_paused;
+bool map_mode, accelerated_mode, autopilot, game_paused, game_suspended;
 int controlled_bot, frame_count;
 float extcam_dist = 2. * ONE_METER;    // external camera distance (ie. "zoom")
 float sight_teta=0, sight_phi=0;   // direction of vision while in plane view
@@ -608,6 +608,10 @@ parse_error:
         struct vector v,u;
         explosion = false;
         frame_count++;
+
+        // Handle user and external events
+        xproceed();
+        if (game_suspended) continue;
 
         // PJ
         control(controlled_bot);

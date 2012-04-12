@@ -98,7 +98,6 @@ void control(int b)
 {
     int i;
     struct vector u;
-    xproceed();
     // Left button
     if (! map_mode) switch (selected_weapon) {
     case 0:

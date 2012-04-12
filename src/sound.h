@@ -54,4 +54,7 @@ void playsound(enum snd_voice, enum snd_sample, float freq, struct vector const 
 // A predefined position located in the head of the listener (relative pos of course)
 struct vector voices_in_my_head;
 
+void sound_suspend(void);
+void sound_resume(void);
+
 #endif
