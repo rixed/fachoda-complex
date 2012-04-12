@@ -45,7 +45,7 @@ void pnumchar(int n, int x, int y, int c) {
     }
 }
 void pnum(int n, int x, int y, int c, int just) {
-    char sig=2*(n>=0)-1;
+    int sig=2*(n>=0)-1;
     int m=n;
     if (just==1) { // justifié à gauche
         if (sig==1) x-=8;
@@ -66,7 +66,7 @@ void pnumchara(int n, int x, int y, int c) {    // a = dans le mapping
     }
 }
 void pnuma(int n, int x, int y, int c, int just) {
-    char sig=2*(n>=0)-1;
+    int sig=2*(n>=0)-1;
     int m=n;
     if (just==1) { // justifié à gauche
         if (sig==1) x-=8;
