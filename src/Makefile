@@ -38,7 +38,7 @@ install: fachoda getkeyname $(COMPDATA)
 	install --strip fachoda $(DESTDIR)$(BINDIR)
 	install --strip getkeyname $(DESTDIR)$(BINDIR)
 	install $(COMPDATA) $(DESTDIR)$(DATADIR)
-	install ../COPYING ../GPL.txt ../README.md $(DESTDIR)$(DOCDIR)
+	install ../COPYING ../GPL.txt ../README.md .fachodarc $(DESTDIR)$(DOCDIR)
 	@for d in $(SUBDATADIRS); do \
 		install -d "$(DESTDIR)$(DATADIR)/$$d" ;\
 		for f in $$d/*; do \
