@@ -145,13 +145,13 @@ void loadtbtile(char *fn)
         exit(-1);
     }
     fseek(f,12,SEEK_SET);
-    fread(&sxtbtile,2,1,f);
-    fread(&sytbtile,2,1,f);
+    file_read(&sxtbtile, 2, f);
+    file_read(&sytbtile, 2, f);
     fseek(f,-sxtbtile*sytbtile*sizeof(struct pixel),SEEK_END);
     tbtile = malloc(sxtbtile*sytbtile*sizeof(*tbtile));
     for (y=0; y<sytbtile; y++) for (x=0; x<sxtbtile; x++) {
         struct pixel p;
-        fread(&p, sizeof(p), 1, f);
+        file_read(&p, sizeof(p), f);
         tbtile[x+y*sxtbtile].r=p.r;
         tbtile[x+y*sxtbtile].g=p.g;
         tbtile[x+y*sxtbtile].b=p.b;

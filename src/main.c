@@ -532,7 +532,7 @@ parse_error:
     z_near=win_center_x;
     // Read saved highscores (from home)
     if ((file = file_open_try(".fachoda-highscores", getenv("HOME"), "r")) != NULL) {
-        fread(&highscore, sizeof(struct high_score), ARRAY_LEN(highscore), file);
+        file_read(&highscore, ARRAY_LEN(highscore)*sizeof(struct high_score), file);
         fclose(file);
     }
     /* autres inits */
@@ -1032,7 +1032,7 @@ fin:
     sound_fini();
     // save highscores
     if (!easy_mode && !enable_view_enemy && plane_desc[starting_plane-1].prix<=plane_desc[0].prix && (file=file_open(".fachoda-highscores", getenv("HOME"), "w+"))!=NULL) {
-        fwrite(&highscore, sizeof(struct high_score), ARRAY_LEN(highscore), file);
+        file_write(&highscore, ARRAY_LEN(highscore)*sizeof(struct high_score), file);
         fclose(file);
     }
     {

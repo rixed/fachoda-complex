@@ -236,6 +236,7 @@ void polyphong(struct vect2dlum *p1, struct vect2dlum *p2, struct vect2dlum *p3,
         lx <<= vf;
         a=(dx*dx+dy*dy)>>vf;
         aa=a+a;
+        py = px = qx = ql = py2 = px2 = ql2 = qx2 = 0;    // to please gcc
         goto debtrace;
     }
 

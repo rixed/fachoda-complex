@@ -149,6 +149,7 @@ bool polyflat(struct vect2d *p1, struct vect2d *p2, struct vect2d *p3, struct pi
         xi=p1->x<<vf;
         lx = (p2->x - p1->x +1)<<vf;
         yfin = yi+1;
+        qx = ql = 0;   // to please gcc
         goto debtrace;
     }
     lx = 1<<vf;
@@ -473,20 +474,166 @@ static void darken(uint8_t *b)
     *b = *b - ((*b>>2) & 0x3F);
 }
 
+static bool is_on_screen(struct vect2d e, double disp_radius)
+{
+    return
+        e.x >= -disp_radius &&
+        e.x <= win_width + disp_radius &&
+        e.y >= -disp_radius &&
+        e.y <= win_height + disp_radius;
+}
+
+static void render_sphere(int o)
+{
+    if (obj[o].posc.z <= 0) return;
+    if (obj[o].type == TYPE_LIGHT && !night_mode) return;
+
+    struct vect2d e;
+    proj(&e, &obj[o].posc);
+    double disp_radius = proj1(mod[obj[o].model].rayon, obj[o].posc.z);
+
+    if (! is_on_screen(e, disp_radius)) return;
+
+    if (obj[o].type == TYPE_CLOUD) {
+        if (night_mode) {
+            plotfumee(e.x, e.y, disp_radius);
+        } else {
+            plotnuage(e.x, e.y, disp_radius);
+        }
+    } else if (obj[o].type == TYPE_SMOKE) {
+        if (smoke_radius[o - smoke_start] > 0.) {
+            plotfumee(e.x, e.y, (int)(disp_radius*smoke_radius[o-smoke_start]) >> 9);
+        }
+    } else {
+        assert(obj[o].type == TYPE_LIGHT);
+        plotphare(e.x, e.y, disp_radius*4 + 1);
+    }
+}
+
+static void render_obj(int o, int no)
+{
+    double disp_radius;
+
+    if (obj[o].posc.z > 0) {
+        struct vect2d e;
+        proj(&e,&obj[o].posc);
+        disp_radius = proj1(mod[obj[o].model].rayon, obj[o].posc.z);
+        if (! is_on_screen(e, disp_radius)) return;
+    } else {
+        // Maybe some part of the object are in front nonetheless?
+        double r;
+        r = mod[obj[o].model].rayon*sqrt(z_near*z_near+win_center_x*win_center_x)/win_center_x;
+        if (obj[o].posc.z < z_near*fabs(obj[o].posc.x)/win_center_x - r) return;
+        r = mod[obj[o].model].rayon*sqrt(z_near*z_near+win_center_y*win_center_y)/win_center_y;
+        if (obj[o].posc.z < z_near*fabs(obj[o].posc.y)/win_center_y - r) return;
+        disp_radius = win_width;
+    }
+
+    // TODO: instead of this, alter background pixel color by disp_radius until it's >1
+    if (disp_radius < .3) {
+        return;
+    } else if (disp_radius < .5) {
+        // Draw a single dot (black?) so that we can see planes from a distance.
+        if (obj[o].posc.z > 0) {
+            struct vect2d e;
+            proj(&e, &obj[o].posc);
+            plot(e.x - win_center_x, e.y - win_center_y, 0x0);
+        }
+        return;
+    }
+
+    // actual drawing of meshed objects
+    struct vector c;
+    struct matrix co;
+    int mo = obj[o].distance<(TILE_LEN*TILE_LEN*.14) ? 0 : 1;
+    // on calcule alors la pos de la obj[0] dans le repère de l'objet, ie ObjT*(campos-objpos)
+    mulmtv(&obj[o].rot,&obj[o].t, &c);
+    neg(&c);
+    // on calcule aussi la position de tous les points de l'objet dans le repere de la camera, ie CamT*Obj*u
+    mulmt3(&co,&obj[0].rot,&obj[o].rot);
+    for (int p=0; p<mod[obj[o].model].nbpts[mo]; p++) {
+        struct vector pts3d;
+        mulmv(&co, &mod[obj[o].model].pts[mo][p], &pts3d);
+        addv(&pts3d,&obj[o].posc);
+        if (pts3d.z>0) proj(&pts2d[p].v,&pts3d);
+        else pts2d[p].v.x = MAXINT;
+        // on calcule aussi les projs des
+        // norms dans le plan lumineux infiniment éloigné
+        if (scalaire(&mod[obj[o].model].norm[mo][p],&oL[no].z)<0) {
+            pts2d[p].xl = scalaire(&mod[obj[o].model].norm[mo][p],&oL[no].x);
+            pts2d[p].yl = scalaire(&mod[obj[o].model].norm[mo][p],&oL[no].y);
+        } else pts2d[p].xl = MAXINT;
+    }
+    if (obj[o].type==TYPE_SHOT) {
+        if (pts2d[0].v.x!=MAXINT && pts2d[1].v.x!=MAXINT) drawline(&pts2d[0].v, &pts2d[1].v, 0xFFA0F0);
+    } else {
+        for (int p=0; p<mod[obj[o].model].nbfaces[mo]; p++) {
+            // test de visibilité entre obj[0] et normale
+            struct vector t;
+            subv3(&mod[obj[o].model].pts[mo][mod[obj[o].model].fac[mo][p].p[0]], &c, &t);
+            if (scalaire(&t,&mod[obj[o].model].fac[mo][p].norm)<=0) {
+                if (pts2d[mod[obj[o].model].fac[mo][p].p[0]].v.x != MAXINT &&
+                        pts2d[mod[obj[o].model].fac[mo][p].p[1]].v.x != MAXINT &&
+                        pts2d[mod[obj[o].model].fac[mo][p].p[2]].v.x != MAXINT) {
+                    if (obj[o].type==TYPE_INSTRUMENTS && p>=mod[obj[o].model].nbfaces[mo]-2) {
+                        struct vect2dm pt[3];
+                        int i;
+                        for (i=0; i<3; i++) {
+                            pt[i].v.x=pts2d[mod[obj[o].model].fac[mo][p].p[i]].v.x;
+                            pt[i].v.y=pts2d[mod[obj[o].model].fac[mo][p].p[i]].v.y;
+                        }
+                        if (p-(mod[obj[o].model].nbfaces[mo]-2)) {
+                            pt[2].mx=MAP_MARGIN;
+                            pt[2].my=pannel_width+MAP_MARGIN;
+                            pt[0].mx=pannel_height+MAP_MARGIN;
+                            pt[0].my=MAP_MARGIN;
+                            pt[1].mx=pannel_height+MAP_MARGIN;
+                            pt[1].my=pannel_width+MAP_MARGIN;
+                        } else {
+                            pt[0].mx=MAP_MARGIN;
+                            pt[0].my=pannel_width+MAP_MARGIN;
+                            pt[1].mx=MAP_MARGIN;
+                            pt[1].my=MAP_MARGIN;
+                            pt[2].mx=pannel_height+MAP_MARGIN;
+                            pt[2].my=MAP_MARGIN;
+                        }
+                        polymap(&pt[0],&pt[1],&pt[2]);
+                    } else {
+                        struct pixel coul = mod[obj[o].model].fac[mo][p].color;
+                        if (night_mode) {
+                            if (obj[o].type != TYPE_INSTRUMENTS) {
+                                darken(&coul.r);
+                            }
+                            darken(&coul.g);
+                            darken(&coul.b);
+                        }
+                        if (pts2d[mod[obj[o].model].fac[mo][p].p[0]].xl!=MAXINT && pts2d[mod[obj[o].model].fac[mo][p].p[1]].xl!=MAXINT && pts2d[mod[obj[o].model].fac[mo][p].p[2]].xl!=MAXINT)
+                            polyphong(
+                                    &pts2d[mod[obj[o].model].fac[mo][p].p[0]],
+                                    &pts2d[mod[obj[o].model].fac[mo][p].p[1]],
+                                    &pts2d[mod[obj[o].model].fac[mo][p].p[2]],
+                                    coul);
+                        else
+                            polyflat(
+                                    &pts2d[mod[obj[o].model].fac[mo][p].p[0]].v,
+                                    &pts2d[mod[obj[o].model].fac[mo][p].p[1]].v,
+                                    &pts2d[mod[obj[o].model].fac[mo][p].p[2]].v,
+                                    coul);
+                    }
+                }
+            }
+        }
+    }
+}
+
 void renderer(int ak, enum render_part fast) {
     int o, p, no;
-    struct vector c,t,pts3d;
-    double rayonapparent=0;
-    struct matrix co;
-    struct vect2d e;
-    //obj[0]=light
+
     if (map[ak].first_obj==-1) return;
     // boucler sur tous les objets
     for (o=map[ak].first_obj; o!=-1; o=obj[o].next) {
         if ((fast==1 && obj[o].type!=TYPE_CLOUD) || fast==2) continue;
         // calcul la position de l'objet dans le repère de la caméra, ie CamT*(objpos-campos)
-//      if (obj[o].model==0) continue;  // une roue effacée
-//      copyv(&obj[o].t,&obj[o].pos);
         subv3(&obj[o].pos,&obj[0].pos,&obj[o].t);
         mulmtv(&obj[0].rot,&obj[o].t,&obj[o].posc);
         obj[o].distance = norme2(&obj[o].posc);
@@ -527,6 +674,7 @@ void renderer(int ak, enum render_part fast) {
             mulv(&oL[no].y,DISTLUM);
             if (aff && (z=z_ground(obj[o].pos.x,obj[o].pos.y, true))>obj[o].pos.z-500) {
                 for (p=0; p<mod[obj[o].model].nbpts[1]; p++) {
+                    struct vector pts3d;
                     mulmv(&obj[o].rot, &mod[obj[o].model].pts[1][p], &pts3d);
                     addv(&pts3d,&obj[o].pos);
                     pts3d.x+=pts3d.z-z;
@@ -554,6 +702,7 @@ void renderer(int ak, enum render_part fast) {
     if (no>MAXNO) printf("ERROR ! NO>MAXNO AT ak=%d (no=%d)\n",ak,no);
     // affichage dans l'ordre du Z
     o=map[ak].first_obj; no=0;
+    // FIXME: so we need map[ak].last_obj as well
     if (fast!=1) while (obj[o].next!=-1 /*&& (viewall || obj[obj[o].next].distance<TL2)*/) { o=obj[o].next; no++; }
     do {
         if (
@@ -563,119 +712,10 @@ void renderer(int ak, enum render_part fast) {
             (fast==2 && (obj[o].type==TYPE_PLANE || obj[o].type==TYPE_ZEPPELIN || obj[o].type==TYPE_SMOKE || obj[o].type==TYPE_SHOT || obj[o].type==TYPE_BOMB || obj[o].type==TYPE_INSTRUMENTS || obj[o].type==TYPE_CLOUD))
         ) {
             if (obj[o].aff && obj[o].posc.z>-mod[obj[o].model].rayon) { // il faut déjà que l'objet soit un peu devant la caméra et que ce soit pas un objet à passer...
-                int visu;
-                if (obj[o].posc.z > 0) {
-                    // on va projetter ce centre à l'écran
-                    proj(&e,&obj[o].posc);
-                    rayonapparent = proj1(mod[obj[o].model].rayon,obj[o].posc.z);
-                    visu = e.x>-rayonapparent && e.x<win_width+rayonapparent && e.y>-rayonapparent && e.y<win_height+rayonapparent;
-                } else {    // verifier la formule qd meme...
-                    if (obj[o].type != TYPE_CLOUD && obj[o].type != TYPE_SMOKE && obj[o].type != TYPE_LIGHT) {
-                        double r = mod[obj[o].model].rayon*sqrt(z_near*z_near+win_center_x*win_center_x)/win_center_x;
-                        visu = obj[o].posc.z > z_near*fabs(obj[o].posc.x)/win_center_x - r;
-                        r = mod[obj[o].model].rayon*sqrt(z_near*z_near+win_center_y*win_center_y)/win_center_y;
-                        visu = visu && (obj[o].posc.z > z_near*fabs(obj[o].posc.y)/win_center_y - r);
-                        rayonapparent = win_width;
-                    } else visu=0;
-                }
-                // la sphère est-elle visible ?
-                if (visu) {
-                    if (obj[o].type == TYPE_CLOUD) {
-                        if (night_mode) plotfumee(e.x,e.y,rayonapparent);
-                        else plotnuage(e.x,e.y,rayonapparent);
-                    }
-                    else if (obj[o].type == TYPE_SMOKE) {
-                        if (smoke_radius[o-smoke_start] > 0.) {
-                            plotfumee(e.x, e.y, (int)(rayonapparent*smoke_radius[o-smoke_start]) >> 9);
-                        }
-                    } else {
-                        if (rayonapparent>.3) {
-                            if (rayonapparent<.5) plot(e.x-win_center_x,e.y-win_center_y,0x0);
-                            else {
-                                int mo = obj[o].distance<(TILE_LEN*TILE_LEN*.14) ? 0 : 1;
-                                // on calcule alors la pos de la obj[0] dans le repère de l'objet, ie ObjT*(campos-objpos)
-                                mulmtv(&obj[o].rot,&obj[o].t,&c);
-                                neg(&c);
-                                // on calcule aussi la position de tous les points de l'objet dans le repere de la camera, ie CamT*Obj*u
-                                mulmt3(&co,&obj[0].rot,&obj[o].rot);
-                                for (p=0; p<mod[obj[o].model].nbpts[mo]; p++) {
-                                    mulmv(&co, &mod[obj[o].model].pts[mo][p], &pts3d);
-                                    addv(&pts3d,&obj[o].posc);
-                                    if (pts3d.z>0) proj(&pts2d[p].v,&pts3d);
-                                    else pts2d[p].v.x = MAXINT;
-                                    // on calcule aussi les projs des
-                                    // norms dans le plan lumineux infiniment éloigné
-                                    if (scalaire(&mod[obj[o].model].norm[mo][p],&oL[no].z)<0) {
-                                        pts2d[p].xl = scalaire(&mod[obj[o].model].norm[mo][p],&oL[no].x);
-                                        pts2d[p].yl = scalaire(&mod[obj[o].model].norm[mo][p],&oL[no].y);
-                                    } else pts2d[p].xl = MAXINT;
-                                }
-                                if (obj[o].type==TYPE_SHOT) {
-                                    if (pts2d[0].v.x!=MAXINT && pts2d[1].v.x!=MAXINT) drawline(&pts2d[0].v, &pts2d[1].v, 0xFFA0F0);
-                                } else {
-                                    for (p=0; p<mod[obj[o].model].nbfaces[mo]; p++) {
-                                        // test de visibilité entre obj[0] et normale
-                                        copyv(&t,&mod[obj[o].model].pts[mo][mod[obj[o].model].fac[mo][p].p[0]]);
-                                        subv(&t,&c);
-                                        if (scalaire(&t,&mod[obj[o].model].fac[mo][p].norm)<=0) {
-                                            if (pts2d[mod[obj[o].model].fac[mo][p].p[0]].v.x != MAXINT &&
-                                                    pts2d[mod[obj[o].model].fac[mo][p].p[1]].v.x != MAXINT &&
-                                                    pts2d[mod[obj[o].model].fac[mo][p].p[2]].v.x != MAXINT) {
-                                                if (obj[o].type==TYPE_INSTRUMENTS && p>=mod[obj[o].model].nbfaces[mo]-2) {
-                                                    struct vect2dm pt[3];
-                                                    int i;
-                                                    for (i=0; i<3; i++) {
-                                                        pt[i].v.x=pts2d[mod[obj[o].model].fac[mo][p].p[i]].v.x;
-                                                        pt[i].v.y=pts2d[mod[obj[o].model].fac[mo][p].p[i]].v.y;
-                                                    }
-                                                    if (p-(mod[obj[o].model].nbfaces[mo]-2)) {
-                                                        pt[2].mx=MAP_MARGIN;
-                                                        pt[2].my=pannel_width+MAP_MARGIN;
-                                                        pt[0].mx=pannel_height+MAP_MARGIN;
-                                                        pt[0].my=MAP_MARGIN;
-                                                        pt[1].mx=pannel_height+MAP_MARGIN;
-                                                        pt[1].my=pannel_width+MAP_MARGIN;
-                                                    } else {
-                                                        pt[0].mx=MAP_MARGIN;
-                                                        pt[0].my=pannel_width+MAP_MARGIN;
-                                                        pt[1].mx=MAP_MARGIN;
-                                                        pt[1].my=MAP_MARGIN;
-                                                        pt[2].mx=pannel_height+MAP_MARGIN;
-                                                        pt[2].my=MAP_MARGIN;
-                                                    }
-                                                    polymap(&pt[0],&pt[1],&pt[2]);
-                                                } else {
-                                                    struct pixel coul = mod[obj[o].model].fac[mo][p].color;
-                                                    if (night_mode) {
-                                                        if (obj[o].type != TYPE_INSTRUMENTS) {
-                                                            darken(&coul.r);
-                                                        }
-                                                        darken(&coul.g);
-                                                        darken(&coul.b);
-                                                    }
-                                                    if (pts2d[mod[obj[o].model].fac[mo][p].p[0]].xl!=MAXINT && pts2d[mod[obj[o].model].fac[mo][p].p[1]].xl!=MAXINT && pts2d[mod[obj[o].model].fac[mo][p].p[2]].xl!=MAXINT)
-                                                        polyphong(
-                                                                &pts2d[mod[obj[o].model].fac[mo][p].p[0]],
-                                                                &pts2d[mod[obj[o].model].fac[mo][p].p[1]],
-                                                                &pts2d[mod[obj[o].model].fac[mo][p].p[2]],
-                                                                coul);
-                                                    else
-                                                        polyflat(
-                                                                &pts2d[mod[obj[o].model].fac[mo][p].p[0]].v,
-                                                                &pts2d[mod[obj[o].model].fac[mo][p].p[1]].v,
-                                                                &pts2d[mod[obj[o].model].fac[mo][p].p[2]].v,
-                                                                coul);
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    if (night_mode && obj[o].type==TYPE_LIGHT) {   // HALO
-                        plotphare(e.x,e.y,rayonapparent*4+1);
-                    }
+                if (obj[o].type == TYPE_CLOUD || obj[o].type == TYPE_SMOKE || obj[o].type == TYPE_LIGHT) {
+                    render_sphere(o);
+                } else {
+                    render_obj(o, no);
                 }
             }
         }

@@ -91,11 +91,11 @@ void loadfont(char *fn, int nx, int ny, int cy) {
         exit(-1);
     }
     fseek(fil,12,SEEK_SET);
-    fread(&sx,2,1,fil);
-    fread(&sy,2,1,fil);
+    file_read(&sx, 2, fil);
+    file_read(&sy, 2, fil);
     fseek(fil,-sx*sy*sizeof(struct pixel),SEEK_END);
     itmp = malloc(sx*sy*sizeof(*itmp));
-    fread(itmp,sizeof(*itmp),sx*sy,fil);
+    file_read(itmp, sx*sy*sizeof(*itmp), fil);
     fclose(fil);
     for (fy=0; fy<ny; fy++)
         for (fx=0; fx<nx; fx++) {
@@ -119,15 +119,15 @@ void loadbigfont(char *fn) {
     if ((fil=file_open(fn, DATADIR, "r"))==NULL) {
         exit(-1);
     }
-    fseek(fil,12,SEEK_SET);
-    fread(&sx,2,1,fil);
-    fread(&sy,2,1,fil);
+    fseek(fil, 12, SEEK_SET);
+    file_read(&sx, 2, fil);
+    file_read(&sy, 2, fil);
     SizeBigCharY=sy;
     SizeBigCharX=sx/13;
     SizeBigChar=SizeBigCharX*SizeBigCharY;
     fseek(fil,-sx*sy*sizeof(struct pixel32),SEEK_END);
     itmp = malloc(sx*sy*sizeof(*itmp));
-    fread(itmp, sizeof(*itmp), sx*sy, fil);
+    file_read(itmp, sx*sy*sizeof(*itmp), fil);
     fclose(fil);
     BigFont = malloc(sx*sy*sizeof(*BigFont));
     for (fx=0; fx<13; fx++) {

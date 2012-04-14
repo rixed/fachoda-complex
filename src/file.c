@@ -54,15 +54,25 @@ FILE *file_open(char const *name, char const *dir, char const *mode)
 void file_read(void *ptr, size_t size, FILE *f)
 {
     clearerr(f);
-    size_t ret = fread(ptr, size, 1, f);
-    if (ret != 1) {
+    size_t ret = fread(ptr, 1, size, f);
+    if (ret != size) {
         if (feof(f)) {
             //fprintf(stderr, "Cannot read %zu bytes: End Of File\n", size);
             memset(ptr, 0, size);   // FIXME: store data in a sane format that does no rely on this behavior!
         } else {
-            fprintf(stderr, "Cannot read %zu bytes: %s\n", size, strerror(errno));
+            fprintf(stderr, "Cannot read %zu bytes: %s\n", size-ret, strerror(errno));
             abort();
         }
+    }
+}
+
+void file_write(void *ptr, size_t size, FILE *f)
+{
+    clearerr(f);
+    size_t ret = fwrite(ptr, 1, size, f);
+    if (ret != size) {
+        fprintf(stderr, "Cannot write %zu bytes: %s\n", size-ret, strerror(errno));
+        abort();
     }
 }
 
