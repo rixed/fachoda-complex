@@ -1,0 +1,56 @@
+#
+# Fachoda Complex configuration file.
+#
+
+#
+# Key mapping
+# To find out the SDL name of a key, use the `getkeyname' program
+# that comes.with fachoda.
+#
+
+key_quit = escape               # Quit
+key_yes = y                     # Yes
+key_no = n                      # No
+key_throttle_more = =           # Motor +5%
+key_throttle_less = -           # Motor -5%
+key_view_external = f5          # External views
+key_view_still = f6             # Travelling view
+key_view_internal = f4          # Internal views
+key_zoom_out = f7               # Zoom out
+key_zoom_in = f8                # Zoom in
+key_view_next = f2              # View next plane
+key_view_previous = f3          # View previous plane
+key_view_self = f1              # View your plane or closest ennemy
+key_view_map = f9               # Map mode
+key_look_raise = up             # Rise your head
+key_look_lower = down           # Lower your head
+key_look_left = left            # Turn left your head
+key_look_right = right          # Turn right your head
+key_look_ahead = home           # Look ahead
+key_look_back = end             # Look backward
+key_look_at_left = delete       # Look at left
+key_look_at_right = page down   # Look at right
+key_look_up = page up           # Look up
+key_look_panel = insert         # Look at the instrument panel
+key_gears = g                   # Gear
+key_flaps = f                   # Flaps
+key_brakes = b                  # Brakes
+key_autopilot = p               # Autopilot
+key_buy = f10                   # Buy a plane
+key_pause = pause               # Pause
+key_scores = tab                # See Highscores
+key_acceleration = x            # Accelerated mode
+key_navpoint_to_base = n        # Set navpoint to home base
+key_suicide = f12               # Suicide
+key_flag_map = c                # Flag the map at plane's position
+
+# These keys are only used when in keyboard control
+
+key_nose_down = [8]             # Nose down
+key_nose_up = [2]               # Nose up
+key_roll_left = [4]             # Roll left
+key_roll_right = [6]            # Roll right
+key_center_stick = [6]          # Center stick
+key_shoot = space               # Fire
+key_alt_weapon = right ctrl     # Change weapon
+

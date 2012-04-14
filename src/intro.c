@@ -149,11 +149,10 @@ static struct {
             {"Rest In Peace",-6}
         }
     }, {    // cercle 16 Options
-        6,
+        5,
         {
             {"Game Type", 1},
             {"Technics", 2},
-            {"Redefine Keys", -2},
             {"Cheat", 3},
             {"Map", 17},
             {"Back", 0}
@@ -285,7 +284,6 @@ int present(void)
                     case -5: NBTANKBOTS=jauge(NBTANKBOTS,500); break;
                     case -7: CtlSensitiv=.01*jauge(100*CtlSensitiv,100); break;
                     case -8: CtlAmortis=.01*jauge(100*CtlAmortis,100); break;
-                    case -6: redefinekeys(); break;
             /*      case -9: readstring(hostname);
                     case -10: readstring(myname);*/
                     case -11: hilly_level=300+exp(.1*jauge(log(hilly_level-300.)/.1,100)); break;

@@ -32,6 +32,7 @@
 #include "robot.h"
 #include "file.h"
 #include "video_sdl.h"
+#include "config.h"
 
 //#define PRINT_DEBUG
 
@@ -473,6 +474,9 @@ int main(int narg, char **arg)
 "   french          : Pour que les textes soient en francais (defaut : frenglish)\n"
 "   gruge           : Who knows ?\n"
 );
+    // Load config file
+    config_load();
+
     /*
         Who Am I ?
       */

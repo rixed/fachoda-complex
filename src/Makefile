@@ -12,11 +12,11 @@ SRCS = \
 	control.c sun.c map.c sound.c ravages.c \
 	present.c keycodes.c roads.c \
 	init.c intro.c main.c video_sdl.c world.c \
-	gtime.c file.c
+	gtime.c file.c config.c
 
 OBJS = ${subst .c,.o,$(SRCS)}
 
-all: fachoda
+all: fachoda getkeyname
 
 fachoda: $(OBJS)
 	$(CC) -o $@ $(CFLAGS) $^ $(LDFLAGS)
@@ -33,9 +33,10 @@ SUBDATADIRS := \
 	van vehic vion1 vion2 zeppelin
 
 COMPDATA = $(wildcard *.jpg) $(wildcard *.tga) $(wildcard *.png)
-install: fachoda $(COMPDATA)
+install: fachoda getkeyname $(COMPDATA)
 	install -d $(DESTDIR)$(BINDIR) $(DESTDIR)$(DATADIR) $(DESTDIR)$(DOCDIR)
 	install --strip fachoda $(DESTDIR)$(BINDIR)
+	install --strip getkeyname $(DESTDIR)$(BINDIR)
 	install $(COMPDATA) $(DESTDIR)$(DATADIR)
 	install ../COPYING ../GPL.txt ../README.md $(DESTDIR)$(DOCDIR)
 	@for d in $(SUBDATADIRS); do \
@@ -62,7 +63,7 @@ clear:
 
 .depend:
 	rm -f .depend ;
-	for f in $(SRCS); do \
+	for f in $(wildcard *.c *.h); do \
 		$(CC) -MM -MF $$f.dep $$f ; \
 		cat $$f.dep >> .depend ; \
 	done

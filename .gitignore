@@ -1,6 +1,6 @@
 *.o
 fachoda
-fachodasrv
+getkeyname
 cscope.out
 core
 core.*

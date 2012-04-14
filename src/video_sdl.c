@@ -30,20 +30,20 @@ struct pixel32 *videobuffer;
 void initvideo(bool fullscreen)
 {
     if (SDL_Init(SDL_INIT_VIDEO) < 0) {
-        fprintf(stderr,"Couln't initialize SDL : %s\n",SDL_GetError());
+        fprintf(stderr,"Couln't initialize SDL: %s\n",SDL_GetError());
         exit(1);
     }
     atexit(SDL_Quit);
     screen = SDL_SetVideoMode(win_width, win_height, 0, SDL_SWSURFACE|SDL_ANYFORMAT|(fullscreen?SDL_FULLSCREEN:0));
     if (! screen) {
-        fprintf(stderr,"Couldn't set video mode : %s\n",SDL_GetError());
+        fprintf(stderr,"Couldn't set video mode: %s\n",SDL_GetError());
         exit(1);
     }
     printf("Set %dx%d at %d bits-per-pixel mode\n",screen->w,screen->h,screen->format->BitsPerPixel);
 
     bufsurface = SDL_CreateRGBSurfaceFrom((void*)videobuffer, win_width, win_height, 32, win_width*4, 0xFF0000, 0xFF00, 0xFF, 0);
     if (! bufsurface) {
-        fprintf(stderr,"Couldn't get surface : %s\n",SDL_GetError());
+        fprintf(stderr,"Couldn't get surface: %s\n",SDL_GetError());
         exit(1);
     }
 
@@ -61,7 +61,7 @@ void buffer2video(void)
     dstrect.w=bufsurface->w;
     dstrect.h=bufsurface->h;
     if(SDL_BlitSurface(bufsurface,NULL,screen,&dstrect)<0) {
-        fprintf(stderr,"Couldn't blit : %s\n",SDL_GetError());
+        fprintf(stderr,"Couldn't blit: %s\n",SDL_GetError());
     }
     SDL_UpdateRects(screen,1,&dstrect);
 }
@@ -165,17 +165,3 @@ void xproceed(void)
     }
 }
 
-SDLKey getscancode(void)
-{
-    SDL_Event event;
-    while (SDL_WaitEvent(&event) >= 0) {
-        switch (event.type) {
-            case SDL_KEYDOWN:
-                return event.key.keysym.sym;
-            case SDL_QUIT:
-                exit(0);
-        }
-    }
-    assert(!"Error in SDL_WaitEvent()");
-    return -1;  // ??
-}

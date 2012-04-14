@@ -96,7 +96,6 @@ enum view_type next_external_view(enum view_type v)
 
 void control(int b)
 {
-    int i;
     struct vector u;
     // Left button
     if (! map_mode) switch (selected_weapon) {
@@ -207,19 +206,6 @@ void control(int b)
                 }
             } while (DogBot!=DBi);
             DogBot=DBm; DogBotDist=d;
-        }
-    }
-    if (kreset(gkeys[kc_nextbomb].kc)) {
-        for (
-            i = bot[viewed_bot].vion;
-            i < bot[viewed_bot].vion + n_object[bot[viewed_bot].navion].nbpieces &&
-            (obj[i].objref != -1 || (obj[i].type != TYPE_BOMB));
-            i++
-        ) ;
-        if (i < bot[viewed_bot].vion + n_object[bot[viewed_bot].navion].nbpieces) {
-            viewed_bomb = i;
-        } else {
-            viewed_bomb = 0;
         }
     }
     if (!accelerated_mode || frame_count > 64) {

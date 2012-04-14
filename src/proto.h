@@ -541,7 +541,6 @@ void explode(int oc, int i, char const *reason);
 // present.c
 void affpresent(int,int);
 extern char *scenar[4][4][2];
-void redefinekeys(void);
 int present(void);
 void animpresent(void);
 int invaders(void);
@@ -559,10 +558,10 @@ extern uint8_t *BigFont;
 extern uint8_t font[112][10];
 // keycodes
 #include <SDL/SDL.h>
-#define NBKEYS 45 //56
+#define NBKEYS 44
 extern struct kc {
     SDLKey kc;
-    char *function;
+    char const *varname;
 } gkeys[NBKEYS];
 // roads
 extern int largroute[3];

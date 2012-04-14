@@ -229,33 +229,3 @@ int presentold() {
     } while (1);
 }
 */
-
-void redefinekeys(void)
-{
-#   define LINE_HEIGHT 11
-    int const nb_disp_lines = win_height/LINE_HEIGHT;
-    for (int redef_k = 0; redef_k < NBKEYS; redef_k++) {
-        affpresent(0, 0);
-        int first_disp_k = redef_k - (nb_disp_lines-1);
-        if (first_disp_k < 0) first_disp_k = 0;
-        for (int line = 0; line < nb_disp_lines && line < NBKEYS; line++) {
-            int const k = line + first_disp_k;
-            char msg[200];
-            if (k == redef_k) {
-                snprintf(msg, sizeof(msg), "Type new key for %s (was %s)",
-                    gkeys[k].function,
-                    SDL_GetKeyName(gkeys[k].kc));
-                pstr(msg, line*LINE_HEIGHT, 0x20FF30);
-            } else {
-                snprintf(msg, sizeof(msg), "%s : %s",
-                    gkeys[k].function,
-                    SDL_GetKeyName(gkeys[k].kc));
-                pstr(msg, line*LINE_HEIGHT, 0xE0E0E0);
-            }
-        }
-        buffer2video();
-        gkeys[redef_k].kc = getscancode();
-    }
-
-    keys_save();
-}

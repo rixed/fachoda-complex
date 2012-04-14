@@ -16,26 +16,21 @@
  * You should have received a copy of the GNU General Public License
  * along with Fachoda.  If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef VIDEOSDL_H_120302
-#define VIDEOSDL_H_120302
+#ifndef CONFIG_H_120414
+#define CONFIG_H_120414
+/* Read only configuration from the .fachodarc file.
+ * This fachodarc file is a mere list of "name = value" lines,
+ * where definitions are separated by newlines, white_spaces are trimmed,
+ * '#' starts a comment, and name are restricted to alphenumeric chars.
+ *
+ * The file is read at initialization and the config can later be queried
+ * with config_get_*() functions, which all take a default value so that
+ * no error are ever reported. */
 
-#include <stdbool.h>
-#include <SDL/SDL.h>
-#include "proto.h"
+char const *config_get_string(char const *name, char const *dflt);
+unsigned config_get_uint(char const *name, unsigned dflt);
 
-extern struct pixel32 *videobuffer;
-
-void buffer2video(void);
-
-void initvideo(bool fullscreen);
-
-bool kread(SDLKey);
-bool kreset(SDLKey);
-bool button_read(unsigned b);
-bool button_reset(unsigned b);
-
-void xproceed(void);
-
-extern int xmouse, ymouse;
+// Init functions
+void config_load(void);
 
 #endif

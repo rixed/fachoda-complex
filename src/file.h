@@ -24,9 +24,17 @@
 
 // FIXME: use unistd instead of sloppy stdio
 
+/* Open file 'name' from dir 'dir' (or current dir if dir is NULL), or file
+ * 'name' from current dir if not found. */
 FILE *file_open(char const *name, char const *dir, char const *mode);
+
+/* Same as above but do not print error message if the file can't be found. */
 FILE *file_open_try(char const *name, char const *dir, char const *mode);
+
+/* Read this size from file. Missing bytes will be filled with 0. Abort on error. */
 void file_read(void *ptr, size_t size, FILE *f);
+
+/* Write these bytes, aborting on error. */
 void file_write(void *ptr, size_t size, FILE *f);
 
 #endif

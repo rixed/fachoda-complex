@@ -20,97 +20,78 @@
 #include <stdio.h>
 #include <math.h>
 #include <string.h>
+#include <strings.h>
 #include <errno.h>
 #include <stdint.h>
 #include <SDL/SDL.h>
-#include "file.h"
 #include "proto.h"
+#include "config.h"
 
 struct kc gkeys[NBKEYS] = {
-    { SDLK_ESCAPE, "Quit" },
-    { SDLK_y, "Yes" },
-    { SDLK_n, "No" },
-
-    { SDLK_EQUALS, "Motor +5%" },
-    { SDLK_MINUS, "Motor -5%" },
-
-    { SDLK_F5, "External views" },
-    { SDLK_F6, "Travelling view" },
-    { SDLK_F4, "Internal views" },
-    { SDLK_F7, "Zoom out" },
-    { SDLK_F8, "Zoom in" },
-    { SDLK_F2, "View next plane" },
-    { SDLK_F3, "View previous plane" },
-    { SDLK_F1, "View your plane or closest ennemy" },
-    { SDLK_m, "View next bomb" },
-    { SDLK_UP, "Rise your head" },
-    { SDLK_DOWN, "Lower your head" },
-    { SDLK_LEFT, "Turn left your head" },
-    { SDLK_RIGHT, "Turn right your head" },
-    { SDLK_HOME, "Look ahead" },
-    { SDLK_END, "Look backward" },
-    { SDLK_DELETE, "Look at left" },
-    { SDLK_PAGEDOWN, "Look at right" },
-    { SDLK_PAGEUP, "Look up" },
-    { SDLK_INSERT, "Look at the instrument panel" },
-
-    { SDLK_g, "Gear" },
-    { SDLK_f, "Flaps" },
-    { SDLK_b, "Brakes" },
-    { SDLK_p, "Autopilot" },
-    { SDLK_F10, "Buy a plane" },
-    { SDLK_KP8, "Nose down" },
-    { SDLK_KP2, "Nose up" },
-    { SDLK_KP4, "Roll left" },
-    { SDLK_KP6, "Roll right" },
-    { SDLK_KP6, "Center stick" },
-    { SDLK_SPACE, "Fire" },
-    { SDLK_RCTRL, "Change weapon" },
-
-    { SDLK_PAUSE, "Pause" },
-    { SDLK_TAB, "See Highscores" },
-    { SDLK_x, "Accelerated mode" },
-    { SDLK_n, "Set navpoint to home base" },
-    { SDLK_F9, "Map mode" },
-    { SDLK_F12, "Suicide" },
-    { SDLK_c, "Flag the map at plane's position" },
-
-    { SDLK_h, "Emergency UP! (...?)" },
-    { SDLK_j, "Gun this plane (...?)" }
+    { SDLK_ESCAPE, "key_quit" },
+    { SDLK_y, "key_yes" },
+    { SDLK_n, "key_no" },
+    { SDLK_EQUALS, "key_throttle_more" },
+    { SDLK_MINUS, "key_throttle_less" },
+    { SDLK_F5, "key_view_external" },
+    { SDLK_F6, "key_view_still" },
+    { SDLK_F4, "key_view_internal" },
+    { SDLK_F2, "key_view_next" },
+    { SDLK_F3, "key_view_previous" },
+    { SDLK_F1, "key_view_self" },
+    { SDLK_F9, "key_view_map" },
+    { SDLK_F7, "key_zoom_out" },
+    { SDLK_F8, "key_zoom_in" },
+    { SDLK_UP, "key_look_raise" },
+    { SDLK_DOWN, "key_look_lower" },
+    { SDLK_LEFT, "key_look_left" },
+    { SDLK_RIGHT, "key_look_right" },
+    { SDLK_HOME, "key_look_ahead" },
+    { SDLK_END, "key_look_back" },
+    { SDLK_DELETE, "key_look_at_left" },
+    { SDLK_PAGEDOWN, "key_look_at_right" },
+    { SDLK_PAGEUP, "key_look_up" },
+    { SDLK_INSERT, "key_look_panel" },
+    { SDLK_g, "key_gears" },
+    { SDLK_f, "key_flaps" },
+    { SDLK_b, "key_brakes" },
+    { SDLK_p, "key_autopilot" },
+    { SDLK_F10, "key_buy" },
+    { SDLK_KP8, "key_pause" },
+    { SDLK_KP2, "key_scores" },
+    { SDLK_KP4, "key_acceleration" },
+    { SDLK_KP6, "key_navpoint_to_base" },
+    { SDLK_KP6, "key_suicide" },
+    { SDLK_SPACE, "key_flag_map" },
+    { SDLK_RCTRL, "key_cheat_up" },
+    { SDLK_PAUSE, "key_cheat_gunme" },
+    { SDLK_TAB, "key_nose_down" },
+    { SDLK_x, "key_nose_up" },
+    { SDLK_n, "key_roll_left" },
+    { SDLK_F12, "key_roll_right" },
+    { SDLK_c, "key_center_stick" },
+    { SDLK_h, "key_shoot" },
+    { SDLK_j, "key_alt_weapon" },
 };
 
-static FILE *keyfile_open(char const *perms)
+static SDLKey sdl_key_of_name(char const *name)
 {
-    return file_open_try(".fachoda-keys", getenv("HOME"), perms);
-}
-
-void keys_save(void)
-{
-    FILE *f = keyfile_open("w+");
-    if (! f) return;
-
-    for (unsigned i = 0; i < ARRAY_LEN(gkeys); i++) {
-        ssize_t ret = fwrite(&gkeys[i].kc, sizeof(gkeys[i].kc), 1, f);
-        if (ret < 1) {
-            fprintf(stderr, "Cannot write key\n");
-        }
+    for (SDLKey k = 0; k < SDLK_LAST; k++) {
+        if (0 == strcasecmp(name, SDL_GetKeyName(k))) return k;
     }
 
-    fclose(f);
+    fprintf(stderr, "Unknown key \"%s\"\n", name);
+    return SDLK_UNKNOWN;
 }
 
 void keys_load(void)
 {
-    FILE *f = keyfile_open("r");
-    if (! f) return;
-
     for (unsigned i = 0; i < ARRAY_LEN(gkeys); i++) {
-        ssize_t ret = fread(&gkeys[i].kc, sizeof(gkeys[i].kc), 1, f);
-        if (ret < 1) {
-            fprintf(stderr, "Cannot read key\n");
+        char const *keyname = config_get_string(gkeys[i].varname, NULL);
+        if (keyname) {
+            SDLKey kc = sdl_key_of_name(keyname);
+            if (kc != SDLK_UNKNOWN) gkeys[i].kc = kc;
         }
     }
-
-    fclose(f);
 }
 
