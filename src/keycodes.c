@@ -26,6 +26,7 @@
 #include <SDL/SDL.h>
 #include "proto.h"
 #include "config.h"
+#include "keycodesdef.h"
 
 struct kc gkeys[NBKEYS] = {
     { SDLK_ESCAPE, "key_quit" },
@@ -57,26 +58,26 @@ struct kc gkeys[NBKEYS] = {
     { SDLK_b, "key_brakes" },
     { SDLK_p, "key_autopilot" },
     { SDLK_F10, "key_buy" },
-    { SDLK_KP8, "key_pause" },
-    { SDLK_KP2, "key_scores" },
-    { SDLK_KP4, "key_acceleration" },
-    { SDLK_KP6, "key_navpoint_to_base" },
-    { SDLK_KP6, "key_suicide" },
-    { SDLK_SPACE, "key_flag_map" },
-    { SDLK_RCTRL, "key_cheat_up" },
-    { SDLK_PAUSE, "key_cheat_gunme" },
-    { SDLK_TAB, "key_nose_down" },
-    { SDLK_x, "key_nose_up" },
-    { SDLK_n, "key_roll_left" },
-    { SDLK_F12, "key_roll_right" },
-    { SDLK_c, "key_center_stick" },
-    { SDLK_h, "key_shoot" },
-    { SDLK_j, "key_alt_weapon" },
+    { SDLK_PAUSE, "key_pause" },
+    { SDLK_TAB, "key_scores" },
+    { SDLK_x, "key_acceleration" },
+    { SDLK_n, "key_navpoint_to_base" },
+    { SDLK_F12, "key_suicide" },
+    { SDLK_c, "key_flag_map" },
+    { SDLK_h, "key_cheat_up" },
+    { SDLK_j, "key_cheat_gunme" },
+    { SDLK_KP8, "key_nose_down" },
+    { SDLK_KP2, "key_nose_up" },
+    { SDLK_KP4, "key_roll_left" },
+    { SDLK_KP6, "key_roll_right" },
+    { SDLK_KP5, "key_center_stick" },
+    { SDLK_SPACE, "key_shoot" },
+    { SDLK_RCTRL, "key_alt_weapon" },
 };
 
 static SDLKey sdl_key_of_name(char const *name)
 {
-    for (SDLKey k = 0; k < SDLK_LAST; k++) {
+    for (SDLKey k = SDLK_FIRST; k < SDLK_LAST; k++) {
         if (0 == strcasecmp(name, SDL_GetKeyName(k))) return k;
     }
 
