@@ -56,7 +56,7 @@ void mixplot(int x, int y, int r, int g, int b){
         ((int*)videobuffer)[x+win_center_x+win_width*(y+win_center_y)]=(rr<<16)+(gg<<8)+bb;
     }
 }
-void plotmouse(int x,int y){
+void plot_stick(int x,int y){
     plot(x-5,y,0xA0A0A0);
     plot(x+5,y,0xA0A0A0);
     plot(x,y-5,0xA0A0A0);
@@ -92,7 +92,7 @@ void plotboule(int x,int y) {
     plot(x,y+2,0x808020);
     plot(x+1,y+2,0x606020);
 }
-void plotcursor(int x,int y) {
+void plot_cursor(int x,int y) {
     static float a=0, ar=0;
     float r=8*sin(ar);
     float c=r*cos(a);

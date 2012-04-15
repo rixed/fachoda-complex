@@ -429,6 +429,48 @@ static void view_hud_draw(void)
 #   endif
 }
 
+// displayed in easy mode
+static void flight_hud_draw(void)
+{
+    int const b = viewed_bot; // controlled_bot;
+    pword("Sz:", 10, 10, 0x406040);
+    pnum(bot[b].vionvit.z, 40, 10, 0xAFDF10, 1);
+    pword("Sl:", 10, 20, 0x406040);
+    pnum(bot[b].vitlin, 40, 20, 0xFFFFFF, 1);
+    if (autopilot || b != controlled_bot) {
+        float const diff_speed = bot[b].target_speed - bot[b].vitlin;
+        pnum(diff_speed, 40+4*10, 20, diff_speed > 0 ? 0xD0D0F0 : 0xF0D0D0, 1);
+    }
+    pword("St:", 10, 30, 0x406040);
+    pnum(norme(&bot[b].vionvit), 40, 30, 0x00FFFF, 1);
+    pword("Zg:", 10, 40, 0x406040);
+    pnum(bot[b].zs, 40, 40, 0xFF00FF, 1);
+    if (autopilot || b != controlled_bot) {
+        float const diff_alt = (bot[b].u.z + bot[b].target_rel_alt) - obj[bot[b].vion].pos.z;
+        pnum(diff_alt, 40+4*10, 40, diff_alt > 0 ? 0xD0D0F0 : 0xF0D0D0, 1);
+    }
+    if (bot[b].but.gear) pword("gear",10,60,0xD0D0D0);
+    if (bot[b].but.flap) pword("flaps",10,70,0xD0D0D0);
+    if (bot[b].but.brakes) pword("brakes",10,80,0xD0D0D0);
+    if (viewed_bot == controlled_bot && autopilot) pword("auto", 10, 90, 0xD0D0D0);
+    if (bot[b].is_flying) {
+        if (bot[b].stall) pword("!STALL!", 10, 90, 0xFF0000);
+    } else {
+        pword("grounded", 10, 90, 0xD0D0D0);
+    }
+}
+
+// Always displayed whatever the view
+static void game_hud_draw(void)
+{
+    if (game_paused) pstr("P A U S E", win_center_y/3, 0xFFFFFF);
+    else if (accelerated_mode) pstr("ACCELERATED MODE", win_center_y/3, 0xFFFFFF);
+    if (prompt_quit) pstr("Quit ? Yes/No", win_center_y/3 + 2*13, 0xFFFFFF);
+    if (current_msg_ttl >= 0. && bot[viewed_bot].camp == current_msg_camp) {
+        pstr(current_msg, 10, 0xF1F511);
+    }
+}
+
 int main(int narg, char **arg)
 {
     int i,j, dtradio=0;
@@ -677,7 +719,7 @@ parse_error:
                 obj_check_pos(i);
                 if (shot_ttl[i-shot_start] <= 0. || obj[i].pos.z<z_ground(obj[i].pos.x,obj[i].pos.y, true)) {
                     obj[i].aff=0;   // pour qu'il soit plus affiché
-#ifndef DEMO
+#                   ifndef DEMO
                     if (i==nb_obj-1) do {
                         nb_obj--; nb_shot--;
                         if (obj[nb_obj].next!=-1) obj[obj[nb_obj].next].prec=obj[nb_obj].prec;
@@ -688,7 +730,7 @@ parse_error:
                         // cheval sur une frontiere, puisqu'il ne bouclera
                         // plus jusqu'ici
                     } while (obj[nb_obj-1].aff==0 && nb_obj>shot_start);
-#endif
+#                   endif
                 }
             }
             // Move bombs
@@ -880,156 +922,125 @@ parse_error:
             for (i = 0; i < NBTANKBOTS; i++) physics_tank(i, dt_sec);
             for (i = 0; i < NBZEP; i++) physics_zep(i, dt_sec);
 
+            animsoleil();
+            animate_water(dt_sec);
+
             // Now that we know the location of all objects, setup the camera.
             setup_camera(dt_sec);
 
             // Now that we know camera's position, play all sounds
             struct vector velocity = { 0., 0., 0. };   // FIXME
             update_listener(&obj[0].pos, &velocity, &obj[0].rot);
-
-            // Draw the frame
-            if (!accelerated_mode || 0 == (frame_count&31)) {
-                // Where's the light?
-                if (explosion) {
-                    subv3(&obj[0].pos, &explosion_pos, &u);
-                    if (renorme(&u) < TILE_LEN) {
-                        copyv(&light.z,&u);
-                        light.x = u;
-                        orthov(&light.x, &light.z);
-                        renorme(&light.x);
-                        prodvect(&light.z, &light.x, &light.y);
-                    }
-                } else {
-                    light = LightSol;
-                }
-
-                animsoleil();
-                if (map_mode) {
-                    map_draw();
-                } else {
-                    background();
-                    affsoleil(&light.z);
-                    mulmtv(&obj[bot[viewed_bot].vion].rot,&light.z,&v);
-                    lx=-127*v.y; ly=-127*v.z; lz=50*v.x+77;
-                    if (plane_desc[bot[viewed_bot].navion].oldtb) tbback = tbback_old;
-                    else tbback = tbback_modern;
-                    drawtbback();
-                    drawtbcadrans(viewed_bot);
-                    animate_water(dt_sec);
-                    draw_ground_and_objects();
-#                   ifdef VEC_DEBUG
-                    draw_debug();
-#                   endif
-                    if (! night_mode) {
-                        double i;
-                        uint8_t u;
-                        if ((i=scalaire(&obj[0].rot.z,&light.z))<-.9) {
-                            u=(exp(-i-.9)-1)*2200;
-                            MMXAddSatInt((int*)videobuffer,(u<<16)+(u<<8)+u,win_width*win_height);
-                        }
-                    }
-                    if (easy_mode) {
-                        if (bot[viewed_bot].cibt != -1) {
-                            draw_target(obj[bot[viewed_bot].cibt].pos, 0xC02080);
-                            fall_min_dist2(viewed_bot);
-                            draw_mark(bot[viewed_bot].drop_mark, 0x400000);
-                        }
-                        if (bot[viewed_bot].cibv != -1) draw_target(obj[bot[viewed_bot].cibv].pos, 0xC08020);
-                        struct vector nav = bot[viewed_bot].u;
-                        nav.z += bot[viewed_bot].target_rel_alt;
-                        draw_target(nav, 0x20F830);
-                    }
-                    view_hud_draw();
-                }
-                plotmouse(win_center_x*bot[viewed_bot].xctl,win_center_y*bot[viewed_bot].yctl);
-                // HUD
-                if (easy_mode) {
-                    int const b = viewed_bot; // controlled_bot;
-                    pword("Sz:", 10, 10, 0x406040);
-                    pnum(bot[b].vionvit.z, 40, 10, 0xAFDF10, 1);
-                    pword("Sl:", 10, 20, 0x406040);
-                    pnum(bot[b].vitlin, 40, 20, 0xFFFFFF, 1);
-                    if (autopilot || b != controlled_bot) {
-                        float const diff_speed = bot[b].target_speed - bot[b].vitlin;
-                        pnum(diff_speed, 40+4*10, 20, diff_speed > 0 ? 0xD0D0F0 : 0xF0D0D0, 1);
-                    }
-                    pword("St:", 10, 30, 0x406040);
-                    pnum(norme(&bot[b].vionvit), 40, 30, 0x00FFFF, 1);
-                    pword("Zg:", 10, 40, 0x406040);
-                    pnum(bot[b].zs, 40, 40, 0xFF00FF, 1);
-                    if (autopilot || b != controlled_bot) {
-                        float const diff_alt = (bot[b].u.z + bot[b].target_rel_alt) - obj[bot[b].vion].pos.z;
-                        pnum(diff_alt, 40+4*10, 40, diff_alt > 0 ? 0xD0D0F0 : 0xF0D0D0, 1);
-                    }
-                    if (bot[b].but.gear) pword("gear",10,60,0xD0D0D0);
-                    if (bot[b].but.flap) pword("flaps",10,70,0xD0D0D0);
-                    if (bot[b].but.brakes) pword("brakes",10,80,0xD0D0D0);
-                    if (viewed_bot == controlled_bot && autopilot) pword("auto", 10, 90, 0xD0D0D0);
-                    if (bot[b].is_flying) {
-                        if (bot[b].stall) pword("!STALL!", 10, 90, 0xFF0000);
-                    } else {
-                        pword("grounded", 10, 90, 0xD0D0D0);
-                    }
-                }
-                if (accelerated_mode) pstr("ACCELERATED MODE", win_center_y/3, 0xFFFFFF);
-                if (prompt_quit) pstr("Quit ? Yes/No", win_center_y/3 + 2*13, 0xFFFFFF);
-                if (current_msg_ttl >= 0. && bot[viewed_bot].camp == current_msg_camp) {
-                    pstr(current_msg, 10, 0xF1F511);
-                }
-                // Display current balance
-                if (bot[controlled_bot].gold - 2000 > maxgold) {
-                    maxgold = bot[controlled_bot].gold - 2000;
-                    if (maxrank < ARRAY_LEN(highscore)) highscore[maxrank].score = maxgold;
-                    while (maxrank > 0 && highscore[maxrank-1].score < maxgold) {
-                        maxrank--;
-                        if (maxrank<ARRAY_LEN(highscore)-1) {
-                            memcpy(&highscore[maxrank+1], &highscore[maxrank], sizeof(struct high_score));
-                        }
-                        highscore[maxrank].score = maxgold;
-                        snprintf(highscore[maxrank].name, sizeof(highscore[maxrank].name), "%s", playbotname[controlled_bot]);
-                    }
-                }
-                if (bot[controlled_bot].gold>oldgold) {
-                    if (!caissetot && caisse>0) caisse+=bot[controlled_bot].gold-oldgold;
-                    else caisse=bot[controlled_bot].gold-oldgold;
-                    dtcaisse=20;
-                    caissetot=0;
-                } else if (oldgold>bot[controlled_bot].gold) {
-                    if (!caissetot && caisse<0) caisse+=bot[controlled_bot].gold-oldgold;
-                    else caisse=bot[controlled_bot].gold-oldgold;
-                    dtcaisse=20;
-                    caissetot=0;
-                }
-                if (dtcaisse) {
-                    pbignum(caisse,win_center_x,win_height/3,2,caissetot,1);
-                    dtcaisse--;
-                    if (!dtcaisse) {
-                        if (!caissetot) {
-                            caisse=bot[controlled_bot].gold;
-                            dtcaisse=30;
-                            caissetot=1;
-                            playsound(VOICE_GEAR, SAMPLE_MESSAGE, 1.4, &voices_in_my_head, true, false);
-                        } else {
-                            caissetot=0;
-                            caisse=0;
-                        }
-                    }
-                }
-                oldgold=bot[controlled_bot].gold;
-
-                if (draw_high_scores) {
-                    int y=(win_height-(ARRAY_LEN(highscore)+2)*9)>>1;
-                    pstr("Hall of Shame",y,0xFFFFFF);
-                    for (unsigned i = 0; i < ARRAY_LEN(highscore); i++) {
-                        char fonom[36];
-                        snprintf(fonom, sizeof(fonom), "%d. %s", highscore[i].score, highscore[i].name);
-                        pstr(fonom,y+9*(2+i),i==maxrank?0xFFFF1F:0xEFD018);
-                    }
-                }
-                plotcursor(xmouse,ymouse);
-                buffer2video();
-            }
         }
+
+        // Draw the frame (note: yes we do not skip frames while in pause)
+        if (!accelerated_mode || game_paused || 0 == (frame_count&31)) {
+            // Where's the light?
+            if (explosion) {
+                subv3(&obj[0].pos, &explosion_pos, &u);
+                if (renorme(&u) < TILE_LEN) {
+                    copyv(&light.z,&u);
+                    light.x = u;
+                    orthov(&light.x, &light.z);
+                    renorme(&light.x);
+                    prodvect(&light.z, &light.x, &light.y);
+                }
+            } else {
+                light = LightSol;
+            }
+
+            if (map_mode) {
+                map_draw();
+            } else {
+                background();
+                affsoleil(&light.z);
+                mulmtv(&obj[bot[viewed_bot].vion].rot,&light.z,&v);
+                lx=-127*v.y; ly=-127*v.z; lz=50*v.x+77;
+                if (plane_desc[bot[viewed_bot].navion].oldtb) tbback = tbback_old;
+                else tbback = tbback_modern;
+                drawtbback();
+                drawtbcadrans(viewed_bot);
+                draw_ground_and_objects();
+#               ifdef VEC_DEBUG
+                draw_debug();
+#               endif
+                if (! night_mode) {
+                    double i;
+                    uint8_t u;
+                    if ((i=scalaire(&obj[0].rot.z,&light.z))<-.9) {
+                        u=(exp(-i-.9)-1)*2200;
+                        MMXAddSatInt((int*)videobuffer,(u<<16)+(u<<8)+u,win_width*win_height);
+                    }
+                }
+                if (easy_mode) {
+                    if (bot[viewed_bot].cibt != -1) {
+                        draw_target(obj[bot[viewed_bot].cibt].pos, 0xC02080);
+                        fall_min_dist2(viewed_bot);
+                        draw_mark(bot[viewed_bot].drop_mark, 0x400000);
+                    }
+                    if (bot[viewed_bot].cibv != -1) draw_target(obj[bot[viewed_bot].cibv].pos, 0xC08020);
+                    struct vector nav = bot[viewed_bot].u;
+                    nav.z += bot[viewed_bot].target_rel_alt;
+                    draw_target(nav, 0x20F830);
+                }
+                view_hud_draw();
+            }
+            if (easy_mode) flight_hud_draw();
+            game_hud_draw();
+            plot_stick(win_center_x*bot[viewed_bot].xctl, win_center_y*bot[viewed_bot].yctl);
+            // Display current balance and keep track of maxgold.
+            if (bot[controlled_bot].gold - 2000 > maxgold) {
+                maxgold = bot[controlled_bot].gold - 2000;
+                if (maxrank < ARRAY_LEN(highscore)) highscore[maxrank].score = maxgold;
+                while (maxrank > 0 && highscore[maxrank-1].score < maxgold) {
+                    maxrank--;
+                    if (maxrank<ARRAY_LEN(highscore)-1) {
+                        memcpy(&highscore[maxrank+1], &highscore[maxrank], sizeof(struct high_score));
+                    }
+                    highscore[maxrank].score = maxgold;
+                    snprintf(highscore[maxrank].name, sizeof(highscore[maxrank].name), "%s", playbotname[controlled_bot]);
+                }
+            }
+            if (bot[controlled_bot].gold>oldgold) {
+                if (!caissetot && caisse>0) caisse+=bot[controlled_bot].gold-oldgold;
+                else caisse=bot[controlled_bot].gold-oldgold;
+                dtcaisse=20;
+                caissetot=0;
+            } else if (oldgold>bot[controlled_bot].gold) {
+                if (!caissetot && caisse<0) caisse+=bot[controlled_bot].gold-oldgold;
+                else caisse=bot[controlled_bot].gold-oldgold;
+                dtcaisse=20;
+                caissetot=0;
+            }
+            if (dtcaisse) {
+                pbignum(caisse,win_center_x,win_height/3,2,caissetot,1);
+                dtcaisse--;
+                if (!dtcaisse) {
+                    if (!caissetot) {
+                        caisse=bot[controlled_bot].gold;
+                        dtcaisse=30;
+                        caissetot=1;
+                        playsound(VOICE_GEAR, SAMPLE_MESSAGE, 1.4, &voices_in_my_head, true, false);
+                    } else {
+                        caissetot=0;
+                        caisse=0;
+                    }
+                }
+            }
+            oldgold=bot[controlled_bot].gold;
+
+            if (draw_high_scores) {
+                int y=(win_height-(ARRAY_LEN(highscore)+2)*9)>>1;
+                pstr("Hall of Shame",y,0xFFFFFF);
+                for (unsigned i = 0; i < ARRAY_LEN(highscore); i++) {
+                    char fonom[36];
+                    snprintf(fonom, sizeof(fonom), "%d. %s", highscore[i].score, highscore[i].name);
+                    pstr(fonom,y+9*(2+i),i==maxrank?0xFFFF1F:0xEFD018);
+                }
+            }
+            plot_cursor(xmouse, ymouse);
+            buffer2video();
+        } // end of frame display
     } while (! quit_game);
     // FIN
 fin:

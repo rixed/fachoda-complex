@@ -248,7 +248,7 @@ static int jauge(int vi, int max) {
         for (y=win_height/3-(win_height>>3); y<win_height/3+(win_height>>3); y++)
             memset32((int*)videobuffer+y*win_width+10,0x3060A0,jx);
         pbignum(va,win_center_x,win_height/3-SizeBigCharY/2,2,1,0);
-        plotcursor(xmouse,ymouse);
+        plot_cursor(xmouse,ymouse);
         buffer2video();
         xproceed();
         if (button_read(SDL_BUTTON_LEFT) || button_read(SDL_BUTTON_RIGHT)) {
@@ -301,7 +301,7 @@ int present(void)
         }
         kzc = kazeclick(xmouse, ymouse, curround);
         draw_page(curround, radius + .018*sin(phazr), phaz);
-        plotcursor(xmouse, ymouse);
+        plot_cursor(xmouse, ymouse);
         buffer2video();
         xproceed();
         phaz += rot_speed * dt_sec * (.13 + sin(phazr*1.1)*.61);
