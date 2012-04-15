@@ -68,7 +68,12 @@ void buffer2video(void)
 
 int xmouse, ymouse;
 static bool mouse_button[7];
-static uint8_t keytab[SDLK_LAST-SDLK_FIRST+1];
+
+/* We use a bitfields of SDLK_LAST-FIRST pairs of bits.
+ * For each key, the first bit gives the actual pressed status,
+ * and the second bit is set whenever the key was pressed in the past,
+ * and is only reset to 0 when the key is processed (by kreset). */
+static uint8_t keytab[(SDLK_LAST-SDLK_FIRST+1)/4+1];
 
 static unsigned bit_of_key(SDLKey k)
 {
@@ -79,31 +84,46 @@ static unsigned bit_of_key(SDLKey k)
     return k - SDLK_FIRST;
 }
 
+// Set both keybits to 1
 static void bitset(unsigned n)
 {
-    keytab[n/8] |= 1U<<(n&7);
+    keytab[n/4] |= 3U<<(n&3);
 }
 
+// Reset both keybits to 0
 static void bitzero(unsigned n)
 {
-    keytab[n/8] &= ~(1U<<(n&7));
+    keytab[n/4] &= ~(3U<<(n&3));
 }
 
+// Reset the current keybit to 0 (but keep the pas keybit)
+static void bitzero1(unsigned n)
+{
+    keytab[n/4] &= ~(1U<<(n&3));
+}
+
+// Test the current keybit
+static bool bittest1(unsigned n)
+{
+    return !!(keytab[n/4] & (1U<<(n&3)));
+}
+
+// Test any of the keybits
 static bool bittest(unsigned n)
 {
-    return !!(keytab[n/8] & (1U<<(n&7)));
+    return !!(keytab[n/4] & (3U<<(n&3)));
 }
 
 bool kread(SDLKey k)
 {
-    return bittest(bit_of_key(k));
+    return bittest1(bit_of_key(k));
 }
 
 bool kreset(SDLKey k)
 {
     unsigned n = bit_of_key(k);
     bool const r = bittest(n);
-    bitzero(n);
+    if (r) bitzero(n);
     return r;
 }
 
@@ -139,7 +159,7 @@ void xproceed(void)
                 bitset(bit_of_key(event.key.keysym.sym));
                 break;
             case SDL_KEYUP:
-                bitzero(bit_of_key(event.key.keysym.sym));
+                bitzero1(bit_of_key(event.key.keysym.sym));
                 break;
             case SDL_MOUSEBUTTONDOWN:
                 if (event.button.button < ARRAY_LEN(mouse_button)) {
@@ -157,7 +177,6 @@ void xproceed(void)
             case SDL_ACTIVEEVENT:
                 if (event.active.state & SDL_APPACTIVE) {
                     game_suspended = 0 == event.active.gain;
-                    printf("Game is now %s\n", game_suspended ? "suspended" : "running");
                     game_suspended ? sound_suspend() : sound_resume();
                 }
                 break;
