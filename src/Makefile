@@ -21,6 +21,9 @@ all: fachoda getkeyname
 fachoda: $(OBJS)
 	$(CC) -o $@ $(CFLAGS) $^ $(LDFLAGS)
 
+getkeyname: getkeyname.o
+	$(CC) -o $@ $(CFLAGS) $^ $(LDFLAGS)
+
 .PHONY: clean distclean cscope clear install
 
 SUBDATADIRS := \
