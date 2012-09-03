@@ -87,31 +87,31 @@ static unsigned bit_of_key(SDLKey k)
 // Set both keybits to 1
 static void bitset(unsigned n)
 {
-    keytab[n/4] |= 3U<<(n&3);
+    keytab[n/4] |= 3U<<((n&3)*2);
 }
 
 // Reset both keybits to 0
 static void bitzero(unsigned n)
 {
-    keytab[n/4] &= ~(3U<<(n&3));
+    keytab[n/4] &= ~(3U<<((n&3)*2));
 }
 
-// Reset the current keybit to 0 (but keep the pas keybit)
+// Reset the current keybit to 0 (but keep the past keybit)
 static void bitzero1(unsigned n)
 {
-    keytab[n/4] &= ~(1U<<(n&3));
+    keytab[n/4] &= ~(1U<<((n&3)*2));
 }
 
 // Test the current keybit
 static bool bittest1(unsigned n)
 {
-    return !!(keytab[n/4] & (1U<<(n&3)));
+    return !!(keytab[n/4] & (1U<<((n&3)*2)));
 }
 
 // Test any of the keybits
 static bool bittest(unsigned n)
 {
-    return !!(keytab[n/4] & (3U<<(n&3)));
+    return !!(keytab[n/4] & (3U<<((n&3)*2)));
 }
 
 bool kread(SDLKey k)
@@ -121,7 +121,7 @@ bool kread(SDLKey k)
 
 bool kreset(SDLKey k)
 {
-    unsigned n = bit_of_key(k);
+    unsigned const n = bit_of_key(k);
     bool const r = bittest(n);
     if (r) bitzero(n);
     return r;
